@@ -8,7 +8,11 @@
     "board": "bun team/mcp/server.ts",
     "convex": "convex dev",
     "explore": "bun tools/catalog-explorer/server.ts",
-    "explore:prep": "node tools/catalog-explorer/prep.mjs"
+    "explore:prep": "node tools/catalog-explorer/prep.mjs",
+    "dev:app": "node scripts/dev-app.mjs",
+    "test:app": "cd app/server && bun test && cd ../web && bunx tsc -b",
+    "test:fast": "cd app/server && bun test",
+    "build": "cd app/web && bun run build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
