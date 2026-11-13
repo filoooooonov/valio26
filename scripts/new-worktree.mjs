@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Create a parallel checkout for another agent session:
 //   node scripts/new-worktree.mjs <name>
-// -> ../junction26-worktrees/<name> on branch wt/<name>, deps installed.
+// -> ../valio26-worktrees/<name> on branch wt/<name>, deps installed.
 // The agent there gets id "<you>-<tool>-<name>" on the team board.
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";

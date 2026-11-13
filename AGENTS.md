@@ -19,7 +19,7 @@ config, add this to `~/.codex/config.toml`, using the absolute path to this repo
 ```toml
 [mcp_servers.team]
 command = "node"
-args = ["/ABSOLUTE/PATH/junction26/team/mcp/server.mjs"]
+args = ["/ABSOLUTE/PATH/valio26/team/mcp/server.mjs"]
 env = { TEAM_TOOL = "codex" }
 ```
 

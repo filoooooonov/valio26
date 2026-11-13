@@ -1,4 +1,4 @@
-# junction26
+# valio26
 
 Junction 2026 hackathon project: **challenge not locked yet** (see `challenges/DECIDE.md`).
 
