@@ -213,7 +213,37 @@
         font-size: 46px;
         position: relative;
       }
+      .tile img.photo {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: #fff;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+      .catlist div.inf span:first-child {
+        font-style: italic;
+        color: var(--muted);
+      }
+      .catlist div.on.inf span:first-child {
+        color: #fffd;
+      }
+      .src {
+        font-size: 10px;
+        padding: 1px 6px;
+        border-radius: 99px;
+        background: var(--accent);
+        color: var(--brand);
+        white-space: nowrap;
+      }
+      .src.inf {
+        background: #fff3e0;
+        color: var(--warn);
+      }
       .tile .tag {
+        z-index: 1;
         position: absolute;
         top: 8px;
         left: 8px;
@@ -592,6 +622,33 @@
       };
       const tileBg = (p) =>
         `linear-gradient(135deg, hsl(${hue(p.cat)} 70% 92%), hsl(${(hue(p.cat) + 40) % 360} 70% 85%))`;
+      // Category names: src "valioaimo.fi" = real group name (sampled by EAN); "inferred" = our guess.
+      const catTitle = (k) => {
+        const c = CATS[k];
+        if (!c) return k;
+        return c.src === "inferred"
+          ? `Code ${k} · INFERRED name from common product-name words` +
+              (c.guess
+                ? ` · likely under ${c.guess.join(" > ")} (${c.guessBasis})`
+                : "")
+          : `Code ${k} · ${c.path.join(" > ")} (valioaimo.fi product groups)`;
+      };
+      const catHtml = (k) => {
+        const c = CATS[k];
+        if (!c) return esc(k);
+        return c.src === "inferred"
+          ? `${k} · <i>${esc(c.label)}</i> <span class="src inf">inferred</span>` +
+              (c.guess
+                ? `<br><span class="missing">likely under ${esc(c.guess.join(" > "))} (${esc(c.guessBasis)})</span>`
+                : "")
+          : `${k} · ${esc(c.path.join(" > "))} <span class="src">valioaimo.fi</span>`;
+      };
+      // Product photos: hotlinked URLs from valioaimo.fi, looked up by EAN when a product is opened
+      // (cached server-side). If the image fails to load we drop it and the emoji tile shows through.
+      const photo = (p) =>
+        IMGS[p.gtin]?.img
+          ? `<img class="photo" loading="lazy" alt="" src="${esc(IMGS[p.gtin].img)}" onerror="this.remove()">`
+          : "";
       const TEMP_LABEL = {
         warmTemperature: "Ambient",
         coolTemperature: "Chilled",
@@ -610,6 +667,7 @@
       // ---------- state ----------
       let P = [],
         CATS = {},
+        IMGS = {},
         STATS = null,
         view = "shop",
         shown = 60;
@@ -654,9 +712,13 @@
       Promise.all([
         fetch("/catalog.json").then((r) => r.json()),
         fetch("/stats.json").then((r) => r.json()),
-      ]).then(([c, s]) => {
+        fetch("/images.json")
+          .then((r) => r.json())
+          .catch(() => ({})),
+      ]).then(([c, s, im]) => {
         P = c.products;
         CATS = c.categories;
+        IMGS = im;
         STATS = s;
         for (const p of P)
           p._s = (
@@ -756,7 +818,7 @@
         chip(l, F.has.has(k), "on", `data-set="has" data-v="${k}"`),
       )
       .join("")}</div>
-    <h4>Category <span style="text-transform:none;font-weight:400">(${cats.length} codes; names inferred)</span></h4>
+    <h4>Category <span style="text-transform:none;font-weight:400">(${cats.length} codes · ${cats.filter(([, v]) => v.src !== "inferred").length} named from valioaimo.fi · <i>italic = inferred</i>)</span></h4>
     <input id="catq" placeholder="Filter categories…" />
     <div class="catlist" id="catlist"></div>`;
         side.querySelectorAll("[data-set]").forEach(
@@ -775,10 +837,17 @@
           document.getElementById("catlist").innerHTML =
             `<div class="${!F.cat ? "on" : ""}" data-c=""><span>All categories</span><span>${fmt(P.length)}</span></div>` +
             cats
-              .filter(([k, v]) => !q || (k + v.label).toLowerCase().includes(q))
+              .filter(
+                ([k, v]) =>
+                  !q ||
+                  [k, v.label, ...(v.path || v.guess || []), ...v.words.fi]
+                    .join(" ")
+                    .toLowerCase()
+                    .includes(q),
+              )
               .map(
                 ([k, v]) =>
-                  `<div class="${F.cat === k ? "on" : ""}" data-c="${k}"><span>${esc(v.label)}</span><span>${v.count}</span></div>`,
+                  `<div class="${F.cat === k ? "on" : ""} ${v.src === "inferred" ? "inf" : ""}" data-c="${k}" title="${esc(catTitle(k))}"><span>${esc(v.label)}</span><span>${v.count}</span></div>`,
               )
               .join("");
           document.querySelectorAll("#catlist [data-c]").forEach(
@@ -815,7 +884,7 @@
           b.push(
             `<span class="b ${p.rel < 0.9 ? "r" : "g"}">${Math.round(p.rel * 100)}% delivered</span>`,
           );
-        return `<div class="card" data-id="${p.id}"><div class="tile" style="background:${tileBg(p)}"><span class="tag">${tempOf(p)}</span>${emojiFor(p)}</div>
+        return `<div class="card" data-id="${p.id}"><div class="tile" style="background:${tileBg(p)}"><span class="tag">${tempOf(p)}</span>${emojiFor(p)}${photo(p)}</div>
     <div class="body"><div class="name">${esc(p.en || p.fi)}</div><div class="meta">${esc(p.brand || p.vendor)} · #${p.id} · per ${UNIT[p.unit] || p.unit}</div><div class="badges">${b.join("")}</div></div></div>`;
       }
 
@@ -867,7 +936,7 @@
           : "";
         document.getElementById("drawer").innerHTML =
           `<button class="x" onclick="closeDrawer()">✕</button>
-    <div class="d-head"><div class="tile" style="background:${tileBg(p)}">${emojiFor(p)}</div><div><h2>${esc(p.en || p.fi)}</h2>
+    <div class="d-head"><div class="tile" id="dtile" style="background:${tileBg(p)}">${emojiFor(p)}${photo(p)}</div><div><h2>${esc(p.en || p.fi)}</h2>
       <div class="meta">${esc(p.fi)}<br>${esc(p.sv)}</div></div></div>
     <section class="d"><h3>Live from Valio Aimo mock API</h3><div class="live">Delivery date <input type="date" id="ld" value="${nextMonday()}"> <button onclick="live('${p.id}')">Check price &amp; availability</button><div id="lres" style="margin-top:10px"></div></div></section>
     <section class="d"><h3>Product</h3>${kv([
@@ -875,10 +944,7 @@
       ["GTIN", p.gtin],
       ["Brand", esc(p.brand)],
       ["Vendor (supplier)", esc(p.vendor)],
-      [
-        "Category code",
-        `${p.cat} <span class="missing">(${esc(CATS[p.cat]?.label)})</span>`,
-      ],
+      ["Category code", catHtml(p.cat)],
       ["Sold per", `${UNIT[p.unit] || p.unit} (${p.unit})`],
       ["Pack structure", units],
       ["Order step (lot size)", p.lot],
@@ -889,7 +955,13 @@
       ],
       ["Country of origin", p.origin.toUpperCase()],
       ["Returnable deposits", p.deposits || ""],
-      ["Images", p.media ? `${p.media} (ids only, files not provided)` : ""],
+      [
+        "Photo",
+        `<span id="dimg" data-gtin="${esc(p.gtin)}">${photoInfo(p)}</span>` +
+          (p.media
+            ? `<br><span class="missing">sponsor data: ${p.media} media id(s), no files</span>`
+            : ""),
+      ],
     ])}</section>
     <section class="d"><h3>Allergens &amp; diet</h3>${kv([
       [
@@ -945,6 +1017,51 @@
     <section class="d"><h3>Description</h3>${p.desc ? esc(p.desc) : '<span class="missing">not in data</span>'}${p.storage ? `<p><b>Storage:</b> ${esc(p.storage)}</p>` : ""}</section>`;
         document.getElementById("drawer").classList.add("open");
         document.getElementById("shade").classList.add("open");
+        if (p.gtin && !IMGS[p.gtin]) loadPhoto(p);
+      }
+      function photoInfo(p) {
+        const m = IMGS[p.gtin];
+        if (!p.gtin)
+          return '<span class="missing">no EAN, cannot look up</span>';
+        if (!m)
+          return '<span class="missing">looking up on valioaimo.fi…</span>';
+        if (m.off)
+          return '<span class="missing">lookup disabled (EXPLORER_IMAGES=0)</span>';
+        if (m.error)
+          return `<span class="missing">lookup failed: ${esc(m.error)}</span>`;
+        if (!m.img)
+          return '<span class="missing">no photo found on valioaimo.fi for this EAN</span>';
+        const src = m.page
+          ? `<a href="${esc(m.page)}" target="_blank" rel="noopener">valioaimo.fi product page</a>`
+          : "valioaimo.fi product search";
+        return (
+          `Real photo from ${src}, matched by EAN <span class="src">valioaimo.fi</span>` +
+          (m.title
+            ? `<br><span class="missing">webshop title: ${esc(m.title)}</span>`
+            : "")
+        );
+      }
+      async function loadPhoto(p) {
+        let m;
+        try {
+          m = await (await fetch(`/img?gtin=${p.gtin}`)).json();
+        } catch (e) {
+          m = { error: String(e) };
+        }
+        // The drawer may have moved on to another product while we waited.
+        const el = document.querySelector(`#dimg[data-gtin="${p.gtin}"]`);
+        IMGS[p.gtin] = m;
+        if (el) el.innerHTML = photoInfo(p);
+        if (m.off || m.error) {
+          delete IMGS[p.gtin]; // not a real answer: retry next time
+          return;
+        }
+        const t = el && document.getElementById("dtile");
+        if (t && m.img && !t.querySelector("img"))
+          t.insertAdjacentHTML("beforeend", photo(p));
+        const card = document.querySelector(`.card[data-id="${p.id}"] .tile`);
+        if (card && m.img && !card.querySelector("img"))
+          card.insertAdjacentHTML("beforeend", photo(p));
       }
       function closeDrawer() {
         document.getElementById("drawer").classList.remove("open");
@@ -1041,7 +1158,7 @@
         const s = STATS;
         return `<div class="big">
       <div class="panel"><b>${fmt(s.total)}</b>products</div><div class="panel"><b>${fmt(s.vendors)}</b>suppliers</div>
-      <div class="panel"><b>${s.categories}</b>category codes (no names)</div><div class="panel"><b>${fmt(s.coverage["Carbon footprint"])}</b>with CO₂ estimate</div>
+      <div class="panel"><b>${s.categories}</b>category codes · ${s.categoryNames?.realCodes ?? 0} named from valioaimo.fi (${s.categoryNames ? Math.round((s.categoryNames.realProducts / s.total) * 100) : 0}% of products), rest inferred</div><div class="panel"><b>${fmt(s.coverage["Carbon footprint"])}</b>with CO₂ estimate</div>
       <div class="panel"><b>${fmt(s.coverage["Delivery reliability"])}</b>with delivery reliability</div></div>
     <div class="ov">
       <div class="panel"><h3>What info do we have? (share of products)</h3>${bars(Object.entries(s.coverage), s.total)}</div>
@@ -1051,7 +1168,7 @@
         <li><b>Sustainability ranking:</b> labels (Finnish origin, organic, MSC, Fairtrade) on almost every product; CO₂ per product group on ~63%.</li>
         <li><b>Risk-aware ordering:</b> delivery reliability (~25%) + Stock vs Terminal + order cut-off times from the availability API.</li>
         <li><b>Exact quantities:</b> pack structure and lot sizes let the gateway turn "1,000 L" into valid order lines.</li>
-        <li><b>Gaps:</b> no images, no category names, no order endpoint, no customer data. We mock or infer those, and label them.</li></ul></div>
+        <li><b>Gaps:</b> no image files (media ids only), category codes without names, no order endpoint, no customer data. Photos are looked up on valioaimo.fi by EAN when you open a product; category names come from a sample of valioaimo.fi product groups, the rest are inferred and labelled.</li></ul></div>
       <div class="panel"><h3>Allergens declared (CONTAINS)</h3>${bars(s.allergens.slice(0, 14), 0, (k) => ALLERGEN[k] || k)}</div>
       <div class="panel"><h3>Labels &amp; certificates</h3>${bars(s.labels.filter(([k]) => !TEMP_LABEL[k]).slice(0, 14), 0, pretty)}</div>
       <div class="panel"><h3>Top nutritional claims</h3>${bars(s.claims.slice(0, 14), 0, pretty)}</div>

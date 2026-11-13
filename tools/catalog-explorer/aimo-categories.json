@@ -1,0 +1,2693 @@
+{
+ "_source": "https://www.valioaimo.fi/ public product search. Group tree: GET /wp-json/valio/search/v1/configuration/products (filter \"Tuoteryhmät\"). Code->group: GET /valio-search-client/products-aimo/?account=valioaimo&search=<EAN> for a sample of products per code; the facet tuoteryhma=<slug> with the deepest path is the group. See docs/sponsors/valio/categories-and-images.md",
+ "_fetched": "2026-11-13",
+ "_sample": {
+  "lookups": 72,
+  "hits": 57
+ },
+ "codes": {
+  "10412": {
+   "slug": "jogurtit",
+   "path": [
+    "Tuoretuotteet",
+    "Maitotaloustuotteet",
+    "Jogurtit"
+   ],
+   "evidence": [
+    {
+     "gtin": "6413300900224",
+     "webshopTitle": "20 x Arla Rasvaton Vadelma-vanilja jogurtti 200 g"
+    },
+    {
+     "gtin": "6413300900798",
+     "webshopTitle": "20 x Arla Kalinka Top Vadelmajogurtti 150 g vähälaktoosinen"
+    }
+   ]
+  },
+  "10600": {
+   "slug": "palajuustot",
+   "path": [
+    "Tuoretuotteet",
+    "Juustot",
+    "Palajuustot"
+   ],
+   "evidence": [
+    {
+     "gtin": "8001868004362",
+     "webshopTitle": "Castelli Parmigiano Reggiano 125 g 12 kuukautta kypsytetty"
+    }
+   ]
+  },
+  "11030": {
+   "slug": "kahvileivat-viinerit-kakut",
+   "path": [
+    "Tuoretuotteet",
+    "Tuore leipä",
+    "Kahvileivät, viinerit, kakut"
+   ],
+   "evidence": [
+    {
+     "gtin": "6411402230607",
+     "webshopTitle": "Fazer Sokerileipurin Pitko 435 g, pullapitko"
+    }
+   ]
+  },
+  "17200": {
+   "slug": "makkarat",
+   "path": [
+    "Tuoretuotteet",
+    "Lihajalosteet",
+    "Makkarat"
+   ],
+   "evidence": [
+    {
+     "gtin": "6407870073457",
+     "webshopTitle": "Atria Wilhelm grillibalkan 7 x320 g"
+    }
+   ]
+  },
+  "17210": {
+   "slug": "muut-kypsat-kokolihavalmisteet",
+   "path": [
+    "Tuoretuotteet",
+    "Lihajalosteet",
+    "Muut kypsät kokolihavalmisteet"
+   ],
+   "evidence": [
+    {
+     "gtin": "2378672600000",
+     "webshopTitle": "Atria Kypsä Karjalanpaisti n2 kg/24 x24mm"
+    }
+   ]
+  },
+  "17300": {
+   "slug": "valmisruoat-ja-keitot",
+   "path": [
+    "Tuoretuotteet",
+    "Valmisruoka",
+    "Valmisruoat ja -keitot"
+   ],
+   "evidence": [
+    {
+     "gtin": "6412000042555",
+     "webshopTitle": "Saarioinen Kaalikääryle 2 kg/väh20 x n85 g"
+    }
+   ]
+  },
+  "17301": {
+   "slug": "ruokasalaatit",
+   "path": [
+    "Tuoretuotteet",
+    "Valmisruoka",
+    "Ruokasalaatit"
+   ],
+   "evidence": [
+    {
+     "gtin": "6412000045358",
+     "webshopTitle": "Saarioinen Rosolli 3 kg"
+    }
+   ]
+  },
+  "17306": {
+   "slug": "kasviproteiinit",
+   "path": [
+    "Tuoretuotteet",
+    "Valmisruoka",
+    "Kasviproteiinit"
+   ],
+   "evidence": [
+    {
+     "gtin": "6416419130896",
+     "webshopTitle": "Jalotofu Maustamaton tofu 1080 g Luomu"
+    }
+   ]
+  },
+  "17443": {
+   "slug": "leikatut-vihannekset",
+   "path": [
+    "Hedelmät ja vihannekset",
+    "Leikattu hevi",
+    "Leikatut vihannekset"
+   ],
+   "evidence": [
+    {
+     "gtin": "6416124778789",
+     "webshopTitle": "Valmix Grande 2,5 kg"
+    }
+   ]
+  },
+  "18710": {
+   "slug": "porsaan-ja-sianliha",
+   "path": [
+    "Tuore liha ja kala",
+    "Tuore liha",
+    "Porsaan- ja sianliha"
+   ],
+   "evidence": [
+    {
+     "gtin": "2300767100000",
+     "webshopTitle": "HK Viljaporsaan Kylki kanttaamaton"
+    }
+   ]
+  },
+  "18720": {
+   "slug": "vasikan-ja-naudanliha",
+   "path": [
+    "Tuore liha ja kala",
+    "Tuore liha",
+    "Vasikan- ja naudanliha"
+   ],
+   "evidence": [
+    {
+     "gtin": "2300762700000",
+     "webshopTitle": "Dry Aged Naudan Fileselkä Suomi"
+    },
+    {
+     "gtin": "2381903000000",
+     "webshopTitle": "Well Beef Naudan Paahtopaisti n 1,6 kg"
+    }
+   ]
+  },
+  "18750": {
+   "slug": "kanan-broilerin-ja-kalkkunanliha",
+   "path": [
+    "Tuore liha ja kala",
+    "Tuore kana, broileri ja kalkkuna",
+    "Kanan-, broilerin- ja kalkkunanliha"
+   ],
+   "evidence": [
+    {
+     "gtin": "2377225700000",
+     "webshopTitle": "Kariniemen Kananpojan fileesuikale maustamaton 2 kg"
+    }
+   ]
+  },
+  "20012": {
+   "slug": "gn-astiat",
+   "path": [
+    "Nonfood",
+    "Ruoanvalmistus",
+    "GN-astiat"
+   ],
+   "evidence": [
+    {
+     "gtin": "4004133837508",
+     "webshopTitle": "Gn-Astia Melamiini 1/4-65 1,35 L Musta"
+    }
+   ]
+  },
+  "20022": {
+   "slug": "keittio-ja-leivontatyovalineet",
+   "path": [
+    "Nonfood",
+    "Keittiötyövälineet",
+    "Keittiö- ja leivontatyövälineet"
+   ],
+   "evidence": [
+    {
+     "gtin": "8014808714955",
+     "webshopTitle": "Kaavin 25 Cm Valkoinen +220 C"
+    }
+   ]
+  },
+  "21140": {
+   "slug": "keksit-ja-piparkakut",
+   "path": [
+    "Teolliset elintarvikkeet",
+    "Keksit",
+    "Keksit ja piparkakut"
+   ],
+   "evidence": [
+    {
+     "gtin": "6411401062100",
+     "webshopTitle": "Fazer Suklaalehti suklaakeksi 185 g"
+    }
+   ]
+  },
+  "21380": {
+   "slug": "pastat",
+   "path": [
+    "Teolliset elintarvikkeet",
+    "Pastat ja nuudelit",
+    "Pastat"
+   ],
+   "evidence": [
+    {
+     "gtin": "7310130411861",
+     "webshopTitle": "Kungsörnen 10 kg Täysjyväminispagetti"
+    }
+   ]
+  },
+  "21596": {
+   "slug": "muut-vihannessailykkeet",
+   "path": [
+    "Teolliset elintarvikkeet",
+    "Säilykkeet",
+    "Muut vihannessäilykkeet"
+   ],
+   "evidence": [
+    {
+     "gtin": "25201194000817",
+     "webshopTitle": "6 x Royal 350/200 g mieto viipaloitu pepperoni"
+    }
+   ]
+  },
+  "21902": {
+   "slug": "liemitiivisteet",
+   "path": [
+    "Teolliset elintarvikkeet",
+    "Keitot ja kastikkeet",
+    "Liemitiivisteet"
+   ],
+   "evidence": [
+    {
+     "gtin": "7322551052707",
+     "webshopTitle": "6 x Bong Touch of Taste Kasvisfondi 180 ml"
+    }
+   ]
+  },
+  "21917": {
+   "slug": "maustekastikkeet",
+   "path": [
+    "Teolliset elintarvikkeet",
+    "Keitot ja kastikkeet",
+    "Maustekastikkeet"
+   ],
+   "evidence": [
+    {
+     "gtin": "6430011810161",
+     "webshopTitle": "Spice Up! Makea thai chilikastike 500 ml"
+    },
+    {
+     "gtin": "7313160410255",
+     "webshopTitle": "Rydbergs Hampurilaiskastike 2,5 kg"
+    }
+   ]
+  },
+  "22140": {
+   "slug": "siirapit-ja-makusiirapit",
+   "path": [
+    "Teolliset elintarvikkeet",
+    "Sokerit, siirapit ja makusiirapit",
+    "Siirapit ja makusiirapit"
+   ],
+   "evidence": [
+    {
+     "gtin": "3217690017165",
+     "webshopTitle": "Routin 1883 -vaniljasiirappi 1 l"
+    }
+   ]
+  },
+  "22300": {
+   "slug": "jauhetut-kahvit",
+   "path": [
+    "Juomat",
+    "Kahvit",
+    "Jauhetut kahvit"
+   ],
+   "evidence": [
+    {
+     "gtin": "6411301122188",
+     "webshopTitle": "Paulig Juhla Mokka kahvi puolikarkea jauhatus 18 x 300 g"
+    }
+   ]
+  },
+  "22530": {
+   "slug": "pussiteet-ja-haudukkeet",
+   "path": [
+    "Juomat",
+    "Teet",
+    "Pussiteet ja haudukkeet"
+   ],
+   "evidence": [
+    {
+     "gtin": "6413446001205",
+     "webshopTitle": "Nordqvist Teetaivas 20 x 1,75 g"
+    }
+   ]
+  },
+  "22601": {
+   "slug": "leipomotuotteet-ja-leivontasuklaat-1",
+   "path": [
+    "Teolliset elintarvikkeet",
+    "Leipomotuotteet ja leivontasuklaat",
+    "Leipomotuotteet ja leivontasuklaat"
+   ],
+   "evidence": [
+    {
+     "gtin": "5701073164143",
+     "webshopTitle": "12 x Dr. Oetker Vaaleanvihreä Sokerikuorrute 125 g"
+    }
+   ]
+  },
+  "22630": {
+   "slug": "kuivatut-mausteet",
+   "path": [
+    "Teolliset elintarvikkeet",
+    "Mausteet ja etikat",
+    "Kuivatut mausteet"
+   ],
+   "evidence": [
+    {
+     "gtin": "17311310041462",
+     "webshopTitle": "Santa Maria BBQ & Grill Mesquite mausteseos 285 g"
+    },
+    {
+     "gtin": "17311310031012",
+     "webshopTitle": "Santa Maria Taco Spice Mix mausteseos jauhelihalle 28 g"
+    }
+   ]
+  },
+  "22700": {
+   "slug": "virvoitusjuomat-1",
+   "path": [
+    "Juomat",
+    "Virvoitusjuomat",
+    "Virvoitusjuomat"
+   ],
+   "evidence": [
+    {
+     "gtin": "8002516348227",
+     "webshopTitle": "Tomarchio 275 ml Appelsiini Limonadi"
+    }
+   ]
+  },
+  "41702": {
+   "slug": "vasikan-ja-naudanlihapakasteet",
+   "path": [
+    "Pakasteet",
+    "Lihapakasteet",
+    "Vasikan- ja naudanlihapakasteet"
+   ],
+   "evidence": [
+    {
+     "gtin": "6408190005050",
+     "webshopTitle": "Well Beef 96 X75 g raakapakastettu jauhettu naudan täyslihahampurilaispihvi"
+    }
+   ]
+  },
+  "41705": {
+   "slug": "lihavalmisruokapakasteet",
+   "path": [
+    "Pakasteet",
+    "Lihavalmisruokapakasteet"
+   ],
+   "evidence": [
+    {
+     "gtin": "7310620053854",
+     "webshopTitle": "Sibylla Krakovamakkara pakaste (9 x15 kpl) 10,8 kg/80 g"
+    }
+   ]
+  },
+  "41710": {
+   "slug": "kanan-broilerin-ja-kalkkunanlihapakasteet",
+   "path": [
+    "Pakasteet",
+    "Siipikarjapakasteet",
+    "Kanan-, broilerin- ja kalkkunanlihapakasteet"
+   ],
+   "evidence": [
+    {
+     "gtin": "6416661998480",
+     "webshopTitle": "Rollfoods Chicken Strips Spicy Style 3,0 kg Pakaste"
+    }
+   ]
+  },
+  "41720": {
+   "slug": "kalapakasteet",
+   "path": [
+    "Pakasteet",
+    "Kala- ja äyriäispakasteet",
+    "Kalapakasteet"
+   ],
+   "evidence": [
+    {
+     "gtin": "7392497091375",
+     "webshopTitle": "SEITIKUUTIOT, FELDTS, 2 x2 x2 MSC 5 kg/ltk, ruodoton"
+    }
+   ]
+  },
+  "41753": {
+   "slug": "kasviproteiinit-1",
+   "path": [
+    "Pakasteet",
+    "Valmisruokapakasteet",
+    "Kasviproteiinit"
+   ],
+   "evidence": [
+    {
+     "gtin": "6430103965526",
+     "webshopTitle": "Apetit Kasvis-papukroketti kypsä pakaste n. 200 x20 g 4 kg"
+    }
+   ]
+  },
+  "41755": {
+   "slug": "muut-valmisruoka-ja-aterianosapakasteet",
+   "path": [
+    "Pakasteet",
+    "Valmisruokapakasteet",
+    "Muut valmisruoka- ja aterianosapakasteet"
+   ],
+   "evidence": [
+    {
+     "gtin": "8717154058611",
+     "webshopTitle": "Salud vehnätortilla 20 cm 8 x18 kpl"
+    }
+   ]
+  },
+  "41760": {
+   "slug": "leipapakasteet",
+   "path": [
+    "Pakasteet",
+    "Leipomopakasteet",
+    "Leipäpakasteet"
+   ],
+   "evidence": [
+    {
+     "gtin": "6437005072833",
+     "webshopTitle": "Vaasan Vehnäpaahtoleipä 6 x500 g"
+    }
+   ]
+  },
+  "41761": {
+   "slug": "sampylapakasteet",
+   "path": [
+    "Pakasteet",
+    "Leipomopakasteet",
+    "Sämpyläpakasteet"
+   ],
+   "evidence": [
+    {
+     "gtin": "5701014027438",
+     "webshopTitle": "Schulstad Bakery Solutions Rustic Sämpylä Tumma 40 x73 g"
+    }
+   ]
+  },
+  "41762": {
+   "slug": "konditoria-ja-taikinapakasteet",
+   "path": [
+    "Pakasteet",
+    "Leipomopakasteet",
+    "Konditoria- ja taikinapakasteet"
+   ],
+   "evidence": [
+    {
+     "gtin": "6437005043857",
+     "webshopTitle": "Vaasan Lihapiirakka 35 x160 g"
+    }
+   ]
+  },
+  "41763": {
+   "slug": "kakut-kakkupohjat-ja-leivokset",
+   "path": [
+    "Pakasteet",
+    "Leipomopakasteet",
+    "Kakut, kakkupohjat ja leivokset"
+   ],
+   "evidence": [
+    {
+     "gtin": "7310892036005",
+     "webshopTitle": "8 x Frödinge laktoositon mud cake kostea suklaakakku pakaste 400 g"
+    },
+    {
+     "gtin": "4004311148815",
+     "webshopTitle": "Rollfoods Suklaakakku 12 x 83 g = 1 kg pakaste"
+    }
+   ]
+  },
+  "41764": {
+   "slug": "pullat-munkit-ja-croissantit",
+   "path": [
+    "Pakasteet",
+    "Leipomopakasteet",
+    "Pullat, munkit ja croissantit"
+   ],
+   "evidence": [
+    {
+     "gtin": "5413056023865",
+     "webshopTitle": "Schulstad Bakery Solutions Premium Croissant 36 x90 g"
+    }
+   ]
+  },
+  "41800": {
+   "slug": "jaatelopuikot-tuutit-ja-sorbetit",
+   "path": [
+    "Pakasteet",
+    "Jäätelöt ja jälkiruoat",
+    "Jäätelöpuikot, -tuutit ja sorbetit"
+   ],
+   "evidence": [
+    {
+     "gtin": "6430064402153",
+     "webshopTitle": "24 xFazer Geisha jäätelötuutti 70 g/1.1 dl"
+    }
+   ]
+  },
+  "41801": {
+   "slug": "jaatelopurkit-paketit-ja-sorbetit",
+   "path": [
+    "Pakasteet",
+    "Jäätelöt ja jälkiruoat",
+    "Jäätelöpurkit, -paketit ja sorbetit"
+   ],
+   "evidence": [
+    {
+     "gtin": "6430064400722",
+     "webshopTitle": "4 xAino Ihana maitosuklaa kermajäätelö kotipakkaus 530 g/900 ml"
+    }
+   ]
+  },
+  "41820": {
+   "slug": "irtojaatelot-ja-sorbetit",
+   "path": [
+    "Pakasteet",
+    "Jäätelöt ja jälkiruoat",
+    "Irtojäätelöt ja sorbetit"
+   ],
+   "evidence": [
+    {
+     "gtin": "7613030258018",
+     "webshopTitle": "2 xMövenpick sorbetti irtojäätelö Rasberry&Strawberry 1469 g/2,4 L"
+    }
+   ]
+  },
+  "52210": {
+   "slug": "makeispussit-ja-rasiat",
+   "path": [
+    "Teolliset elintarvikkeet",
+    "Makeiset",
+    "Makeispussit- ja rasiat"
+   ],
+   "evidence": [
+    {
+     "gtin": "6420256010860",
+     "webshopTitle": "Malaco Aakkoset Mini Sirkus makeissekoitus 120 g"
+    },
+    {
+     "gtin": "7622200609703",
+     "webshopTitle": "24 x Malaco Snöre Lakrits makeinen 94 g"
+    }
+   ]
+  },
+  "63001": {
+   "slug": "vartalonhoito",
+   "path": [
+    "Nonfood",
+    "Puhtaus ja terveys",
+    "Vartalonhoito"
+   ],
+   "evidence": [
+    {
+     "gtin": "6417964482591",
+     "webshopTitle": "Kiilto Care Dose 400 ml Hair&Body dispenser suihkugeeli hiuksille ja vartalolle"
+    }
+   ]
+  },
+  "63100": {
+   "slug": "astianpesuaineet",
+   "path": [
+    "Nonfood",
+    "Siivous",
+    "Astianpesuaineet"
+   ],
+   "evidence": [
+    {
+     "gtin": "7615400121861",
+     "webshopTitle": "Suma Revoflow Perfect Pur-Eco A17 neutraali huuhtelukirkaste Revoflow järjestelmään Joutsen 4 l"
+    }
+   ]
+  },
+  "63114": {
+   "slug": "yleispuhdistusaineet",
+   "path": [
+    "Nonfood",
+    "Siivous",
+    "Yleispuhdistusaineet"
+   ],
+   "evidence": [
+    {
+     "gtin": "5000204783483",
+     "webshopTitle": "Duck Aktiv-Gel 750 ml marine WC:n puhdistusaine"
+    }
+   ]
+  },
+  "63120": {
+   "slug": "siivoustarvikkeet",
+   "path": [
+    "Nonfood",
+    "Siivous",
+    "Siivoustarvikkeet"
+   ],
+   "evidence": [
+    {
+     "gtin": "6410880025101",
+     "webshopTitle": "Diversey Astianpesuharja punainen 1 kpl"
+    }
+   ]
+  },
+  "63232": {
+   "slug": "poytaliinat-tabletit-kaita-ja-kateliinat",
+   "path": [
+    "Nonfood",
+    "Kattaus, tarjoilu ja somistus",
+    "Pöytäliinat, tabletit, kaita- ja kateliinat"
+   ],
+   "evidence": [
+    {
+     "gtin": "7321031663716",
+     "webshopTitle": "DUNI Evolin®-pöytäliina 127 x 220 cm musta 1 x 25"
+    }
+   ]
+  },
+  "63235": {
+   "slug": "lautasliinat-34-cm-ja-isompi",
+   "path": [
+    "Nonfood",
+    "Kattaus, tarjoilu ja somistus",
+    "Lautasliinat 34 cm ja isompi"
+   ],
+   "evidence": [
+    {
+     "gtin": "7321031684490",
+     "webshopTitle": "DUNI Elegance® Lily 48 x 48 cm 1/4 valkoinen 6 x 40"
+    },
+    {
+     "gtin": "7321030026130",
+     "webshopTitle": "DUNI Tissue-lautasliina 40 x 40 cm 3-krs 1/4 punainen 125 kpl/pkt (8 x 125 kpl/ltk)"
+    }
+   ]
+  },
+  "64001": {
+   "slug": "kertakayttokupit-mukit-ja-kannet",
+   "path": [
+    "Nonfood",
+    "Take away",
+    "Kertakäyttökupit, -mukit ja -kannet"
+   ],
+   "evidence": [
+    {
+     "gtin": "6410600109210",
+     "webshopTitle": "Huhtamaki kartonkinen Coffee to go kuumakuppi 80 x250 ml"
+    }
+   ]
+  },
+  "64003": {
+   "slug": "muut-kertakayttotuotteet",
+   "path": [
+    "Nonfood",
+    "Take away",
+    "Muut kertakäyttötuotteet"
+   ],
+   "evidence": [
+    {
+     "gtin": "6418401667908",
+     "webshopTitle": "Fredman kakkupaperilajitelma pyöreä 15 kpl x 12"
+    }
+   ]
+  },
+  "64004": {
+   "slug": "annos-ja-pakasterasiat-ja-kannet",
+   "path": [
+    "Nonfood",
+    "Take away",
+    "Annos- ja pakasterasiat ja kannet"
+   ],
+   "evidence": [
+    {
+     "gtin": "6418400078019",
+     "webshopTitle": "Fredman Comple® muovikaulusvuoka PET-pinnoitteella 7,5 dl vihreä 190 x150 x45mm 500 kpl"
+    },
+    {
+     "gtin": "7321031591415",
+     "webshopTitle": "DUNI Fixpack pyöreä kuppi, 200 ml, läpikuultava PP, 112 x 112 x 40 mm, 50 kpl/pkt (14 x 50 kpl/ltk)"
+    }
+   ]
+  }
+ },
+ "tree": {
+  "hedelmat-ja-vihannekset": [
+   "Hedelmät ja vihannekset"
+  ],
+  "hedelmat": [
+   "Hedelmät ja vihannekset",
+   "Hedelmät"
+  ],
+  "banaanit": [
+   "Hedelmät ja vihannekset",
+   "Hedelmät",
+   "Banaanit"
+  ],
+  "kivelliset-hedelmat": [
+   "Hedelmät ja vihannekset",
+   "Hedelmät",
+   "Kivelliset hedelmät"
+  ],
+  "muut-hedelmat": [
+   "Hedelmät ja vihannekset",
+   "Hedelmät",
+   "Muut hedelmät"
+  ],
+  "omenat-ja-paarynat": [
+   "Hedelmät ja vihannekset",
+   "Hedelmät",
+   "Omenat ja päärynät"
+  ],
+  "sitrushedelmat": [
+   "Hedelmät ja vihannekset",
+   "Hedelmät",
+   "Sitrushedelmät"
+  ],
+  "juurekset": [
+   "Hedelmät ja vihannekset",
+   "Juurekset"
+  ],
+  "juurekset-1": [
+   "Hedelmät ja vihannekset",
+   "Juurekset",
+   "Juurekset"
+  ],
+  "kuoritut-juurekset-ja-sipulit": [
+   "Hedelmät ja vihannekset",
+   "Juurekset",
+   "Kuoritut juurekset ja sipulit"
+  ],
+  "tuoreet-juuressoseet": [
+   "Hedelmät ja vihannekset",
+   "Juurekset",
+   "Tuoreet juuressoseet"
+  ],
+  "leikattu-hevi": [
+   "Hedelmät ja vihannekset",
+   "Leikattu hevi"
+  ],
+  "leikatut-hedelmat": [
+   "Hedelmät ja vihannekset",
+   "Leikattu hevi",
+   "Leikatut hedelmät"
+  ],
+  "leikatut-juurekset": [
+   "Hedelmät ja vihannekset",
+   "Leikattu hevi",
+   "Leikatut juurekset"
+  ],
+  "leikatut-salaatit": [
+   "Hedelmät ja vihannekset",
+   "Leikattu hevi",
+   "Leikatut salaatit"
+  ],
+  "leikatut-sipulit": [
+   "Hedelmät ja vihannekset",
+   "Leikattu hevi",
+   "Leikatut sipulit"
+  ],
+  "leikatut-vihannekset": [
+   "Hedelmät ja vihannekset",
+   "Leikattu hevi",
+   "Leikatut vihannekset"
+  ],
+  "marjat": [
+   "Hedelmät ja vihannekset",
+   "Marjat"
+  ],
+  "tuoreet-marjat": [
+   "Hedelmät ja vihannekset",
+   "Marjat",
+   "Tuoreet marjat"
+  ],
+  "perunat": [
+   "Hedelmät ja vihannekset",
+   "Perunat"
+  ],
+  "keitetyt-perunat": [
+   "Hedelmät ja vihannekset",
+   "Perunat",
+   "Keitetyt perunat"
+  ],
+  "kuorelliset-perunat": [
+   "Hedelmät ja vihannekset",
+   "Perunat",
+   "Kuorelliset perunat"
+  ],
+  "raaat-ja-kuoritut-perunat": [
+   "Hedelmät ja vihannekset",
+   "Perunat",
+   "Raa'at ja kuoritut perunat"
+  ],
+  "raaat-ja-leikatut-perunat": [
+   "Hedelmät ja vihannekset",
+   "Perunat",
+   "Raa'at ja leikatut perunat"
+  ],
+  "sienet": [
+   "Hedelmät ja vihannekset",
+   "Sienet"
+  ],
+  "luonnon-tuoreet-sienet": [
+   "Hedelmät ja vihannekset",
+   "Sienet",
+   "Luonnon tuoreet sienet"
+  ],
+  "suolasienet": [
+   "Hedelmät ja vihannekset",
+   "Sienet",
+   "Suolasienet"
+  ],
+  "viljellyt-tuoreet-sienet": [
+   "Hedelmät ja vihannekset",
+   "Sienet",
+   "Viljellyt tuoreet sienet"
+  ],
+  "syotavat-kukat": [
+   "Hedelmät ja vihannekset",
+   "Syötävät kukat"
+  ],
+  "vihannekset": [
+   "Hedelmät ja vihannekset",
+   "Vihannekset"
+  ],
+  "kaalit": [
+   "Hedelmät ja vihannekset",
+   "Vihannekset",
+   "Kaalit"
+  ],
+  "kurkut-zuccinit-ja-kurpitsat": [
+   "Hedelmät ja vihannekset",
+   "Vihannekset",
+   "Kurkut, zuccinit ja kurpitsat"
+  ],
+  "muut-vihannekset": [
+   "Hedelmät ja vihannekset",
+   "Vihannekset",
+   "Muut vihannekset"
+  ],
+  "paprikat": [
+   "Hedelmät ja vihannekset",
+   "Vihannekset",
+   "Paprikat"
+  ],
+  "pavut-herneet-ja-palkokasvit": [
+   "Hedelmät ja vihannekset",
+   "Vihannekset",
+   "Pavut, herneet ja palkokasvit"
+  ],
+  "salaatit": [
+   "Hedelmät ja vihannekset",
+   "Vihannekset",
+   "Salaatit"
+  ],
+  "sipulit": [
+   "Hedelmät ja vihannekset",
+   "Vihannekset",
+   "Sipulit"
+  ],
+  "tomaatit": [
+   "Hedelmät ja vihannekset",
+   "Vihannekset",
+   "Tomaatit"
+  ],
+  "yrtit-ja-versot": [
+   "Hedelmät ja vihannekset",
+   "Yrtit ja versot"
+  ],
+  "idut-ja-versot": [
+   "Hedelmät ja vihannekset",
+   "Yrtit ja versot",
+   "Idut ja versot"
+  ],
+  "maustekasvit-ja-lehdet": [
+   "Hedelmät ja vihannekset",
+   "Yrtit ja versot",
+   "Maustekasvit ja -lehdet"
+  ],
+  "yrttipuntit": [
+   "Hedelmät ja vihannekset",
+   "Yrtit ja versot",
+   "Yrttipuntit"
+  ],
+  "yrttirasiat": [
+   "Hedelmät ja vihannekset",
+   "Yrtit ja versot",
+   "Yrttirasiat"
+  ],
+  "yrttiruukut": [
+   "Hedelmät ja vihannekset",
+   "Yrtit ja versot",
+   "Yrttiruukut"
+  ],
+  "juomat": [
+   "Juomat"
+  ],
+  "alkoholittomat-juomat": [
+   "Juomat",
+   "Alkoholittomat juomat"
+  ],
+  "alkoholittomat-lonkerot": [
+   "Juomat",
+   "Alkoholittomat juomat",
+   "Alkoholittomat lonkerot"
+  ],
+  "alkoholittomat-oluet": [
+   "Juomat",
+   "Alkoholittomat juomat",
+   "Alkoholittomat oluet"
+  ],
+  "alkoholittomat-siiderit": [
+   "Juomat",
+   "Alkoholittomat juomat",
+   "Alkoholittomat siiderit"
+  ],
+  "alkoholittomat-viinit": [
+   "Juomat",
+   "Alkoholittomat juomat",
+   "Alkoholittomat viinit"
+  ],
+  "kaakaot": [
+   "Juomat",
+   "Kaakaot"
+  ],
+  "kaakao": [
+   "Juomat",
+   "Kaakaot",
+   "Kaakao"
+  ],
+  "kahvit": [
+   "Juomat",
+   "Kahvit"
+  ],
+  "espressokahvit": [
+   "Juomat",
+   "Kahvit",
+   "Espressokahvit"
+  ],
+  "jauhetut-kahvit": [
+   "Juomat",
+   "Kahvit",
+   "Jauhetut kahvit"
+  ],
+  "papukahvit": [
+   "Juomat",
+   "Kahvit",
+   "Papukahvit"
+  ],
+  "pika-ja-kapselikahvit": [
+   "Juomat",
+   "Kahvit",
+   "Pika- ja kapselikahvit"
+  ],
+  "valmiit-kahvijuomat": [
+   "Juomat",
+   "Kahvit",
+   "Valmiit kahvijuomat"
+  ],
+  "mehukeitot-ja-smoothiet": [
+   "Juomat",
+   "Mehukeitot ja smoothiet"
+  ],
+  "mehukeitot": [
+   "Juomat",
+   "Mehukeitot ja smoothiet",
+   "Mehukeitot"
+  ],
+  "smoothiet": [
+   "Juomat",
+   "Mehukeitot ja smoothiet",
+   "Smoothiet"
+  ],
+  "mehut": [
+   "Juomat",
+   "Mehut"
+  ],
+  "juomatiivisteet": [
+   "Juomat",
+   "Mehut",
+   "Juomatiivisteet"
+  ],
+  "mehut-1": [
+   "Juomat",
+   "Mehut",
+   "Mehut"
+  ],
+  "tuore-ja-taysmehut": [
+   "Juomat",
+   "Mehut",
+   "Tuore- ja täysmehut"
+  ],
+  "teet": [
+   "Juomat",
+   "Teet"
+  ],
+  "irtoteet-ja-haudukkeet": [
+   "Juomat",
+   "Teet",
+   "Irtoteet ja haudukkeet"
+  ],
+  "pussiteet-ja-haudukkeet": [
+   "Juomat",
+   "Teet",
+   "Pussiteet ja haudukkeet"
+  ],
+  "teejuomat": [
+   "Juomat",
+   "Teet",
+   "Teejuomat"
+  ],
+  "virvoitusjuomat": [
+   "Juomat",
+   "Virvoitusjuomat"
+  ],
+  "energia-proteiini-ja-urheilujuomat": [
+   "Juomat",
+   "Virvoitusjuomat",
+   "Energia-, proteiini- ja urheilujuomat"
+  ],
+  "hyvinvointijuomat": [
+   "Juomat",
+   "Virvoitusjuomat",
+   "Hyvinvointijuomat"
+  ],
+  "juomat-alle-28": [
+   "Juomat",
+   "Virvoitusjuomat",
+   "Juomat alle 2,8%"
+  ],
+  "kivennaisvedet": [
+   "Juomat",
+   "Virvoitusjuomat",
+   "Kivennäisvedet"
+  ],
+  "kombuchat": [
+   "Juomat",
+   "Virvoitusjuomat",
+   "Kombuchat"
+  ],
+  "mixerit": [
+   "Juomat",
+   "Virvoitusjuomat",
+   "Mixerit"
+  ],
+  "post-mix-uutteet": [
+   "Juomat",
+   "Virvoitusjuomat",
+   "Post-mix uutteet"
+  ],
+  "vedet": [
+   "Juomat",
+   "Virvoitusjuomat",
+   "Vedet"
+  ],
+  "virvoitusjuomat-1": [
+   "Juomat",
+   "Virvoitusjuomat",
+   "Virvoitusjuomat"
+  ],
+  "nonfood": [
+   "Nonfood"
+  ],
+  "kattaus-tarjoilu-ja-somistus": [
+   "Nonfood",
+   "Kattaus, tarjoilu ja somistus"
+  ],
+  "annostelijaliinat": [
+   "Nonfood",
+   "Kattaus, tarjoilu ja somistus",
+   "Annostelijaliinat"
+  ],
+  "aterimet": [
+   "Nonfood",
+   "Kattaus, tarjoilu ja somistus",
+   "Aterimet"
+  ],
+  "baaritarvikkeet": [
+   "Nonfood",
+   "Kattaus, tarjoilu ja somistus",
+   "Baaritarvikkeet"
+  ],
+  "juomalasit": [
+   "Nonfood",
+   "Kattaus, tarjoilu ja somistus",
+   "Juomalasit"
+  ],
+  "kynttilat": [
+   "Nonfood",
+   "Kattaus, tarjoilu ja somistus",
+   "Kynttilät"
+  ],
+  "lautasliina-annostelijat": [
+   "Nonfood",
+   "Kattaus, tarjoilu ja somistus",
+   "Lautasliina-annostelijat"
+  ],
+  "lautasliinat-24-cm-ja-tai-pienempi": [
+   "Nonfood",
+   "Kattaus, tarjoilu ja somistus",
+   "Lautasliinat 24 cm ja tai pienempi"
+  ],
+  "lautasliinat-25-33-cm": [
+   "Nonfood",
+   "Kattaus, tarjoilu ja somistus",
+   "Lautasliinat 25-33 cm"
+  ],
+  "lautasliinat-34-cm-ja-isompi": [
+   "Nonfood",
+   "Kattaus, tarjoilu ja somistus",
+   "Lautasliinat 34 cm ja isompi"
+  ],
+  "muut-tarjoiluastiat": [
+   "Nonfood",
+   "Kattaus, tarjoilu ja somistus",
+   "Muut tarjoiluastiat"
+  ],
+  "posliini-ja-keraamiset-astiat": [
+   "Nonfood",
+   "Kattaus, tarjoilu ja somistus",
+   "Posliini- ja keraamiset astiat"
+  ],
+  "poytaliinat-tabletit-kaita-ja-kateliinat": [
+   "Nonfood",
+   "Kattaus, tarjoilu ja somistus",
+   "Pöytäliinat, tabletit, kaita- ja kateliinat"
+  ],
+  "tarjoiluvalineet": [
+   "Nonfood",
+   "Kattaus, tarjoilu ja somistus",
+   "Tarjoiluvälineet"
+  ],
+  "ulkotulet-kynttilat-ja-lyhdyt": [
+   "Nonfood",
+   "Kattaus, tarjoilu ja somistus",
+   "Ulkotulet, -kynttilät ja lyhdyt"
+  ],
+  "keittiotyovalineet": [
+   "Nonfood",
+   "Keittiötyövälineet"
+  ],
+  "keittio-ja-leivontatyovalineet": [
+   "Nonfood",
+   "Keittiötyövälineet",
+   "Keittiö- ja leivontatyövälineet"
+  ],
+  "kodinkoneet": [
+   "Nonfood",
+   "Keittiötyövälineet",
+   "Kodinkoneet"
+  ],
+  "leikkuulaudat-veitset-ja-tarvikkeet": [
+   "Nonfood",
+   "Keittiötyövälineet",
+   "Leikkuulaudat, -veitset ja tarvikkeet"
+  ],
+  "mittarit-vaaat-ja-ajastimet": [
+   "Nonfood",
+   "Keittiötyövälineet",
+   "Mittarit, vaa'at ja ajastimet"
+  ],
+  "muut-keittiovalineet": [
+   "Nonfood",
+   "Keittiötyövälineet",
+   "Muut keittiövälineet"
+  ],
+  "lamput-ja-paristot": [
+   "Nonfood",
+   "Lamput ja paristot"
+  ],
+  "lamput-ja-paristot-1": [
+   "Nonfood",
+   "Lamput ja paristot",
+   "Lamput ja paristot"
+  ],
+  "puhtaus-ja-terveys": [
+   "Nonfood",
+   "Puhtaus ja terveys"
+  ],
+  "hiustenhoito": [
+   "Nonfood",
+   "Puhtaus ja terveys",
+   "Hiustenhoito"
+  ],
+  "muut-hygieniatuotteet": [
+   "Nonfood",
+   "Puhtaus ja terveys",
+   "Muut hygieniatuotteet"
+  ],
+  "suojavarusteet-ja-ensiapu": [
+   "Nonfood",
+   "Puhtaus ja terveys",
+   "Suojavarusteet ja ensiapu"
+  ],
+  "suuhygienia": [
+   "Nonfood",
+   "Puhtaus ja terveys",
+   "Suuhygienia"
+  ],
+  "vaipat-ja-intiimihygienia": [
+   "Nonfood",
+   "Puhtaus ja terveys",
+   "Vaipat ja intiimihygienia"
+  ],
+  "vartalonhoito": [
+   "Nonfood",
+   "Puhtaus ja terveys",
+   "Vartalonhoito"
+  ],
+  "ruoanvalmistus": [
+   "Nonfood",
+   "Ruoanvalmistus"
+  ],
+  "foliot-kelmut-ja-ruoanvalmistuspaperit": [
+   "Nonfood",
+   "Ruoanvalmistus",
+   "Foliot, kelmut ja ruoanvalmistuspaperit"
+  ],
+  "gn-astiat": [
+   "Nonfood",
+   "Ruoanvalmistus",
+   "GN-astiat"
+  ],
+  "kattilat-padat-ja-pannut": [
+   "Nonfood",
+   "Ruoanvalmistus",
+   "Kattilat, padat ja pannut"
+  ],
+  "leivonta-ja-uunivuoat": [
+   "Nonfood",
+   "Ruoanvalmistus",
+   "Leivonta- ja uunivuoat"
+  ],
+  "muut-ruoanvalmistustuotteet": [
+   "Nonfood",
+   "Ruoanvalmistus",
+   "Muut ruoanvalmistustuotteet"
+  ],
+  "ruoanvalmistuspussit": [
+   "Nonfood",
+   "Ruoanvalmistus",
+   "Ruoanvalmistuspussit"
+  ],
+  "suodatinpaperit": [
+   "Nonfood",
+   "Ruoanvalmistus",
+   "Suodatinpaperit"
+  ],
+  "sailonta-ja-pakastusastiat": [
+   "Nonfood",
+   "Ruoanvalmistus",
+   "Säilöntä- ja pakastusastiat"
+  ],
+  "savukkeet-ja-valineet": [
+   "Nonfood",
+   "Savukkeet ja välineet"
+  ],
+  "tulitikut-ja-sytyttimet": [
+   "Nonfood",
+   "Savukkeet ja välineet",
+   "Tulitikut ja sytyttimet"
+  ],
+  "siivous": [
+   "Nonfood",
+   "Siivous"
+  ],
+  "astianpesuaineet": [
+   "Nonfood",
+   "Siivous",
+   "Astianpesuaineet"
+  ],
+  "erikoispuhdistusaineet": [
+   "Nonfood",
+   "Siivous",
+   "Erikoispuhdistusaineet"
+  ],
+  "jatesakit-ja-roskapussit": [
+   "Nonfood",
+   "Siivous",
+   "Jätesäkit ja roskapussit"
+  ],
+  "pyykinpesuaineet": [
+   "Nonfood",
+   "Siivous",
+   "Pyykinpesuaineet"
+  ],
+  "roska-astiat": [
+   "Nonfood",
+   "Siivous",
+   "Roska-astiat"
+  ],
+  "siivoustarvikkeet": [
+   "Nonfood",
+   "Siivous",
+   "Siivoustarvikkeet"
+  ],
+  "yleispuhdistusaineet": [
+   "Nonfood",
+   "Siivous",
+   "Yleispuhdistusaineet"
+  ],
+  "take-away": [
+   "Nonfood",
+   "Take away"
+  ],
+  "annos-ja-pakasterasiat-ja-kannet": [
+   "Nonfood",
+   "Take away",
+   "Annos- ja pakasterasiat ja kannet"
+  ],
+  "kattaus-ruoanvalmistus-ja-sailytys": [
+   "Nonfood",
+   "Take away",
+   "Kattaus, ruoanvalmistus ja säilytys"
+  ],
+  "kertakayttoaterimet": [
+   "Nonfood",
+   "Take away",
+   "Kertakäyttöaterimet"
+  ],
+  "kertakayttokupit-mukit-ja-kannet": [
+   "Nonfood",
+   "Take away",
+   "Kertakäyttökupit, -mukit ja -kannet"
+  ],
+  "kertakayttolautaset": [
+   "Nonfood",
+   "Take away",
+   "Kertakäyttölautaset"
+  ],
+  "muovi-ja-paperikassit": [
+   "Nonfood",
+   "Take away",
+   "Muovi- ja paperikassit"
+  ],
+  "muovi-ja-paperipussit": [
+   "Nonfood",
+   "Take away",
+   "Muovi- ja paperipussit"
+  ],
+  "muut-kertakayttotuotteet": [
+   "Nonfood",
+   "Take away",
+   "Muut kertakäyttötuotteet"
+  ],
+  "pakkaustarvikkeet": [
+   "Nonfood",
+   "Take away",
+   "Pakkaustarvikkeet"
+  ],
+  "pizza-kakku-ja-leivoslaatikot": [
+   "Nonfood",
+   "Take away",
+   "Pizza-, kakku- ja leivoslaatikot"
+  ],
+  "termolaatikot-ja-kassit": [
+   "Nonfood",
+   "Take away",
+   "Termolaatikot ja -kassit"
+  ],
+  "amparit-ja-saavit": [
+   "Nonfood",
+   "Take away",
+   "Ämpärit ja saavit"
+  ],
+  "tekstiilit": [
+   "Nonfood",
+   "Tekstiilit"
+  ],
+  "tekstiilit-1": [
+   "Nonfood",
+   "Tekstiilit",
+   "Tekstiilit"
+  ],
+  "toimistotarvikkeet": [
+   "Nonfood",
+   "Toimistotarvikkeet"
+  ],
+  "kopiopaperit-ja-kartongit": [
+   "Nonfood",
+   "Toimistotarvikkeet",
+   "Kopiopaperit ja kartongit"
+  ],
+  "kuminauhat-teipit-liimat-yms": [
+   "Nonfood",
+   "Toimistotarvikkeet",
+   "Kuminauhat, teipit, liimat yms."
+  ],
+  "kynat-kumit-ja-viivaimet": [
+   "Nonfood",
+   "Toimistotarvikkeet",
+   "Kynät, kumit ja viivaimet"
+  ],
+  "lampopaperit-kuittirullat-ja-kassakirjat": [
+   "Nonfood",
+   "Toimistotarvikkeet",
+   "Lämpöpaperit, kuittirullat ja kassakirjat"
+  ],
+  "mapit-muovitaskut-ja-arkistointi": [
+   "Nonfood",
+   "Toimistotarvikkeet",
+   "Mapit, muovitaskut ja arkistointi"
+  ],
+  "muut-toimistotarvikkeet": [
+   "Nonfood",
+   "Toimistotarvikkeet",
+   "Muut toimistotarvikkeet"
+  ],
+  "vihkot-lehtiot-ja-muistilaput": [
+   "Nonfood",
+   "Toimistotarvikkeet",
+   "Vihkot, lehtiöt ja muistilaput"
+  ],
+  "vapaa-aika-ja-harrastus": [
+   "Nonfood",
+   "Vapaa-aika ja harrastus"
+  ],
+  "autotarvikkeet": [
+   "Nonfood",
+   "Vapaa-aika ja harrastus",
+   "Autotarvikkeet"
+  ],
+  "kausituotteet": [
+   "Nonfood",
+   "Vapaa-aika ja harrastus",
+   "Kausituotteet"
+  ],
+  "lemmikkitarvikkeet": [
+   "Nonfood",
+   "Vapaa-aika ja harrastus",
+   "Lemmikkitarvikkeet"
+  ],
+  "mullat-ja-lannoitteet": [
+   "Nonfood",
+   "Vapaa-aika ja harrastus",
+   "Mullat ja lannoitteet"
+  ],
+  "rautakauppa": [
+   "Nonfood",
+   "Vapaa-aika ja harrastus",
+   "Rautakauppa"
+  ],
+  "vapaa-aika-ja-harrastus-1": [
+   "Nonfood",
+   "Vapaa-aika ja harrastus",
+   "Vapaa-aika ja harrastus"
+  ],
+  "wc-ja-talouspaperit": [
+   "Nonfood",
+   "WC- ja talouspaperit"
+  ],
+  "kasipyyhkeet": [
+   "Nonfood",
+   "WC- ja talouspaperit",
+   "Käsipyyhkeet"
+  ],
+  "nenaliinat-ja-kasvopyyhkeet": [
+   "Nonfood",
+   "WC- ja talouspaperit",
+   "Nenäliinat ja kasvopyyhkeet"
+  ],
+  "talouspaperit": [
+   "Nonfood",
+   "WC- ja talouspaperit",
+   "Talouspaperit"
+  ],
+  "wc-ja-kasipyyheannostelijat": [
+   "Nonfood",
+   "WC- ja talouspaperit",
+   "WC- ja käsipyyheannostelijat"
+  ],
+  "wc-paperit": [
+   "Nonfood",
+   "WC- ja talouspaperit",
+   "WC-paperit"
+  ],
+  "pakasteet": [
+   "Pakasteet"
+  ],
+  "juustot-ja-muut-pakasteet": [
+   "Pakasteet",
+   "Juustot ja muut pakasteet"
+  ],
+  "muut-pakasteet": [
+   "Pakasteet",
+   "Juustot ja muut pakasteet",
+   "Muut pakasteet"
+  ],
+  "pakastejuustot": [
+   "Pakasteet",
+   "Juustot ja muut pakasteet",
+   "Pakastejuustot"
+  ],
+  "jaatelot-ja-jalkiruoat": [
+   "Pakasteet",
+   "Jäätelöt ja jälkiruoat"
+  ],
+  "irtojaatelot-ja-sorbetit": [
+   "Pakasteet",
+   "Jäätelöt ja jälkiruoat",
+   "Irtojäätelöt ja sorbetit"
+  ],
+  "jalkiruokapakasteet": [
+   "Pakasteet",
+   "Jäätelöt ja jälkiruoat",
+   "Jälkiruokapakasteet"
+  ],
+  "jaatelopuikot-tuutit-ja-sorbetit": [
+   "Pakasteet",
+   "Jäätelöt ja jälkiruoat",
+   "Jäätelöpuikot, -tuutit ja sorbetit"
+  ],
+  "jaatelopurkit-paketit-ja-sorbetit": [
+   "Pakasteet",
+   "Jäätelöt ja jälkiruoat",
+   "Jäätelöpurkit, -paketit ja sorbetit"
+  ],
+  "kala-ja-ayriaispakasteet": [
+   "Pakasteet",
+   "Kala- ja äyriäispakasteet"
+  ],
+  "kalapakasteet": [
+   "Pakasteet",
+   "Kala- ja äyriäispakasteet",
+   "Kalapakasteet"
+  ],
+  "matipakasteet": [
+   "Pakasteet",
+   "Kala- ja äyriäispakasteet",
+   "Mätipakasteet"
+  ],
+  "ayriaispakasteet": [
+   "Pakasteet",
+   "Kala- ja äyriäispakasteet",
+   "Äyriäispakasteet"
+  ],
+  "leipomopakasteet": [
+   "Pakasteet",
+   "Leipomopakasteet"
+  ],
+  "kakut-kakkupohjat-ja-leivokset": [
+   "Pakasteet",
+   "Leipomopakasteet",
+   "Kakut, kakkupohjat ja leivokset"
+  ],
+  "konditoria-ja-taikinapakasteet": [
+   "Pakasteet",
+   "Leipomopakasteet",
+   "Konditoria- ja taikinapakasteet"
+  ],
+  "leipapakasteet": [
+   "Pakasteet",
+   "Leipomopakasteet",
+   "Leipäpakasteet"
+  ],
+  "piirakat-ja-muut-leipomotuotteet": [
+   "Pakasteet",
+   "Leipomopakasteet",
+   "Piirakat ja muut leipomotuotteet"
+  ],
+  "pullat-munkit-ja-croissantit": [
+   "Pakasteet",
+   "Leipomopakasteet",
+   "Pullat, munkit ja croissantit"
+  ],
+  "sampylapakasteet": [
+   "Pakasteet",
+   "Leipomopakasteet",
+   "Sämpyläpakasteet"
+  ],
+  "lihapakasteet": [
+   "Pakasteet",
+   "Lihapakasteet"
+  ],
+  "karitsan-ja-lampaanlihapakasteet": [
+   "Pakasteet",
+   "Lihapakasteet",
+   "Karitsan- ja lampaanlihapakasteet"
+  ],
+  "porsaaan-ja-sianlihapakasteet": [
+   "Pakasteet",
+   "Lihapakasteet",
+   "Porsaaan- ja sianlihapakasteet"
+  ],
+  "riista-ja-poronlihapaksteet": [
+   "Pakasteet",
+   "Lihapakasteet",
+   "Riista- ja poronlihapaksteet"
+  ],
+  "vasikan-ja-naudanlihapakasteet": [
+   "Pakasteet",
+   "Lihapakasteet",
+   "Vasikan- ja naudanlihapakasteet"
+  ],
+  "lihavalmisruokapakasteet": [
+   "Pakasteet",
+   "Lihavalmisruokapakasteet"
+  ],
+  "marja-ja-hedelmapakasteet-ja-soseet": [
+   "Pakasteet",
+   "Marja- ja hedelmäpakasteet ja -soseet"
+  ],
+  "hedelmapakasteet": [
+   "Pakasteet",
+   "Marja- ja hedelmäpakasteet ja -soseet",
+   "Hedelmäpakasteet"
+  ],
+  "marja-ja-hedelmapyreet-ja-soseet": [
+   "Pakasteet",
+   "Marja- ja hedelmäpakasteet ja -soseet",
+   "Marja- ja hedelmäpyreet ja -soseet"
+  ],
+  "marjapakasteet": [
+   "Pakasteet",
+   "Marja- ja hedelmäpakasteet ja -soseet",
+   "Marjapakasteet"
+  ],
+  "perunapakasteet": [
+   "Pakasteet",
+   "Perunapakasteet"
+  ],
+  "perunapakasteet-1": [
+   "Pakasteet",
+   "Perunapakasteet",
+   "Perunapakasteet"
+  ],
+  "siipikarjapakasteet": [
+   "Pakasteet",
+   "Siipikarjapakasteet"
+  ],
+  "kanan-broilerin-ja-kalkkunanlihapakasteet": [
+   "Pakasteet",
+   "Siipikarjapakasteet",
+   "Kanan-, broilerin- ja kalkkunanlihapakasteet"
+  ],
+  "riistalintu-ja-muut-siipikarjapakasteet": [
+   "Pakasteet",
+   "Siipikarjapakasteet",
+   "Riistalintu- ja muut siipikarjapakasteet"
+  ],
+  "valmisruokapakasteet": [
+   "Pakasteet",
+   "Valmisruokapakasteet"
+  ],
+  "kalatuotteet": [
+   "Pakasteet",
+   "Valmisruokapakasteet",
+   "Kalatuotteet"
+  ],
+  "kasviproteiinit-1": [
+   "Pakasteet",
+   "Valmisruokapakasteet",
+   "Kasviproteiinit"
+  ],
+  "kasvistuotteet": [
+   "Pakasteet",
+   "Valmisruokapakasteet",
+   "Kasvistuotteet"
+  ],
+  "lihatuotteet": [
+   "Pakasteet",
+   "Valmisruokapakasteet",
+   "Lihatuotteet"
+  ],
+  "muut-valmisruoka-ja-aterianosapakasteet": [
+   "Pakasteet",
+   "Valmisruokapakasteet",
+   "Muut valmisruoka- ja aterianosapakasteet"
+  ],
+  "vihannes-yrtti-ja-pyrepakasteet": [
+   "Pakasteet",
+   "Vihannes-, yrtti- ja pyrepakasteet"
+  ],
+  "kasvispyreet-ja-soseet": [
+   "Pakasteet",
+   "Vihannes-, yrtti- ja pyrepakasteet",
+   "Kasvispyreet ja -soseet"
+  ],
+  "vihannespakasteet": [
+   "Pakasteet",
+   "Vihannes-, yrtti- ja pyrepakasteet",
+   "Vihannespakasteet"
+  ],
+  "vihannessekoitukset": [
+   "Pakasteet",
+   "Vihannes-, yrtti- ja pyrepakasteet",
+   "Vihannessekoitukset"
+  ],
+  "yrttipakasteet": [
+   "Pakasteet",
+   "Vihannes-, yrtti- ja pyrepakasteet",
+   "Yrttipakasteet"
+  ],
+  "teolliset-elintarvikkeet": [
+   "Teolliset elintarvikkeet"
+  ],
+  "elainten-ruoat": [
+   "Teolliset elintarvikkeet",
+   "Eläinten ruoat"
+  ],
+  "elainten-ruoat-1": [
+   "Teolliset elintarvikkeet",
+   "Eläinten ruoat",
+   "Eläinten ruoat"
+  ],
+  "herneet-ja-pavut": [
+   "Teolliset elintarvikkeet",
+   "Herneet ja pavut"
+  ],
+  "herneet-ja-pavut-1": [
+   "Teolliset elintarvikkeet",
+   "Herneet ja pavut",
+   "Herneet ja pavut"
+  ],
+  "soijarouheet-ja-suikaleet": [
+   "Teolliset elintarvikkeet",
+   "Herneet ja pavut",
+   "Soijarouheet ja -suikaleet"
+  ],
+  "hillot-soseet-ja-marmeladit": [
+   "Teolliset elintarvikkeet",
+   "Hillot, soseet ja marmeladit"
+  ],
+  "hillot": [
+   "Teolliset elintarvikkeet",
+   "Hillot, soseet ja marmeladit",
+   "Hillot"
+  ],
+  "marmeladit": [
+   "Teolliset elintarvikkeet",
+   "Hillot, soseet ja marmeladit",
+   "Marmeladit"
+  ],
+  "pahkinalevitteet": [
+   "Teolliset elintarvikkeet",
+   "Hillot, soseet ja marmeladit",
+   "Pähkinälevitteet"
+  ],
+  "soseet": [
+   "Teolliset elintarvikkeet",
+   "Hillot, soseet ja marmeladit",
+   "Soseet"
+  ],
+  "jauhot-hiutaleet-ja-ryynit": [
+   "Teolliset elintarvikkeet",
+   "Jauhot, hiutaleet ja ryynit"
+  ],
+  "bulgurit-ja-muut-lisakkeet": [
+   "Teolliset elintarvikkeet",
+   "Jauhot, hiutaleet ja ryynit",
+   "Bulgurit ja muut lisäkkeet"
+  ],
+  "hiutaleet-ja-leseet": [
+   "Teolliset elintarvikkeet",
+   "Jauhot, hiutaleet ja ryynit",
+   "Hiutaleet ja leseet"
+  ],
+  "jauhoseokset": [
+   "Teolliset elintarvikkeet",
+   "Jauhot, hiutaleet ja ryynit",
+   "Jauhoseokset"
+  ],
+  "maltaat-ja-mallasuutteet": [
+   "Teolliset elintarvikkeet",
+   "Jauhot, hiutaleet ja ryynit",
+   "Maltaat ja mallasuutteet"
+  ],
+  "muut-jauhot": [
+   "Teolliset elintarvikkeet",
+   "Jauhot, hiutaleet ja ryynit",
+   "Muut jauhot"
+  ],
+  "perunajauhot-ja-tarkkelykset": [
+   "Teolliset elintarvikkeet",
+   "Jauhot, hiutaleet ja ryynit",
+   "Perunajauhot ja tärkkelykset"
+  ],
+  "perunamuusiaineet": [
+   "Teolliset elintarvikkeet",
+   "Jauhot, hiutaleet ja ryynit",
+   "Perunamuusiaineet"
+  ],
+  "ryynit-ja-suurimot": [
+   "Teolliset elintarvikkeet",
+   "Jauhot, hiutaleet ja ryynit",
+   "Ryynit ja suurimot"
+  ],
+  "vehnajauhot": [
+   "Teolliset elintarvikkeet",
+   "Jauhot, hiutaleet ja ryynit",
+   "Vehnäjauhot"
+  ],
+  "keitot-ja-kastikkeet": [
+   "Teolliset elintarvikkeet",
+   "Keitot ja kastikkeet"
+  ],
+  "ateriakastikkeet": [
+   "Teolliset elintarvikkeet",
+   "Keitot ja kastikkeet",
+   "Ateriakastikkeet"
+  ],
+  "jalkiruokakastikkeet": [
+   "Teolliset elintarvikkeet",
+   "Keitot ja kastikkeet",
+   "Jälkiruokakastikkeet"
+  ],
+  "kastikepohjat": [
+   "Teolliset elintarvikkeet",
+   "Keitot ja kastikkeet",
+   "Kastikepohjat"
+  ],
+  "keittopohjat": [
+   "Teolliset elintarvikkeet",
+   "Keitot ja kastikkeet",
+   "Keittopohjat"
+  ],
+  "liemitiivisteet": [
+   "Teolliset elintarvikkeet",
+   "Keitot ja kastikkeet",
+   "Liemitiivisteet"
+  ],
+  "majoneesit": [
+   "Teolliset elintarvikkeet",
+   "Keitot ja kastikkeet",
+   "Majoneesit"
+  ],
+  "maustekastikkeet": [
+   "Teolliset elintarvikkeet",
+   "Keitot ja kastikkeet",
+   "Maustekastikkeet"
+  ],
+  "muut-kastikkeet": [
+   "Teolliset elintarvikkeet",
+   "Keitot ja kastikkeet",
+   "Muut kastikkeet"
+  ],
+  "salaattikastikkeet": [
+   "Teolliset elintarvikkeet",
+   "Keitot ja kastikkeet",
+   "Salaattikastikkeet"
+  ],
+  "soijakastikkeet": [
+   "Teolliset elintarvikkeet",
+   "Keitot ja kastikkeet",
+   "Soijakastikkeet"
+  ],
+  "valmiskastikkeet": [
+   "Teolliset elintarvikkeet",
+   "Keitot ja kastikkeet",
+   "Valmiskastikkeet"
+  ],
+  "valmiskeitot": [
+   "Teolliset elintarvikkeet",
+   "Keitot ja kastikkeet",
+   "Valmiskeitot"
+  ],
+  "valmisliemet": [
+   "Teolliset elintarvikkeet",
+   "Keitot ja kastikkeet",
+   "Valmisliemet"
+  ],
+  "keksit": [
+   "Teolliset elintarvikkeet",
+   "Keksit"
+  ],
+  "keksit-ja-piparkakut": [
+   "Teolliset elintarvikkeet",
+   "Keksit",
+   "Keksit ja piparkakut"
+  ],
+  "korput-ja-rinkelit": [
+   "Teolliset elintarvikkeet",
+   "Keksit",
+   "Korput ja rinkelit"
+  ],
+  "taytekeksit-ja-vohvelit": [
+   "Teolliset elintarvikkeet",
+   "Keksit",
+   "Täytekeksit ja vohvelit"
+  ],
+  "voileipa-ja-suolakeksit-seka-riisikakut": [
+   "Teolliset elintarvikkeet",
+   "Keksit",
+   "Voileipä- ja suolakeksit sekä riisikakut"
+  ],
+  "valipalakeksit-ja-patukat": [
+   "Teolliset elintarvikkeet",
+   "Keksit",
+   "Välipalakeksit ja -patukat"
+  ],
+  "kuivat-hedelmat-pahkinat-ja-siemenet": [
+   "Teolliset elintarvikkeet",
+   "Kuivat hedelmät, pähkinät ja siemenet"
+  ],
+  "kuivatut-hedelmat-marjat-ja-marjajauheet": [
+   "Teolliset elintarvikkeet",
+   "Kuivat hedelmät, pähkinät ja siemenet",
+   "Kuivatut hedelmät, marjat ja marjajauheet"
+  ],
+  "kuivatut-sienet-ja-vihannekset": [
+   "Teolliset elintarvikkeet",
+   "Kuivat hedelmät, pähkinät ja siemenet",
+   "Kuivatut sienet ja vihannekset"
+  ],
+  "pahkinat": [
+   "Teolliset elintarvikkeet",
+   "Kuivat hedelmät, pähkinät ja siemenet",
+   "Pähkinät"
+  ],
+  "siemenet": [
+   "Teolliset elintarvikkeet",
+   "Kuivat hedelmät, pähkinät ja siemenet",
+   "Siemenet"
+  ],
+  "kuivat-leivat": [
+   "Teolliset elintarvikkeet",
+   "Kuivat leivät"
+  ],
+  "hapankorput": [
+   "Teolliset elintarvikkeet",
+   "Kuivat leivät",
+   "Hapankorput"
+  ],
+  "leipatikut-ja-krutongit": [
+   "Teolliset elintarvikkeet",
+   "Kuivat leivät",
+   "Leipätikut ja krutongit"
+  ],
+  "nakkileivat": [
+   "Teolliset elintarvikkeet",
+   "Kuivat leivät",
+   "Näkkileivät"
+  ],
+  "lasten-ruoat": [
+   "Teolliset elintarvikkeet",
+   "Lasten ruoat"
+  ],
+  "lasten-ruoat-1": [
+   "Teolliset elintarvikkeet",
+   "Lasten ruoat",
+   "Lasten ruoat"
+  ],
+  "leipomotuotteet-ja-leivontasuklaat": [
+   "Teolliset elintarvikkeet",
+   "Leipomotuotteet ja leivontasuklaat"
+  ],
+  "hiivat": [
+   "Teolliset elintarvikkeet",
+   "Leipomotuotteet ja leivontasuklaat",
+   "Hiivat"
+  ],
+  "leipomotuotteet-ja-leivontasuklaat-1": [
+   "Teolliset elintarvikkeet",
+   "Leipomotuotteet ja leivontasuklaat",
+   "Leipomotuotteet ja leivontasuklaat"
+  ],
+  "luontaistuotteet": [
+   "Teolliset elintarvikkeet",
+   "Luontaistuotteet"
+  ],
+  "luontaistuotteet-1": [
+   "Teolliset elintarvikkeet",
+   "Luontaistuotteet",
+   "Luontaistuotteet"
+  ],
+  "urheilulisaravinteet": [
+   "Teolliset elintarvikkeet",
+   "Luontaistuotteet",
+   "Urheilulisäravinteet"
+  ],
+  "makeiset": [
+   "Teolliset elintarvikkeet",
+   "Makeiset"
+  ],
+  "irtomakeiset": [
+   "Teolliset elintarvikkeet",
+   "Makeiset",
+   "Irtomakeiset"
+  ],
+  "kausimakeiset": [
+   "Teolliset elintarvikkeet",
+   "Makeiset",
+   "Kausimakeiset"
+  ],
+  "konvehdit-ja-kaarelliset-makeiset": [
+   "Teolliset elintarvikkeet",
+   "Makeiset",
+   "Konvehdit ja käärelliset makeiset"
+  ],
+  "makeispussit-ja-rasiat": [
+   "Teolliset elintarvikkeet",
+   "Makeiset",
+   "Makeispussit- ja rasiat"
+  ],
+  "muut-makeiset": [
+   "Teolliset elintarvikkeet",
+   "Makeiset",
+   "Muut makeiset"
+  ],
+  "pastillit": [
+   "Teolliset elintarvikkeet",
+   "Makeiset",
+   "Pastillit"
+  ],
+  "purukumit": [
+   "Teolliset elintarvikkeet",
+   "Makeiset",
+   "Purukumit"
+  ],
+  "suklaa-ja-makeislevyt": [
+   "Teolliset elintarvikkeet",
+   "Makeiset",
+   "Suklaa- ja makeislevyt"
+  ],
+  "suklaa-ja-makeispatukat": [
+   "Teolliset elintarvikkeet",
+   "Makeiset",
+   "Suklaa- ja makeispatukat"
+  ],
+  "mausteet-ja-etikat": [
+   "Teolliset elintarvikkeet",
+   "Mausteet ja etikat"
+  ],
+  "etikat": [
+   "Teolliset elintarvikkeet",
+   "Mausteet ja etikat",
+   "Etikat"
+  ],
+  "hyytelo-ja-sailontaaineet": [
+   "Teolliset elintarvikkeet",
+   "Mausteet ja etikat",
+   "Hyytelö- ja säilöntäaineet"
+  ],
+  "ketsupit": [
+   "Teolliset elintarvikkeet",
+   "Mausteet ja etikat",
+   "Ketsupit"
+  ],
+  "kuivatut-mausteet": [
+   "Teolliset elintarvikkeet",
+   "Mausteet ja etikat",
+   "Kuivatut mausteet"
+  ],
+  "maustetahnat": [
+   "Teolliset elintarvikkeet",
+   "Mausteet ja etikat",
+   "Maustetahnat"
+  ],
+  "muut-mausteet": [
+   "Teolliset elintarvikkeet",
+   "Mausteet ja etikat",
+   "Muut mausteet"
+  ],
+  "nestemaiset-mausteet": [
+   "Teolliset elintarvikkeet",
+   "Mausteet ja etikat",
+   "Nestemäiset mausteet"
+  ],
+  "sinapit": [
+   "Teolliset elintarvikkeet",
+   "Mausteet ja etikat",
+   "Sinapit"
+  ],
+  "suolat": [
+   "Teolliset elintarvikkeet",
+   "Mausteet ja etikat",
+   "Suolat"
+  ],
+  "murot-ja-myslit": [
+   "Teolliset elintarvikkeet",
+   "Murot ja myslit"
+  ],
+  "murot": [
+   "Teolliset elintarvikkeet",
+   "Murot ja myslit",
+   "Murot"
+  ],
+  "myslit-ja-granolat": [
+   "Teolliset elintarvikkeet",
+   "Murot ja myslit",
+   "Myslit ja granolat"
+  ],
+  "pastat-ja-nuudelit": [
+   "Teolliset elintarvikkeet",
+   "Pastat ja nuudelit"
+  ],
+  "nuudelit": [
+   "Teolliset elintarvikkeet",
+   "Pastat ja nuudelit",
+   "Nuudelit"
+  ],
+  "pastat": [
+   "Teolliset elintarvikkeet",
+   "Pastat ja nuudelit",
+   "Pastat"
+  ],
+  "riisit": [
+   "Teolliset elintarvikkeet",
+   "Riisit"
+  ],
+  "riisit-1": [
+   "Teolliset elintarvikkeet",
+   "Riisit",
+   "Riisit"
+  ],
+  "snacks": [
+   "Teolliset elintarvikkeet",
+   "Snacks"
+  ],
+  "muut-snacksit": [
+   "Teolliset elintarvikkeet",
+   "Snacks",
+   "Muut snacksit"
+  ],
+  "pahkinasnacksit": [
+   "Teolliset elintarvikkeet",
+   "Snacks",
+   "Pähkinäsnacksit"
+  ],
+  "sipsit": [
+   "Teolliset elintarvikkeet",
+   "Snacks",
+   "Sipsit"
+  ],
+  "sokerit-siirapit-ja-makusiirapit": [
+   "Teolliset elintarvikkeet",
+   "Sokerit, siirapit ja makusiirapit"
+  ],
+  "hunajat": [
+   "Teolliset elintarvikkeet",
+   "Sokerit, siirapit ja makusiirapit",
+   "Hunajat"
+  ],
+  "muut-makeutusaineet": [
+   "Teolliset elintarvikkeet",
+   "Sokerit, siirapit ja makusiirapit",
+   "Muut makeutusaineet"
+  ],
+  "siirapit-ja-makusiirapit": [
+   "Teolliset elintarvikkeet",
+   "Sokerit, siirapit ja makusiirapit",
+   "Siirapit ja makusiirapit"
+  ],
+  "sokerit": [
+   "Teolliset elintarvikkeet",
+   "Sokerit, siirapit ja makusiirapit",
+   "Sokerit"
+  ],
+  "sailykkeet": [
+   "Teolliset elintarvikkeet",
+   "Säilykkeet"
+  ],
+  "hedelmasailykkeet": [
+   "Teolliset elintarvikkeet",
+   "Säilykkeet",
+   "Hedelmäsäilykkeet"
+  ],
+  "kaalisailykkeet": [
+   "Teolliset elintarvikkeet",
+   "Säilykkeet",
+   "Kaalisäilykkeet"
+  ],
+  "kurkkusailykkeet": [
+   "Teolliset elintarvikkeet",
+   "Säilykkeet",
+   "Kurkkusäilykkeet"
+  ],
+  "liha-ja-ruokasailykkeet": [
+   "Teolliset elintarvikkeet",
+   "Säilykkeet",
+   "Liha- ja ruokasäilykkeet"
+  ],
+  "muut-vihannessailykkeet": [
+   "Teolliset elintarvikkeet",
+   "Säilykkeet",
+   "Muut vihannessäilykkeet"
+  ],
+  "oliivisailykkeet": [
+   "Teolliset elintarvikkeet",
+   "Säilykkeet",
+   "Oliivisäilykkeet"
+  ],
+  "papu-ja-hernesailykkeet": [
+   "Teolliset elintarvikkeet",
+   "Säilykkeet",
+   "Papu- ja hernesäilykkeet"
+  ],
+  "punajuurisailykkeet": [
+   "Teolliset elintarvikkeet",
+   "Säilykkeet",
+   "Punajuurisäilykkeet"
+  ],
+  "sienisailykkeet": [
+   "Teolliset elintarvikkeet",
+   "Säilykkeet",
+   "Sienisäilykkeet"
+  ],
+  "tomaattisailykkeet": [
+   "Teolliset elintarvikkeet",
+   "Säilykkeet",
+   "Tomaattisäilykkeet"
+  ],
+  "texmex": [
+   "Teolliset elintarvikkeet",
+   "Texmex"
+  ],
+  "texmex-kastikkeet": [
+   "Teolliset elintarvikkeet",
+   "Texmex",
+   "Texmex kastikkeet"
+  ],
+  "texmex-tacot-tortillat-ja-nachot": [
+   "Teolliset elintarvikkeet",
+   "Texmex",
+   "Texmex tacot, tortillat ja nachot"
+  ],
+  "oljyt": [
+   "Teolliset elintarvikkeet",
+   "Öljyt"
+  ],
+  "muut-oljyt-myos-maustetut": [
+   "Teolliset elintarvikkeet",
+   "Öljyt",
+   "Muut öljyt, myös maustetut"
+  ],
+  "oliivioljyt-myos-maustetut": [
+   "Teolliset elintarvikkeet",
+   "Öljyt",
+   "Oliiviöljyt, myös maustetut"
+  ],
+  "ruokaoljyt": [
+   "Teolliset elintarvikkeet",
+   "Öljyt",
+   "Ruokaöljyt"
+  ],
+  "tuore-liha-ja-kala": [
+   "Tuore liha ja kala"
+  ],
+  "tuore-kala": [
+   "Tuore liha ja kala",
+   "Tuore kala"
+  ],
+  "graavi-ja-kylmasavukalat": [
+   "Tuore liha ja kala",
+   "Tuore kala",
+   "Graavi- ja kylmäsavukalat"
+  ],
+  "kalajalosteet": [
+   "Tuore liha ja kala",
+   "Tuore kala",
+   "Kalajalosteet"
+  ],
+  "kasvatetut-kalat": [
+   "Tuore liha ja kala",
+   "Tuore kala",
+   "Kasvatetut kalat"
+  ],
+  "luonnonkalat": [
+   "Tuore liha ja kala",
+   "Tuore kala",
+   "Luonnonkalat"
+  ],
+  "madit-ja-merilevavalmisteet": [
+   "Tuore liha ja kala",
+   "Tuore kala",
+   "Mädit ja merilevävalmisteet"
+  ],
+  "savukalat": [
+   "Tuore liha ja kala",
+   "Tuore kala",
+   "Savukalat"
+  ],
+  "ayriaiset": [
+   "Tuore liha ja kala",
+   "Tuore kala",
+   "Äyriäiset"
+  ],
+  "tuore-kana-broileri-ja-kalkkuna": [
+   "Tuore liha ja kala",
+   "Tuore kana, broileri ja kalkkuna"
+  ],
+  "kanan-broilerin-ja-kalkkunanliha": [
+   "Tuore liha ja kala",
+   "Tuore kana, broileri ja kalkkuna",
+   "Kanan-, broilerin- ja kalkkunanliha"
+  ],
+  "tuore-liha": [
+   "Tuore liha ja kala",
+   "Tuore liha"
+  ],
+  "jauheliha": [
+   "Tuore liha ja kala",
+   "Tuore liha",
+   "Jauheliha"
+  ],
+  "karitsan-ja-lampaanliha": [
+   "Tuore liha ja kala",
+   "Tuore liha",
+   "Karitsan- ja lampaanliha"
+  ],
+  "muut-kokolihavalmisteet": [
+   "Tuore liha ja kala",
+   "Tuore liha",
+   "Muut kokolihavalmisteet"
+  ],
+  "porsaan-ja-sianliha": [
+   "Tuore liha ja kala",
+   "Tuore liha",
+   "Porsaan- ja sianliha"
+  ],
+  "vasikan-ja-naudanliha": [
+   "Tuore liha ja kala",
+   "Tuore liha",
+   "Vasikan- ja naudanliha"
+  ],
+  "tuoretuotteet": [
+   "Tuoretuotteet"
+  ],
+  "juustot": [
+   "Tuoretuotteet",
+   "Juustot"
+  ],
+  "fetat-ja-salaattijuustot": [
+   "Tuoretuotteet",
+   "Juustot",
+   "Fetat ja salaattijuustot"
+  ],
+  "halloumit-ja-grillijuustot": [
+   "Tuoretuotteet",
+   "Juustot",
+   "Halloumit ja grillijuustot"
+  ],
+  "juustoraasteet-murut-ja-lastut": [
+   "Tuoretuotteet",
+   "Juustot",
+   "Juustoraasteet, -murut ja -lastut"
+  ],
+  "mozzarellajuustot": [
+   "Tuoretuotteet",
+   "Juustot",
+   "Mozzarellajuustot"
+  ],
+  "muut-juustot": [
+   "Tuoretuotteet",
+   "Juustot",
+   "Muut juustot"
+  ],
+  "palajuustot": [
+   "Tuoretuotteet",
+   "Juustot",
+   "Palajuustot"
+  ],
+  "sini-ja-punahomejuustot": [
+   "Tuoretuotteet",
+   "Juustot",
+   "Sini- ja punahomejuustot"
+  ],
+  "sulatejuustot": [
+   "Tuoretuotteet",
+   "Juustot",
+   "Sulatejuustot"
+  ],
+  "tuorejuustot": [
+   "Tuoretuotteet",
+   "Juustot",
+   "Tuorejuustot"
+  ],
+  "valkohome-ja-kittijuustot": [
+   "Tuoretuotteet",
+   "Juustot",
+   "Valkohome- ja kittijuustot"
+  ],
+  "viipalejuustot": [
+   "Tuoretuotteet",
+   "Juustot",
+   "Viipalejuustot"
+  ],
+  "vuohen-ja-lampaanmaitojuustot": [
+   "Tuoretuotteet",
+   "Juustot",
+   "Vuohen- ja lampaanmaitojuustot"
+  ],
+  "kasvipohjaiset": [
+   "Tuoretuotteet",
+   "Kasvipohjaiset"
+  ],
+  "kasvipohjaiset-jogurtin-kaltaiset": [
+   "Tuoretuotteet",
+   "Kasvipohjaiset",
+   "Kasvipohjaiset jogurtin kaltaiset"
+  ],
+  "kasvipohjaiset-juustonkaltaiset": [
+   "Tuoretuotteet",
+   "Kasvipohjaiset",
+   "Kasvipohjaiset juustonkaltaiset"
+  ],
+  "kasvipohjaiset-kermankaltaiset": [
+   "Tuoretuotteet",
+   "Kasvipohjaiset",
+   "Kasvipohjaiset kermankaltaiset"
+  ],
+  "kasvipohjaiset-maidonkaltaiset": [
+   "Tuoretuotteet",
+   "Kasvipohjaiset",
+   "Kasvipohjaiset maidonkaltaiset"
+  ],
+  "kasvipohjaiset-ruoanvalmistustuotteet": [
+   "Tuoretuotteet",
+   "Kasvipohjaiset",
+   "Kasvipohjaiset ruoanvalmistustuotteet"
+  ],
+  "lihajalosteet": [
+   "Tuoretuotteet",
+   "Lihajalosteet"
+  ],
+  "broileri-ja-kalkkunaleikkeleet": [
+   "Tuoretuotteet",
+   "Lihajalosteet",
+   "Broileri- ja kalkkunaleikkeleet"
+  ],
+  "kokonaiset-kinkut-ja-leikkeleet": [
+   "Tuoretuotteet",
+   "Lihajalosteet",
+   "Kokonaiset kinkut ja leikkeleet"
+  ],
+  "leikkelemakkarat": [
+   "Tuoretuotteet",
+   "Lihajalosteet",
+   "Leikkelemakkarat"
+  ],
+  "lihahyytelot-ja-muut-leivanpaalliset": [
+   "Tuoretuotteet",
+   "Lihajalosteet",
+   "Lihahyytelöt ja muut leivänpäälliset"
+  ],
+  "makkarat": [
+   "Tuoretuotteet",
+   "Lihajalosteet",
+   "Makkarat"
+  ],
+  "maksamakkarat-ja-pasteijat": [
+   "Tuoretuotteet",
+   "Lihajalosteet",
+   "Maksamakkarat ja -pasteijat"
+  ],
+  "meetvurstit-ja-salamit": [
+   "Tuoretuotteet",
+   "Lihajalosteet",
+   "Meetvurstit ja salamit"
+  ],
+  "muut-kypsat-kokolihavalmisteet": [
+   "Tuoretuotteet",
+   "Lihajalosteet",
+   "Muut kypsät kokolihavalmisteet"
+  ],
+  "nakit": [
+   "Tuoretuotteet",
+   "Lihajalosteet",
+   "Nakit"
+  ],
+  "pekonit": [
+   "Tuoretuotteet",
+   "Lihajalosteet",
+   "Pekonit"
+  ],
+  "suikaleet-ja-kuutiot": [
+   "Tuoretuotteet",
+   "Lihajalosteet",
+   "Suikaleet ja kuutiot"
+  ],
+  "maitotaloustuotteet": [
+   "Tuoretuotteet",
+   "Maitotaloustuotteet"
+  ],
+  "jogurtit": [
+   "Tuoretuotteet",
+   "Maitotaloustuotteet",
+   "Jogurtit"
+  ],
+  "kermat": [
+   "Tuoretuotteet",
+   "Maitotaloustuotteet",
+   "Kermat"
+  ],
+  "kondensoidut-maidot": [
+   "Tuoretuotteet",
+   "Maitotaloustuotteet",
+   "Kondensoidut maidot"
+  ],
+  "maidot-ja-piimat": [
+   "Tuoretuotteet",
+   "Maitotaloustuotteet",
+   "Maidot ja piimät"
+  ],
+  "maito-ja-kermajauheet": [
+   "Tuoretuotteet",
+   "Maitotaloustuotteet",
+   "Maito- ja kermajauheet"
+  ],
+  "muut-hapanmaitotuotteet": [
+   "Tuoretuotteet",
+   "Maitotaloustuotteet",
+   "Muut hapanmaitotuotteet"
+  ],
+  "rahkat": [
+   "Tuoretuotteet",
+   "Maitotaloustuotteet",
+   "Rahkat"
+  ],
+  "soft-ice-ja-jalkiruoka-ainekset": [
+   "Tuoretuotteet",
+   "Maitotaloustuotteet",
+   "Soft Ice- ja jälkiruoka-ainekset"
+  ],
+  "vanukkaat-ja-valipalat": [
+   "Tuoretuotteet",
+   "Maitotaloustuotteet",
+   "Vanukkaat ja välipalat"
+  ],
+  "viilit": [
+   "Tuoretuotteet",
+   "Maitotaloustuotteet",
+   "Viilit"
+  ],
+  "margariinit": [
+   "Tuoretuotteet",
+   "Margariinit"
+  ],
+  "annosmargariinit": [
+   "Tuoretuotteet",
+   "Margariinit",
+   "Annosmargariinit"
+  ],
+  "juoksevat-margariinit": [
+   "Tuoretuotteet",
+   "Margariinit",
+   "Juoksevat margariinit"
+  ],
+  "leivontamargariinit": [
+   "Tuoretuotteet",
+   "Margariinit",
+   "Leivontamargariinit"
+  ],
+  "margariinirasiat-ja-paketit": [
+   "Tuoretuotteet",
+   "Margariinit",
+   "Margariinirasiat ja -paketit"
+  ],
+  "munat-ja-munavalmisteet": [
+   "Tuoretuotteet",
+   "Munat ja munavalmisteet"
+  ],
+  "kananmunat": [
+   "Tuoretuotteet",
+   "Munat ja munavalmisteet",
+   "Kananmunat"
+  ],
+  "kananmunavalmisteet": [
+   "Tuoretuotteet",
+   "Munat ja munavalmisteet",
+   "Kananmunavalmisteet"
+  ],
+  "tuore-leipa": [
+   "Tuoretuotteet",
+   "Tuore leipä"
+  ],
+  "kahvileivat-viinerit-kakut": [
+   "Tuoretuotteet",
+   "Tuore leipä",
+   "Kahvileivät, viinerit, kakut"
+  ],
+  "muut-ruokaleivat-ja-sampylat": [
+   "Tuoretuotteet",
+   "Tuore leipä",
+   "Muut ruokaleivät ja sämpylät"
+  ],
+  "sampylat-ja-patongit": [
+   "Tuoretuotteet",
+   "Tuore leipä",
+   "Sämpylät ja patongit"
+  ],
+  "tummat-ruokaleivat": [
+   "Tuoretuotteet",
+   "Tuore leipä",
+   "Tummat ruokaleivät"
+  ],
+  "vaaleat-ruokaleivat": [
+   "Tuoretuotteet",
+   "Tuore leipä",
+   "Vaaleat ruokaleivät"
+  ],
+  "valmisruoka": [
+   "Tuoretuotteet",
+   "Valmisruoka"
+  ],
+  "annostuotteet-ja-take-away": [
+   "Tuoretuotteet",
+   "Valmisruoka",
+   "Annostuotteet ja take away"
+  ],
+  "ateriatahnat-ja-levitteet": [
+   "Tuoretuotteet",
+   "Valmisruoka",
+   "Ateriatahnat ja -levitteet"
+  ],
+  "kasviproteiinit": [
+   "Tuoretuotteet",
+   "Valmisruoka",
+   "Kasviproteiinit"
+  ],
+  "muut-valmisruuat": [
+   "Tuoretuotteet",
+   "Valmisruoka",
+   "Muut valmisruuat"
+  ],
+  "ruokasalaatit": [
+   "Tuoretuotteet",
+   "Valmisruoka",
+   "Ruokasalaatit"
+  ],
+  "tuorepastat": [
+   "Tuoretuotteet",
+   "Valmisruoka",
+   "Tuorepastat"
+  ],
+  "valmisruoat-ja-keitot": [
+   "Tuoretuotteet",
+   "Valmisruoka",
+   "Valmisruoat ja -keitot"
+  ],
+  "voit": [
+   "Tuoretuotteet",
+   "Voit"
+  ],
+  "annosvoit": [
+   "Tuoretuotteet",
+   "Voit",
+   "Annosvoit"
+  ],
+  "maustevoit": [
+   "Tuoretuotteet",
+   "Voit",
+   "Maustevoit"
+  ],
+  "voirasiat-ja-paketit": [
+   "Tuoretuotteet",
+   "Voit",
+   "Voirasiat ja -paketit"
+  ]
+ }
+}

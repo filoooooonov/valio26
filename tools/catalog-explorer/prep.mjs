@@ -73,31 +73,90 @@ const products = raw.map((p) => {
   };
 });
 
-// Category names are not in the data: infer a label from the most common words in product names.
+// Category names are not in the sponsor data (codes only).
+// 1) Real names: aimo-categories.json maps a sample of codes to the public valioaimo.fi product-group
+//    tree (looked up by EAN, see docs/sponsors/valio/categories-and-images.md). src: "valioaimo.fi".
+// 2) Everything else is inferred, src: "inferred": a likely department from the longest code prefix
+//    whose verified siblings agree, plus the most common words in the products' en/fi names.
+const AIMO = JSON.parse(
+  readFileSync(join(import.meta.dirname, "aimo-categories.json"), "utf8"),
+);
 const STOP = new Set(
-  "the and with for of in a g kg l ml dl cl x pcs pc ltd oy ab uht 1 2 3 4 5 6 10 approx frozen fresh".split(
+  "the and with for of in a g kg l ml dl cl x pcs pc kpl ltd oy ab uht approx frozen fresh pakaste ltk rasia pss".split(
     " ",
   ),
 );
-const catWords = {};
-for (const p of products) {
-  const w = (catWords[p.cat] ||= {});
-  for (const t of new Set(
-    (p.en || p.fi).toLowerCase().match(/[a-zåäö]{3,}/g) || [],
-  ))
-    if (!STOP.has(t)) w[t] = (w[t] || 0) + 1;
-}
-const categories = {};
-for (const [cat, w] of Object.entries(catWords)) {
-  const top = Object.entries(w)
+// Words that are frequent in this category but rare elsewhere (count x idf), minus brand/vendor names.
+const tokens = (s) => s.toLowerCase().match(/[a-zåäö]{3,}/g) || [];
+const catTokens = (ps, lang) =>
+  ps.map((p) => {
+    const own = new Set(tokens(p.brand + " " + p.vendor));
+    return new Set(tokens(p[lang]).filter((t) => !STOP.has(t) && !own.has(t)));
+  });
+const byCatAll = {};
+for (const p of products) (byCatAll[p.cat] ||= []).push(p);
+const nCats = Object.keys(byCatAll).length;
+const df = { en: {}, fi: {} };
+for (const lang of ["en", "fi"])
+  for (const ps of Object.values(byCatAll))
+    for (const t of new Set(catTokens(ps, lang).flatMap((x) => [...x])))
+      df[lang][t] = (df[lang][t] || 0) + 1;
+const topWords = (ps, lang, k) => {
+  const w = {};
+  for (const set of catTokens(ps, lang)) for (const t of set) w[t] = (w[t] || 0) + 1;
+  return Object.entries(w)
+    .filter(([, c]) => c >= Math.min(2, ps.length))
+    .map(([t, c]) => [t, c * Math.log(nCats / df[lang][t])])
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
+    .slice(0, k)
     .map(([t]) => t);
-  categories[cat] = {
-    label: top.join(" · ") || cat,
-    count: products.filter((p) => p.cat === cat).length,
+};
+const guessDept = (code) => {
+  for (const len of [4, 3, 2]) {
+    const peers = Object.entries(AIMO.codes)
+      .filter(([c]) => c !== code && c.startsWith(code.slice(0, len)))
+      .map(([, v]) => v.path);
+    if (!peers.length) continue;
+    for (const depth of [2, 1]) {
+      const opts = new Set(peers.map((p) => p.slice(0, depth).join(" > ")));
+      if (opts.size === 1)
+        return {
+          path: peers[0].slice(0, depth),
+          basis: `${peers.length} verified code(s) starting ${code.slice(0, len)}`,
+        };
+    }
+    return null; // verified siblings at this prefix disagree: don't guess
+  }
+  return null;
+};
+const categories = {};
+for (const [cat, ps] of Object.entries(byCatAll)) {
+  const words = {
+    en: topWords(ps, "en", 3),
+    fi: topWords(ps, "fi", 3),
   };
+  const real = AIMO.codes[cat];
+  if (real)
+    categories[cat] = {
+      label: real.path.at(-1),
+      path: real.path,
+      src: "valioaimo.fi",
+      count: ps.length,
+      words,
+    };
+  else {
+    const g = guessDept(cat);
+    categories[cat] = {
+      label: (words.en.length ? words.en : words.fi).join(" · ") || cat,
+      src: "inferred",
+      guess: g?.path || null,
+      guessBasis: g?.basis || null,
+      count: ps.length,
+      words,
+    };
+  }
 }
+const catReal = Object.values(categories).filter((c) => c.src !== "inferred");
 
 // Coverage stats: how much of each kind of info do we actually have?
 const n = products.length;
@@ -133,6 +192,12 @@ const stats = {
   },
   vendors: tally("vendor").length,
   categories: Object.keys(categories).length,
+  categoryNames: {
+    realCodes: catReal.length,
+    realProducts: catReal.reduce((a, c) => a + c.count, 0),
+    guessedDept: Object.values(categories).filter((c) => c.guess).length,
+    source: "valioaimo.fi public product-group tree (sampled by EAN)",
+  },
   topVendors: tally("vendor").slice(0, 15),
   salesUnits: tally("unit"),
   temps: tally("temp"),
@@ -157,3 +222,4 @@ console.log(
   `products ${n}, categories ${stats.categories}, vendors ${stats.vendors}`,
 );
 console.log(stats.coverage);
+console.log("category names", stats.categoryNames);
