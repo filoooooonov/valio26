@@ -1,0 +1,1071 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aimo Catalogue Explorer</title>
+    <style>
+      :root {
+        --bg: #f4f6f9;
+        --card: #fff;
+        --ink: #14213d;
+        --muted: #64708a;
+        --line: #e2e7ef;
+        --brand: #0b3b8c;
+        --brand-2: #1f63d6;
+        --accent: #e8f0ff;
+        --ok: #12805c;
+        --warn: #b25e00;
+        --bad: #c0392b;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font:
+          14px/1.45 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: var(--brand);
+        color: #fff;
+        box-shadow: 0 2px 8px #0002;
+      }
+      .bar {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        padding: 12px 24px;
+        max-width: 1500px;
+        margin: 0 auto;
+      }
+      .logo {
+        font-weight: 800;
+        font-size: 18px;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+      }
+      .logo small {
+        font-weight: 500;
+        opacity: 0.7;
+        margin-left: 6px;
+        font-size: 12px;
+      }
+      #q {
+        flex: 1;
+        padding: 11px 16px;
+        border-radius: 999px;
+        border: 0;
+        font-size: 15px;
+        outline: none;
+      }
+      nav button {
+        background: transparent;
+        color: #fff;
+        border: 1px solid #fff5;
+        padding: 8px 14px;
+        border-radius: 999px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      nav button.on {
+        background: #fff;
+        color: var(--brand);
+        border-color: #fff;
+        font-weight: 600;
+      }
+      main {
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 20px 24px;
+      }
+      .shop {
+        display: grid;
+        grid-template-columns: 270px 1fr;
+        gap: 20px;
+      }
+      aside {
+        background: var(--card);
+        border-radius: 14px;
+        padding: 14px;
+        align-self: start;
+        position: sticky;
+        top: 78px;
+        max-height: calc(100vh - 96px);
+        overflow: auto;
+        border: 1px solid var(--line);
+      }
+      aside h4 {
+        margin: 14px 0 6px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--muted);
+      }
+      aside h4:first-child {
+        margin-top: 0;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .chip {
+        border: 1px solid var(--line);
+        background: #fff;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .chip.on {
+        background: var(--brand-2);
+        color: #fff;
+        border-color: var(--brand-2);
+      }
+      .chip.no {
+        background: #fdecea;
+        color: var(--bad);
+        border-color: #f5c6c0;
+        text-decoration: line-through;
+      }
+      .catlist {
+        max-height: 240px;
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      .catlist div {
+        padding: 5px 8px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 12px;
+      }
+      .catlist div:hover {
+        background: var(--accent);
+      }
+      .catlist div.on {
+        background: var(--brand-2);
+        color: #fff;
+      }
+      .catlist span:last-child {
+        color: var(--muted);
+      }
+      .catlist div.on span:last-child {
+        color: #fffb;
+      }
+      #catq {
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        margin-bottom: 6px;
+      }
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        color: var(--muted);
+      }
+      .toolbar select {
+        padding: 6px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+        gap: 14px;
+      }
+      .card {
+        background: var(--card);
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        overflow: hidden;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        transition:
+          transform 0.12s,
+          box-shadow 0.12s;
+      }
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px #14213d14;
+      }
+      .tile {
+        height: 120px;
+        display: grid;
+        place-items: center;
+        font-size: 46px;
+        position: relative;
+      }
+      .tile .tag {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        font-size: 10px;
+        background: #fffc;
+        padding: 2px 7px;
+        border-radius: 99px;
+        color: var(--ink);
+      }
+      .card .body {
+        padding: 10px 12px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+      }
+      .card .name {
+        font-weight: 600;
+        font-size: 13px;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .card .meta {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .badges {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        margin-top: auto;
+        padding-top: 6px;
+      }
+      .b {
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 6px;
+        background: var(--accent);
+        color: var(--brand);
+      }
+      .b.g {
+        background: #e3f6ee;
+        color: var(--ok);
+      }
+      .b.o {
+        background: #fff2e0;
+        color: var(--warn);
+      }
+      .b.r {
+        background: #fdecea;
+        color: var(--bad);
+      }
+      .more {
+        display: block;
+        margin: 20px auto;
+        padding: 10px 22px;
+        border-radius: 999px;
+        border: 1px solid var(--brand-2);
+        background: #fff;
+        color: var(--brand-2);
+        cursor: pointer;
+        font-weight: 600;
+      }
+      /* drawer */
+      #drawer {
+        position: fixed;
+        inset: 0 0 0 auto;
+        width: min(620px, 100vw);
+        background: #fff;
+        box-shadow: -10px 0 40px #0003;
+        transform: translateX(105%);
+        transition: transform 0.2s;
+        z-index: 10;
+        overflow: auto;
+      }
+      #drawer.open {
+        transform: none;
+      }
+      #shade {
+        position: fixed;
+        inset: 0;
+        background: #0004;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+        z-index: 9;
+      }
+      #shade.open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .d-head {
+        padding: 22px 24px;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+      }
+      .d-head .tile {
+        width: 88px;
+        height: 88px;
+        border-radius: 16px;
+        flex: none;
+        font-size: 40px;
+      }
+      .d-head h2 {
+        margin: 0 0 4px;
+        font-size: 18px;
+      }
+      .x {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        border: 0;
+        background: var(--bg);
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      section.d {
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--line);
+      }
+      section.d h3 {
+        margin: 0 0 8px;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--muted);
+      }
+      table.kv {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      table.kv td {
+        padding: 4px 0;
+        border-bottom: 1px dashed var(--line);
+        vertical-align: top;
+      }
+      table.kv td:first-child {
+        color: var(--muted);
+        width: 42%;
+      }
+      .live {
+        background: var(--accent);
+        border-radius: 12px;
+        padding: 12px;
+      }
+      .live input,
+      .live button {
+        padding: 7px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+      }
+      .live button {
+        background: var(--brand-2);
+        color: #fff;
+        border: 0;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .missing {
+        color: #b0b8c8;
+        font-style: italic;
+      }
+      /* overview */
+      .ov {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        gap: 16px;
+      }
+      .panel {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px 18px;
+      }
+      .panel h3 {
+        margin: 0 0 10px;
+        font-size: 14px;
+      }
+      .big {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+      .big .panel {
+        flex: 1;
+        min-width: 160px;
+      }
+      .big b {
+        display: block;
+        font-size: 30px;
+        color: var(--brand);
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 170px 1fr 56px;
+        gap: 8px;
+        align-items: center;
+        font-size: 12px;
+        margin: 5px 0;
+      }
+      .row .t {
+        height: 10px;
+        background: var(--bg);
+        border-radius: 99px;
+        overflow: hidden;
+      }
+      .row .t i {
+        display: block;
+        height: 100%;
+        background: var(--brand-2);
+        border-radius: 99px;
+      }
+      .row span:last-child {
+        text-align: right;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+      .ideas li {
+        margin: 6px 0;
+      }
+      .loading {
+        padding: 80px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 16px;
+      }
+      @media (max-width: 800px) {
+        .shop {
+          grid-template-columns: 1fr;
+        }
+        aside {
+          position: static;
+          max-height: none;
+        }
+        .bar {
+          flex-wrap: wrap;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="bar">
+        <div class="logo">
+          Aimo catalogue <small>synthetic data explorer</small>
+        </div>
+        <input
+          id="q"
+          placeholder="Search 17,546 products: name (fi/en/sv), brand, vendor, product code, GTIN…"
+          autocomplete="off"
+        />
+        <nav>
+          <button data-v="shop" class="on">Shop</button>
+          <button data-v="ov">Data overview</button>
+        </nav>
+      </div>
+    </header>
+    <main id="app"><div class="loading">Loading catalogue…</div></main>
+    <div id="shade"></div>
+    <div id="drawer"></div>
+
+    <script>
+      // ---------- dictionaries (codes are GS1 / Synkka; meanings for temp classes are not in the data) ----------
+      const ALLERGEN = {
+        AC: "Crustaceans",
+        AE: "Egg",
+        AF: "Fish",
+        AM: "Milk",
+        AN: "Tree nuts",
+        AP: "Peanuts",
+        AS: "Sesame",
+        AU: "Sulphites",
+        AW: "Gluten cereals",
+        AY: "Soy",
+        BC: "Celery",
+        BM: "Mustard",
+        ML: "Lactose",
+        NL: "Lupin",
+        UM: "Molluscs",
+        UW: "Wheat",
+        GB: "Barley",
+        NR: "Rye",
+        GO: "Oats",
+        SA: "Almond",
+        SH: "Hazelnut",
+        SW: "Walnut",
+        SC: "Cashew",
+        SP: "Pecan",
+        SR: "Brazil nut",
+        ST: "Pistachio",
+        SM: "Macadamia",
+        NM: "Milk protein?",
+        X99: "Other / unspecified",
+      };
+      const pretty = (s) =>
+        s
+          .replace(/_/g, " ")
+          .toLowerCase()
+          .replace(/^\w/, (c) => c.toUpperCase());
+      const UNIT = {
+        ST: "piece",
+        KI: "case",
+        KG: "kg",
+        PAK: "pack",
+        BAG: "bag",
+        RAS: "tub",
+        PRK: "carton",
+        BOT: "bottle",
+        SK: "box",
+        CS: "case",
+        PAL: "pallet",
+        L: "litre",
+      };
+      const EMOJI = [
+        [/milk|maito|cream|kerma|yogh|jogurt|kefir|quark|rahka/i, "🥛"],
+        [/chees|juusto/i, "🧀"],
+        [/butter|voi\b/i, "🧈"],
+        [/ice cream|jäätelö/i, "🍦"],
+        [/bread|leipä|bun|roll|sämpylä|croissant|baguette|toast/i, "🍞"],
+        [/cake|kakku|pastry|leivos|muffin|cookie|keksi|pulla/i, "🧁"],
+        [/chicken|kana|broiler|turkey|kalkkuna/i, "🍗"],
+        [
+          /beef|nauta|pork|sika|minced|jauheliha|ham|kinkku|bacon|pekoni|sausage|makkara|meat|liha/i,
+          "🥩",
+        ],
+        [
+          /salmon|lohi|fish|kala|tuna|tonnikala|shrimp|katkarapu|herring|silakka/i,
+          "🐟",
+        ],
+        [/egg|kanamuna|munat/i, "🥚"],
+        [/potato|peruna/i, "🥔"],
+        [/tomato|tomaatti/i, "🍅"],
+        [
+          /apple|omena|banana|banaani|berry|marja|strawberr|mansikka|orange|appelsiini|fruit|hedelmä|lemon|sitruuna/i,
+          "🍎",
+        ],
+        [
+          /salad|salaatti|lettuce|cucumber|kurkku|carrot|porkkana|onion|sipuli|vegetable|vihannes|cabbage|kaali|pepper|paprika/i,
+          "🥬",
+        ],
+        [/coffee|kahvi/i, "☕"],
+        [/tea\b|tee\b/i, "🍵"],
+        [/juice|mehu|drink|juoma|water|vesi|soda|limonadi/i, "🧃"],
+        [/beer|olut|wine|viini|cider|siideri/i, "🍺"],
+        [/chocolate|suklaa|candy|karkki|makeinen/i, "🍫"],
+        [/pasta|spaghetti|macaroni|makaroni|noodle/i, "🍝"],
+        [/rice|riisi|grain|vilja|flour|jauho|oat|kaura/i, "🌾"],
+        [
+          /soup|keitto|sauce|kastike|ketchup|mustard|sinappi|mayonnaise|majoneesi|dressing/i,
+          "🥫",
+        ],
+        [/pizza/i, "🍕"],
+        [
+          /clean|pesu|deterg|soap|saippua|dish|astianpesu|wipe|glove|käsine|napkin|lautasliina|paper|paperi|foil|folio|bag|pussi|cup|muki|plate|lautanen/i,
+          "🧻",
+        ],
+        [/oil|öljy/i, "🫒"],
+        [/spice|mauste|salt|suola|herb|yrtti/i, "🧂"],
+      ];
+      const emojiFor = (p) =>
+        (EMOJI.find(([re]) => re.test(p.en + " " + p.fi)) || [0, "📦"])[1];
+      const hue = (s) => {
+        let h = 0;
+        for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360;
+        return h;
+      };
+      const tileBg = (p) =>
+        `linear-gradient(135deg, hsl(${hue(p.cat)} 70% 92%), hsl(${(hue(p.cat) + 40) % 360} 70% 85%))`;
+      const TEMP_LABEL = {
+        warmTemperature: "Ambient",
+        coolTemperature: "Chilled",
+        freezeTemperature: "Frozen",
+      };
+      const tempOf = (p) =>
+        TEMP_LABEL[p.labels.find((l) => TEMP_LABEL[l])] ||
+        "Temp class " + p.temp;
+      const fmt = (n) => n.toLocaleString("en-US");
+      const esc = (s) =>
+        String(s ?? "").replace(
+          /[&<>"]/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+        );
+
+      // ---------- state ----------
+      let P = [],
+        CATS = {},
+        STATS = null,
+        view = "shop",
+        shown = 60;
+      const F = {
+        q: "",
+        cat: null,
+        temp: new Set(),
+        freeFrom: new Set(),
+        noAllergen: new Set(),
+        labels: new Set(),
+        has: new Set(),
+        sort: "relevance",
+      };
+      const FREE_FROM = [
+        "FREE_FROM_LACTOSE",
+        "FREE_FROM_GLUTEN",
+        "FREE_FROM_MILK",
+        "FREE_FROM_ADDITIVES",
+        "FREE_FROM_SUGAR",
+        "FREE_FROM_PRESERVATIVES",
+      ];
+      const LABELS = [
+        "GOODS_FROM_FINLAND_BLUE_SWAN",
+        "MADE_IN_FINLAND_FLAG_WITH_KEY",
+        "FINNISH_HEART_SYMBOL",
+        "EU_ORGANIC_FARMING",
+        "SVANEN",
+        "RAINFOREST_ALLIANCE",
+        "EU_ECO_LABEL",
+        "MARINE_STEWARDSHIP_COUNCIL_LABEL",
+        "FAIR_TRADE_MARK",
+      ];
+      const EXCL = ["AM", "ML", "AW", "UW", "AE", "AY", "AF", "AN", "AP", "AS"];
+      const HAS = {
+        co2: ["CO₂ known", (p) => p.co2 != null],
+        rel: ["Reliability known", (p) => p.rel != null],
+        ingr: ["Full ingredients", (p) => p.ingrCount > 0],
+        nut: ["Nutrition facts", (p) => p.nutrition.length],
+      };
+
+      // ---------- load ----------
+      Promise.all([
+        fetch("/catalog.json").then((r) => r.json()),
+        fetch("/stats.json").then((r) => r.json()),
+      ]).then(([c, s]) => {
+        P = c.products;
+        CATS = c.categories;
+        STATS = s;
+        for (const p of P)
+          p._s = (
+            p.id +
+            " " +
+            p.gtin +
+            " " +
+            p.en +
+            " " +
+            p.fi +
+            " " +
+            p.sv +
+            " " +
+            p.brand +
+            " " +
+            p.vendor
+          ).toLowerCase();
+        render();
+      });
+
+      document.getElementById("q").addEventListener("input", (e) => {
+        F.q = e.target.value.trim().toLowerCase();
+        shown = 60;
+        if (view !== "shop") setView("shop");
+        else renderResults();
+      });
+      document
+        .querySelectorAll("nav button")
+        .forEach((b) => (b.onclick = () => setView(b.dataset.v)));
+      function setView(v) {
+        view = v;
+        document
+          .querySelectorAll("nav button")
+          .forEach((b) => b.classList.toggle("on", b.dataset.v === v));
+        render();
+      }
+
+      // ---------- filtering ----------
+      function filtered() {
+        const terms = F.q.split(/\s+/).filter(Boolean);
+        let r = P.filter(
+          (p) =>
+            terms.every((t) => p._s.includes(t)) &&
+            (!F.cat || p.cat === F.cat) &&
+            (!F.temp.size || F.temp.has(tempOf(p))) &&
+            [...F.freeFrom].every((c) => p.claims.includes(c)) &&
+            [...F.noAllergen].every(
+              (a) => !p.contains.includes(a) && !p.mayContain.includes(a),
+            ) &&
+            [...F.labels].every((l) => p.labels.includes(l)) &&
+            [...F.has].every((h) => HAS[h][1](p)),
+        );
+        if (F.sort === "co2")
+          r = r.filter((p) => p.co2 != null).sort((a, b) => a.co2 - b.co2);
+        if (F.sort === "rel")
+          r = r.filter((p) => p.rel != null).sort((a, b) => b.rel - a.rel);
+        if (F.sort === "name")
+          r = [...r].sort((a, b) => (a.en || a.fi).localeCompare(b.en || b.fi));
+        return r;
+      }
+
+      // ---------- render ----------
+      function render() {
+        const app = document.getElementById("app");
+        if (view === "ov") {
+          app.innerHTML = overview();
+          return;
+        }
+        app.innerHTML = `<div class="shop"><aside id="side"></aside><div><div class="toolbar"><span id="count"></span>
+    <label>Sort <select id="sort"><option value="relevance">Catalogue order</option><option value="name">Name</option><option value="co2">Lowest CO₂ first</option><option value="rel">Most reliable delivery</option></select></label></div>
+    <div class="grid" id="grid"></div><div id="morebox"></div></div></div>`;
+        document.getElementById("sort").value = F.sort;
+        document.getElementById("sort").onchange = (e) => {
+          F.sort = e.target.value;
+          shown = 60;
+          renderResults();
+        };
+        renderSide();
+        renderResults();
+      }
+
+      function chip(label, on, cls, attrs) {
+        return `<span class="chip ${on ? cls : ""}" ${attrs}>${esc(label)}</span>`;
+      }
+      function renderSide() {
+        const side = document.getElementById("side");
+        const cats = Object.entries(CATS).sort(
+          (a, b) => b[1].count - a[1].count,
+        );
+        side.innerHTML = `
+    <h4>Temperature</h4><div class="chips">${["Ambient", "Chilled", "Frozen"].map((t) => chip(t, F.temp.has(t), "on", `data-set="temp" data-v="${t}"`)).join("")}</div>
+    <h4>Free from (claim)</h4><div class="chips">${FREE_FROM.map((c) => chip(pretty(c.replace("FREE_FROM_", "")), F.freeFrom.has(c), "on", `data-set="freeFrom" data-v="${c}"`)).join("")}</div>
+    <h4>Exclude allergen</h4><div class="chips">${EXCL.map((a) => chip(ALLERGEN[a], F.noAllergen.has(a), "no", `data-set="noAllergen" data-v="${a}"`)).join("")}</div>
+    <h4>Labels &amp; certificates</h4><div class="chips">${LABELS.map((l) => chip(pretty(l).replace(/ label| mark/, ""), F.labels.has(l), "on", `data-set="labels" data-v="${l}"`)).join("")}</div>
+    <h4>Data available</h4><div class="chips">${Object.entries(HAS)
+      .map(([k, [l]]) =>
+        chip(l, F.has.has(k), "on", `data-set="has" data-v="${k}"`),
+      )
+      .join("")}</div>
+    <h4>Category <span style="text-transform:none;font-weight:400">(${cats.length} codes; names inferred)</span></h4>
+    <input id="catq" placeholder="Filter categories…" />
+    <div class="catlist" id="catlist"></div>`;
+        side.querySelectorAll("[data-set]").forEach(
+          (el) =>
+            (el.onclick = () => {
+              const s = F[el.dataset.set];
+              s.has(el.dataset.v)
+                ? s.delete(el.dataset.v)
+                : s.add(el.dataset.v);
+              shown = 60;
+              renderSide();
+              renderResults();
+            }),
+        );
+        const drawCats = (q = "") => {
+          document.getElementById("catlist").innerHTML =
+            `<div class="${!F.cat ? "on" : ""}" data-c=""><span>All categories</span><span>${fmt(P.length)}</span></div>` +
+            cats
+              .filter(([k, v]) => !q || (k + v.label).toLowerCase().includes(q))
+              .map(
+                ([k, v]) =>
+                  `<div class="${F.cat === k ? "on" : ""}" data-c="${k}"><span>${esc(v.label)}</span><span>${v.count}</span></div>`,
+              )
+              .join("");
+          document.querySelectorAll("#catlist [data-c]").forEach(
+            (el) =>
+              (el.onclick = () => {
+                F.cat = el.dataset.c || null;
+                shown = 60;
+                drawCats(document.getElementById("catq").value.toLowerCase());
+                renderResults();
+              }),
+          );
+        };
+        document.getElementById("catq").oninput = (e) =>
+          drawCats(e.target.value.toLowerCase());
+        drawCats();
+      }
+
+      function card(p) {
+        const b = [];
+        if (p.claims.includes("FREE_FROM_LACTOSE"))
+          b.push(`<span class="b g">lactose-free</span>`);
+        if (p.claims.includes("FREE_FROM_GLUTEN"))
+          b.push(`<span class="b g">gluten-free</span>`);
+        if (p.labels.includes("EU_ORGANIC_FARMING"))
+          b.push(`<span class="b g">organic</span>`);
+        if (p.labels.some((l) => /FINLAND|FINNISH/.test(l)))
+          b.push(`<span class="b">🇫🇮 Finnish</span>`);
+        if (p.contains.length)
+          b.push(
+            `<span class="b o">${p.contains.length} allergen${p.contains.length > 1 ? "s" : ""}</span>`,
+          );
+        if (p.co2 != null) b.push(`<span class="b">${p.co2} kg CO₂/kg</span>`);
+        if (p.rel != null)
+          b.push(
+            `<span class="b ${p.rel < 0.9 ? "r" : "g"}">${Math.round(p.rel * 100)}% delivered</span>`,
+          );
+        return `<div class="card" data-id="${p.id}"><div class="tile" style="background:${tileBg(p)}"><span class="tag">${tempOf(p)}</span>${emojiFor(p)}</div>
+    <div class="body"><div class="name">${esc(p.en || p.fi)}</div><div class="meta">${esc(p.brand || p.vendor)} · #${p.id} · per ${UNIT[p.unit] || p.unit}</div><div class="badges">${b.join("")}</div></div></div>`;
+      }
+
+      function renderResults() {
+        const r = filtered();
+        document.getElementById("count").textContent =
+          `${fmt(r.length)} products`;
+        const grid = document.getElementById("grid");
+        grid.innerHTML = r.slice(0, shown).map(card).join("");
+        grid
+          .querySelectorAll(".card")
+          .forEach((el) => (el.onclick = () => openProduct(el.dataset.id)));
+        document.getElementById("morebox").innerHTML =
+          r.length > shown
+            ? `<button class="more">Show more (${fmt(r.length - shown)} left)</button>`
+            : "";
+        const m = document.querySelector(".more");
+        if (m)
+          m.onclick = () => {
+            shown += 120;
+            renderResults();
+          };
+      }
+
+      // ---------- product drawer ----------
+      const kv = (rows) =>
+        `<table class="kv">${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v === "" || v == null || (Array.isArray(v) && !v.length) ? '<span class="missing">not in data</span>' : v}</td></tr>`).join("")}</table>`;
+      function nextMonday() {
+        const d = new Date();
+        d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
+        return d.toISOString().slice(0, 10);
+      }
+      function openProduct(id) {
+        const p = P.find((x) => x.id === id);
+        const units = p.units
+          .map(
+            (u) =>
+              `${UNIT[u.unitId] || u.unitId} = ${u.sizeInBaseUnits} ${UNIT[p.baseUnit] || p.baseUnit}`,
+          )
+          .join("<br>");
+        const size = p.size
+          ? [
+              p.size.volume && `${p.size.volume.value} ${p.size.volume.unit}`,
+              p.size.netWeight &&
+                `net ${p.size.netWeight.value} ${p.size.netWeight.unit}`,
+            ]
+              .filter(Boolean)
+              .join(", ")
+          : "";
+        document.getElementById("drawer").innerHTML =
+          `<button class="x" onclick="closeDrawer()">✕</button>
+    <div class="d-head"><div class="tile" style="background:${tileBg(p)}">${emojiFor(p)}</div><div><h2>${esc(p.en || p.fi)}</h2>
+      <div class="meta">${esc(p.fi)}<br>${esc(p.sv)}</div></div></div>
+    <section class="d"><h3>Live from Valio Aimo mock API</h3><div class="live">Delivery date <input type="date" id="ld" value="${nextMonday()}"> <button onclick="live('${p.id}')">Check price &amp; availability</button><div id="lres" style="margin-top:10px"></div></div></section>
+    <section class="d"><h3>Product</h3>${kv([
+      ["Product code", p.id],
+      ["GTIN", p.gtin],
+      ["Brand", esc(p.brand)],
+      ["Vendor (supplier)", esc(p.vendor)],
+      [
+        "Category code",
+        `${p.cat} <span class="missing">(${esc(CATS[p.cat]?.label)})</span>`,
+      ],
+      ["Sold per", `${UNIT[p.unit] || p.unit} (${p.unit})`],
+      ["Pack structure", units],
+      ["Order step (lot size)", p.lot],
+      ["Size", size],
+      [
+        "Storage",
+        `${tempOf(p)}${p.tmin != null ? ` · ${p.tmin}…${p.tmax} °C` : ""}`,
+      ],
+      ["Country of origin", p.origin.toUpperCase()],
+      ["Returnable deposits", p.deposits || ""],
+      ["Images", p.media ? `${p.media} (ids only, files not provided)` : ""],
+    ])}</section>
+    <section class="d"><h3>Allergens &amp; diet</h3>${kv([
+      [
+        "Contains",
+        p.contains
+          .map((a) => `<span class="b o">${ALLERGEN[a] || a}</span>`)
+          .join(" "),
+      ],
+      [
+        "May contain",
+        p.mayContain
+          .map((a) => `<span class="b r">${ALLERGEN[a] || a}</span>`)
+          .join(" "),
+      ],
+      [
+        "Declared free from",
+        p.freeFromAllergen
+          .map((a) => `<span class="b g">${ALLERGEN[a] || a}</span>`)
+          .join(" "),
+      ],
+      [
+        "Claims",
+        p.claims.map((c) => `<span class="b g">${pretty(c)}</span>`).join(" "),
+      ],
+      ["Key ingredients", esc(p.keyIngr)],
+      [
+        "Full ingredient list",
+        p.ingrCount ? p.ingrCount + " ingredients with origins" : "",
+      ],
+    ])}</section>
+    <section class="d"><h3>Sustainability &amp; delivery</h3>${kv([
+      [
+        "Labels",
+        p.labels
+          .filter((l) => !TEMP_LABEL[l])
+          .map((l) => `<span class="b">${pretty(l)}</span>`)
+          .join(" "),
+      ],
+      [
+        "Carbon footprint",
+        p.co2 != null
+          ? `${p.co2} kg CO₂-eq / kg <span class="missing">(product-group average)</span>`
+          : "",
+      ],
+      [
+        "Delivery reliability",
+        p.rel != null
+          ? `${Math.round(p.rel * 1000) / 10}% of ordered quantity delivered historically`
+          : "",
+      ],
+    ])}</section>
+    <section class="d"><h3>Nutrition (per 100 g/ml)</h3>${p.nutrition.length ? kv(p.nutrition.map(([k, v, u]) => [k, `${v} ${u}`])) : '<span class="missing">not in data</span>'}</section>
+    <section class="d"><h3>Description</h3>${p.desc ? esc(p.desc) : '<span class="missing">not in data</span>'}${p.storage ? `<p><b>Storage:</b> ${esc(p.storage)}</p>` : ""}</section>`;
+        document.getElementById("drawer").classList.add("open");
+        document.getElementById("shade").classList.add("open");
+      }
+      function closeDrawer() {
+        document.getElementById("drawer").classList.remove("open");
+        document.getElementById("shade").classList.remove("open");
+      }
+      document.getElementById("shade").onclick = closeDrawer;
+      document.addEventListener(
+        "keydown",
+        (e) => e.key === "Escape" && closeDrawer(),
+      );
+
+      async function live(id) {
+        const out = document.getElementById("lres");
+        out.textContent = "Asking Valio Aimo…";
+        const r = await fetch("/live", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            ids: [id],
+            date: document.getElementById("ld").value,
+          }),
+        }).then((r) => r.json());
+        if (r.error) {
+          out.innerHTML = `<span style="color:var(--bad)">${esc(r.error)}</span>`;
+          return;
+        }
+        const a = r.availability.products[0],
+          pr = r.price.products[0],
+          line = a.scheduleLines[0];
+        const qty = !line
+          ? "❌ cannot be delivered on any date"
+          : line.availableAmount === 999999
+            ? "Supplier warehouse: quantity unknown (999999)"
+            : line.availableAmount >= 1e8
+              ? "In stock (no limit reported)"
+              : `${fmt(line.availableAmount)} ${UNIT[line.salesUnit] || line.salesUnit} available`;
+        const closed =
+          a.closingTime &&
+          new Date(a.closingTime) < new Date(r.availability.timeNow);
+        out.innerHTML = kv([
+          [
+            "Price (excl. VAT)",
+            pr.catalogPrice
+              ? `<b>€${pr.catalogPrice.value}</b> per ${UNIT[p_unit(id)] || ""} · €${pr.catalogPrice.valueWithTax} incl. VAT`
+              : '<span style="color:var(--bad)">no price</span>',
+          ],
+          [
+            "Comparison price",
+            pr.comparisonPrice
+              ? `€${pr.comparisonPrice.value} / ${pr.comparisonUnit}`
+              : "",
+          ],
+          [
+            "List price",
+            pr.listPrice
+              ? `€${pr.listPrice.value} ${pr.netPriceFound ? "(customer net price applied)" : ""}`
+              : "",
+          ],
+          ["Availability", qty],
+          ["Earliest date", line?.availableDate || ""],
+          [
+            "Order cut-off",
+            a.closingTime
+              ? `${a.closingTime.replace("T", " ").slice(0, 16)} ${closed ? '<span class="b r">already passed!</span>' : ""}`
+              : "",
+          ],
+          [
+            "Logistics model",
+            a.logisticModel === "Stock"
+              ? "Stock (Valio Aimo warehouse)"
+              : a.logisticModel === "Terminal"
+                ? "Terminal (from supplier)"
+                : a.logisticModel,
+          ],
+          [
+            "Sales block",
+            a.salesBlock ? '<span class="b r">blocked</span>' : "no",
+          ],
+        ]);
+      }
+      const p_unit = (id) => P.find((x) => x.id === id).unit;
+
+      // ---------- data overview ----------
+      function bars(rows, total, map = (k) => k) {
+        const max = total || Math.max(...rows.map((r) => r[1]));
+        return rows
+          .map(
+            ([k, v]) =>
+              `<div class="row"><span title="${esc(k)}">${esc(map(k))}</span><div class="t"><i style="width:${(100 * v) / max}%"></i></div><span>${total ? Math.round((100 * v) / total) + "%" : fmt(v)}</span></div>`,
+          )
+          .join("");
+      }
+      function overview() {
+        const s = STATS;
+        return `<div class="big">
+      <div class="panel"><b>${fmt(s.total)}</b>products</div><div class="panel"><b>${fmt(s.vendors)}</b>suppliers</div>
+      <div class="panel"><b>${s.categories}</b>category codes (no names)</div><div class="panel"><b>${fmt(s.coverage["Carbon footprint"])}</b>with CO₂ estimate</div>
+      <div class="panel"><b>${fmt(s.coverage["Delivery reliability"])}</b>with delivery reliability</div></div>
+    <div class="ov">
+      <div class="panel"><h3>What info do we have? (share of products)</h3>${bars(Object.entries(s.coverage), s.total)}</div>
+      <div class="panel"><h3>What can we build with it?</h3><ul class="ideas">
+        <li><b>Search &amp; match:</b> names in fi/en/sv, brand, vendor, GTIN, plus comparison price per L/kg from the API.</li>
+        <li><b>Hard guardrails:</b> structured allergens (CONTAINS / MAY_CONTAIN / FREE_FROM) and claims like FREE_FROM_LACTOSE → allergen-safe substitution for schools and hospitals.</li>
+        <li><b>Sustainability ranking:</b> labels (Finnish origin, organic, MSC, Fairtrade) on almost every product; CO₂ per product group on ~63%.</li>
+        <li><b>Risk-aware ordering:</b> delivery reliability (~25%) + Stock vs Terminal + order cut-off times from the availability API.</li>
+        <li><b>Exact quantities:</b> pack structure and lot sizes let the gateway turn "1,000 L" into valid order lines.</li>
+        <li><b>Gaps:</b> no images, no category names, no order endpoint, no customer data. We mock or infer those, and label them.</li></ul></div>
+      <div class="panel"><h3>Allergens declared (CONTAINS)</h3>${bars(s.allergens.slice(0, 14), 0, (k) => ALLERGEN[k] || k)}</div>
+      <div class="panel"><h3>Labels &amp; certificates</h3>${bars(s.labels.filter(([k]) => !TEMP_LABEL[k]).slice(0, 14), 0, pretty)}</div>
+      <div class="panel"><h3>Top nutritional claims</h3>${bars(s.claims.slice(0, 14), 0, pretty)}</div>
+      <div class="panel"><h3>Storage temperature</h3>${bars(
+        s.labels.filter(([k]) => TEMP_LABEL[k]),
+        0,
+        (k) => TEMP_LABEL[k],
+      )}</div>
+      <div class="panel"><h3>Sold per (sales unit)</h3>${bars(s.salesUnits.slice(0, 12), 0, (k) => `${UNIT[k] || "?"} (${k})`)}</div>
+      <div class="panel"><h3>Delivery reliability (products with data)</h3>${bars(s.reliabilityBuckets)}</div>
+      <div class="panel"><h3>Top suppliers</h3>${bars(s.topVendors, 0)}</div>
+      <div class="panel"><h3>Country of origin</h3>${bars(s.origins, 0, (k) => k.toUpperCase())}</div>
+    </div>`;
+      }
+    </script>
+  </body>
+</html>

@@ -6,7 +6,9 @@
     "dev": "node scripts/dev.mjs",
     "test": "node scripts/test.mjs",
     "board": "bun team/mcp/server.ts",
-    "convex": "convex dev"
+    "convex": "convex dev",
+    "explore": "bun tools/catalog-explorer/server.ts",
+    "explore:prep": "node tools/catalog-explorer/prep.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
