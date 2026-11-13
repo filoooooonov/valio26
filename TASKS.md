@@ -5,33 +5,22 @@ merged. Keep tasks to 2h or less, and split anything bigger.
 
 Format: `- [ ] T<n> <task> (rubric: <line>) — files: <paths>`
 
-## Now: first 6 hours (Fri 23:45 → Sat ~06:00). Re-planned after the official rubric + mentor meeting
-Rubric: demo 30 · user need 20 · guardrails 20 · exceptions 15 · openness 15 (see CLAUDE.md). Hero flow = DEMO.md (catering for 50).
+## Now: Sat 14 Nov, solo build (aleksei + agents; ayaan away)
+Rubric: demo 30 · user need 20 · guardrails 20 · exceptions 15 · openness 15. Design: pen `B2 v2` (order draft). Shapes: CONTRACT.md v1.
 
-### ayaan: gateway, policy, data
-- [ ] T2 Catalog loader + local `search_products` (en/fi/sv names, allergens, claims, labels; no API calls) (rubric: demo, user need) — files: app/server/src/catalog.ts
-- [ ] T3 Valio client: `/api/price` + `/api/availability` for **shortlisted SKUs only**, customer price (`netPriceFound`), unit maths, cut-off check (rubric: demo, openness "query only when needed") — files: app/server/src/valio.ts
-- [ ] T4 **Basket planner**: request text ("catering for 50, Saturday, one vegan option") → LLM picks dishes/ingredients → per-person quantities × N → catalog matches → priced, stock-checked basket lines with `why[]` (rubric: user need, demo) — files: app/server/src/plan.ts
-- [ ] T5 Exceptions: partial stock / cut-off passed → good-better-best substitutes ranked allergens → delivery reliability → price → CO₂ (rubric: exceptions) — files: app/server/src/substitute.ts
-- [ ] T6 Mandates + orders: policy check (spend, substitutions, allergens) → placed / pending_approval with plain-language `violations[]`; audit events (rubric: guardrails, explain) — files: app/server/src/policy.ts, app/server/src/orders.ts, app/server/src/audit.ts
-- [ ] T7 MCP server + OpenAPI doc for the same calls (search, plan/quote, order, status), so an external agent can run the milk example (rubric: openness) — files: app/server/src/mcp.ts, app/server/openapi.yaml
-- ⚠️ CONTRACT.md v0 assumes a single-item quote; needs a `POST /api/basket` (plan) shape. ayaan proposes the PR, aleksei approves.
+**Checkpoint A (target ~17:00):** request → basket → resolve swap → approve → order, live.
+- [~] @aleksei S1 Catalogue search (local, en/fi/sv, diet filters) + Valio client (price/availability for shortlisted SKUs only, customer price, cut-off, unit maths) (rubric: demo, openness) — files: app/server/src/catalog.ts, app/server/src/valio.ts
+- [ ] S2 Planner: request → dishes (portion basis, diet per dish) → quantities → catalogue matches → stock check → lines with `why`; pantry assumptions; issues with options (rubric: user need, exceptions) — files: app/server/src/plan.ts
+- [ ] S3 Mandate + orders + audit, enforced server-side (per-order + daily limit, swaps need OK, re-check price/stock at approval, prices held until) (rubric: guardrails) — files: app/server/src/policy.ts, orders.ts, audit.ts
+- [ ] S4 Basket screen per B2 v2: assistant panel (request in, short status out), dish groups, "Your call" decisions, mandate line + approve (rubric: demo, user need) — files: app/web/src/
+- [ ] S5 Valio follow-up today (10–21): show B2 v2; ask: photo must-have? chef or purchasing manager approves? passed closingTime blocks the date? do big accounts already order system-to-system? (rubric: user need) — files: challenges/valio-trade-agents/MEETING-2026-11-13.md
 
-### aleksei: webshop assistant, demo, pitch
-- [x] T8a Aimo brand 1:1 in the web app (real fonts, tokens, header, buttons) (rubric: user need: "integrated into existing website") — files: app/web/src/theme.css
-- [ ] T8 Webshop shell in Aimo style + **assistant panel**: one request box (+ photo button, stubbed), not a chat transcript (rubric: user need, demo) — files: app/web/src/
-- [ ] T9 Basket view: lines with qty, customer price, stock/delivery badge, "why" drawer; flagged lines show good/better/best picker (rubric: exceptions, explain) — files: app/web/src/Basket.tsx
-- [ ] T10 Approval card + mandate panel: violations in plain language, approve/deny → order (rubric: guardrails) — files: app/web/src/Approval.tsx
-- [ ] T11 Audit timeline: request → lookup → order → approval, who/why, export JSON (rubric: explain, openness) — files: app/web/src/Audit.tsx
-- [ ] T12 External agent script (Claude API + MCP) running the 1,000 L milk example into the same approval queue (rubric: openness, guardrails) — files: app/agent/
-- [ ] T13 Prep for the **Sat 14 Nov follow-up with Valio** (10–21): 3 questions (not-a-chatbot vs in-site assistant; passed `closingTime`; photo priority) + show a click-through (rubric: user need) — files: challenges/valio-trade-agents/MEETING-2026-11-13.md
-- [ ] T14 Pitch skeleton + 2-min video shot list from DEMO.md (rubric: all) — files: docs/pitch.md
-
-## Next
-- [ ] Photo → basket (vision: menu / fridge photo → products), stretch from the meeting
-- [ ] Sustainability compare (category CO₂ ranges, labels) in basket lines
-- [ ] Signed offers (ed25519 provenance) + mandate as W3C VC; agentic payments (x402) stretch
-- [ ] Mandate editor (change the spend limit live during the demo)
+**Then:**
+- [ ] S6 Photo → basket (menu/recipe photo → same planner) (rubric: user need)
+- [ ] S7 Approval card + order confirmation with readable audit trail; make approval feel like "review and confirm" (rubric: guardrails, explain)
+- [ ] S8 Substitution options ranked by delivery reliability + CO₂ (rubric: exceptions, compare beyond price)
+- [ ] S9 MCP wrapper + OpenAPI; hotel-chain agent orders 1,000 L lactose-free milk → same approval queue (rubric: openness)
+- [ ] S10 Record 2-min video as soon as Checkpoint A works; run `valio-voice` on it; pitch (rubric: all)
 
 ## Done
 - [x] T1 Real judging criteria: official handout transcribed in `challenges/valio-trade-agents/HANDOUT.md` (Fri 23:40)
