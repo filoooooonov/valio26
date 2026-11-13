@@ -5,28 +5,34 @@ merged. Keep tasks to 2h or less, and split anything bigger.
 
 Format: `- [ ] T<n> <task> (rubric: <line>) — files: <paths>`
 
-## Now: first 6 hours (Fri 22:45 → Sat ~05:00, sleep as needed)
+## Now: first 6 hours (Fri 23:45 → Sat ~06:00). Re-planned after the official rubric + mentor meeting
+Rubric: demo 30 · user need 20 · guardrails 20 · exceptions 15 · openness 15 (see CLAUDE.md). Hero flow = DEMO.md (catering for 50).
 
 ### ayaan: gateway, policy, data
-- [ ] T1 SPIKE follow-up: ask a mentor for the real judging criteria and whether a passed `closingTime` blocks ordering; write the answers into BRIEF.md (rubric: all) — files: challenges/valio-trade-agents/BRIEF.md
-- [ ] T2 Catalog loader + `search_products` (en/fi/sv names, allergens, claims, labels from `data/raw/valio`) (rubric: core req 1) — files: app/server/src/catalog.ts
-- [ ] T3 Valio client: `/api/price` + `/api/availability` wrapper, unit maths (L/KG → sales units, lot sizes), cut-off check (rubric: core req 1–2, response logic) — files: app/server/src/valio.ts
-- [ ] T4 `POST /api/quote` → offers incl. partial availability + good/better/best substitutes with `why[]` (rubric: response logic, explainability) — files: app/server/src/quote.ts
-- [ ] T5 Mandates + `POST /api/orders` policy check → placed / pending_approval with `violations[]`; audit events (rubric: guardrails, audit trail) — files: app/server/src/policy.ts, app/server/src/orders.ts, app/server/src/audit.ts
-- [ ] T6 Signed offers: ed25519 over payloadHash + `/.well-known/gateway-key`; MCP server exposing request_quote/place_order/search_products (rubric: trust protocol, innovation) — files: app/server/src/sign.ts, app/server/src/mcp.ts
+- [ ] T2 Catalog loader + local `search_products` (en/fi/sv names, allergens, claims, labels; no API calls) (rubric: demo, user need) — files: app/server/src/catalog.ts
+- [ ] T3 Valio client: `/api/price` + `/api/availability` for **shortlisted SKUs only**, customer price (`netPriceFound`), unit maths, cut-off check (rubric: demo, openness "query only when needed") — files: app/server/src/valio.ts
+- [ ] T4 **Basket planner**: request text ("catering for 50, Saturday, one vegan option") → LLM picks dishes/ingredients → per-person quantities × N → catalog matches → priced, stock-checked basket lines with `why[]` (rubric: user need, demo) — files: app/server/src/plan.ts
+- [ ] T5 Exceptions: partial stock / cut-off passed → good-better-best substitutes ranked allergens → delivery reliability → price → CO₂ (rubric: exceptions) — files: app/server/src/substitute.ts
+- [ ] T6 Mandates + orders: policy check (spend, substitutions, allergens) → placed / pending_approval with plain-language `violations[]`; audit events (rubric: guardrails, explain) — files: app/server/src/policy.ts, app/server/src/orders.ts, app/server/src/audit.ts
+- [ ] T7 MCP server + OpenAPI doc for the same calls (search, plan/quote, order, status), so an external agent can run the milk example (rubric: openness) — files: app/server/src/mcp.ts, app/server/openapi.yaml
+- ⚠️ CONTRACT.md v0 assumes a single-item quote; needs a `POST /api/basket` (plan) shape. ayaan proposes the PR, aleksei approves.
 
-### aleksei: console, demo, pitch
-- [ ] T7 Console shell + design pass: layout with Approvals queue, Audit log, Mandate panel (mock data matching CONTRACT, labelled) (rubric: implementation, demo) — files: app/web/src/
-- [ ] T8 Approvals queue: list pending orders, show violations + offer provenance, approve/deny → `POST /api/orders/:id/decision` (rubric: core req 3, guardrails) — files: app/web/src/Approvals.tsx
-- [ ] T9 Live audit log: poll `/api/audit`, plain-English timeline, filter by agent (rubric: audit trail, explainability) — files: app/web/src/Audit.tsx
-- [ ] T10 Offer card: good/better/best compare (price/L, delivery date, CO₂, labels), "signature verified" badge (rubric: trust protocol, response logic) — files: app/web/src/OfferCard.tsx
-- [ ] T11 Demo buyer agent script (Claude API tool use against the MCP gateway) that runs DEMO.md step 2–4 end to end (rubric: core req 2, demo) — files: app/agent/
-- [ ] T12 Pitch skeleton: problem/solution/trust-protocol slide outline + 2-min video shot list from DEMO.md (rubric: innovation, impact) — files: docs/pitch.md
+### aleksei: webshop assistant, demo, pitch
+- [x] T8a Aimo brand 1:1 in the web app (real fonts, tokens, header, buttons) (rubric: user need: "integrated into existing website") — files: app/web/src/theme.css
+- [ ] T8 Webshop shell in Aimo style + **assistant panel**: one request box (+ photo button, stubbed), not a chat transcript (rubric: user need, demo) — files: app/web/src/
+- [ ] T9 Basket view: lines with qty, customer price, stock/delivery badge, "why" drawer; flagged lines show good/better/best picker (rubric: exceptions, explain) — files: app/web/src/Basket.tsx
+- [ ] T10 Approval card + mandate panel: violations in plain language, approve/deny → order (rubric: guardrails) — files: app/web/src/Approval.tsx
+- [ ] T11 Audit timeline: request → lookup → order → approval, who/why, export JSON (rubric: explain, openness) — files: app/web/src/Audit.tsx
+- [ ] T12 External agent script (Claude API + MCP) running the 1,000 L milk example into the same approval queue (rubric: openness, guardrails) — files: app/agent/
+- [ ] T13 Prep for the **Sat 14 Nov follow-up with Valio** (10–21): 3 questions (not-a-chatbot vs in-site assistant; passed `closingTime`; photo priority) + show a click-through (rubric: user need) — files: challenges/valio-trade-agents/MEETING-2026-11-13.md
+- [ ] T14 Pitch skeleton + 2-min video shot list from DEMO.md (rubric: all) — files: docs/pitch.md
 
 ## Next
-- [ ] Sustainability compare (category CO₂ ranges, labels) in offers
-- [ ] Mandate editor in console (change spend limit live during the demo)
-- [ ] Verifiable credential format for the mandate (W3C VC JSON) and agentic payments (x402) stretch
+- [ ] Photo → basket (vision: menu / fridge photo → products), stretch from the meeting
+- [ ] Sustainability compare (category CO₂ ranges, labels) in basket lines
+- [ ] Signed offers (ed25519 provenance) + mandate as W3C VC; agentic payments (x402) stretch
+- [ ] Mandate editor (change the spend limit live during the demo)
 
 ## Done
+- [x] T1 Real judging criteria: official handout transcribed in `challenges/valio-trade-agents/HANDOUT.md` (Fri 23:40)
 - [x] T0 Pick challenge and lock in `valio-trade-agents` (Fri 22:45)

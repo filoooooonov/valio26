@@ -14,7 +14,7 @@ traceability and explainability.
 
 **Example:** "1,000 L lactose-free milk by Monday, best on price and availability." The system returns structured offers, then the agent orders within its authority or escalates.
 
-**Judging:** _no explicit rubric in the brief._ Infer it from the "problems to tackle": a **trust protocol** (minimum verification so
+**Judging: SUPERSEDED, see `HANDOUT.md` (official rubric: demo 30 / user need 20 / guardrails 20 / exceptions 15 / openness 15) and `MEETING-2026-11-13.md`.** Original note: _no explicit rubric in the brief._ Infer it from the "problems to tackle": a **trust protocol** (minimum verification so
 the agent can trust stock, price and origin), a **guardrails model** (spend thresholds, substitutions), **response logic** (partial
 availability, good-better-best substitution), and an **audit trail** (human-readable log). ⚠️ Ask the mentors for the actual criteria on Friday.
 

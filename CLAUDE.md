@@ -3,20 +3,31 @@
 Two-person team, 48h hackathon. Read this fully; it's short on purpose.
 
 ## Active challenge
-**Valio Aimo: Trusted Trade Agents (track 106).** Goal: a wholesaler-side agent gateway (MCP + REST) where external
-buyer agents search, get **signed offers**, and order within a **mandate**; out-of-mandate orders escalate to a human
-approval console with a readable audit trail. Brief: [`challenges/valio-trade-agents/BRIEF.md`](challenges/valio-trade-agents/BRIEF.md).
+**Valio Aimo: Trusted Trade Agents (track 106).** Goal: an open agent gateway (MCP + REST) on Valio Aimo's side. Any buyer
+agent, including the **in-webshop shopping assistant** we demo, turns a request ("catering for 50 on Saturday") into a priced,
+stock-checked basket and orders within a **mandate**. Anything outside the mandate goes to a human for approval, with a readable audit trail. Brief: [`challenges/valio-trade-agents/BRIEF.md`](challenges/valio-trade-agents/BRIEF.md).
 Sponsor API notes: `docs/sponsors/valio/README.md`. Stack: Bun + Hono + MCP SDK (`app/server`), Vite + React (`app/web`).
 
 ## Judging rubric
 **Optimise for what judges score.** Every task should map to a rubric line.
 
-Challenge (from BRIEF.md, verbatim): _no explicit rubric in the brief._ Infer it from the "problems to tackle": a **trust protocol** (minimum verification so
-the agent can trust stock, price and origin), a **guardrails model** (spend thresholds, substitutions), **response logic** (partial
-availability, good-better-best substitution), and an **audit trail** (human-readable log). ⚠️ Ask the mentors for the actual criteria on Friday.
+Challenge rubric (official handout, `challenges/valio-trade-agents/HANDOUT.md`):
+| Criterion | Weight |
+|---|---|
+| **Working end-to-end demo** | **30%** |
+| Solving the user's need | 20% |
+| Autonomy and controls (guardrails) | 20% |
+| Robustness to exceptions | 15% |
+| Openness and path to production | 15% |
 
-Core requirements: (1) product, price, availability lookup · (2) request price/availability → **place an order** (fixed prices) ·
-(3) **permissions + human approval**. Optional: delivery-time/sustainability comparison, substitution/exceptions, traceability/explainability.
+"Trust and openness by design: a full flow that works, a clear model for human sign-off, and open, well-documented choices.
+**Not** a production-ready system in 48 hours." Flow to run: **Request → Lookup → Order (fixed price) → Approval**.
+Their rules: **not a chatbot** · mock today's webshop, not the marketplace · **query the APIs only when needed, never for all products**.
+Bonus: compare beyond price (delivery reliability, sustainability labels), handle exceptions (partial stock, substitutions), explain decisions.
+
+What the sponsor said in person (`MEETING-2026-11-13.md`): an assistant **inside the Aimo webshop**. The hero request is
+*"ingredients for a catering event for 50 people on Saturday"* → products, quantities, customer prices, stock → **order prepared for approval**.
+Photo upload is a stretch. Follow-up: **Sat 14 Nov, ~10–21**.
 
 Event-wide peer review (`docs/participant-guidebook.md`):
 - **Innovation:** Is the idea/concept/prototype new or different compared to others?
