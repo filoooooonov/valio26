@@ -11,3 +11,9 @@ build "LLM agent + MCP tools" here.
 3. (10 min) Ask a mentor: "What would make you say *this is how we'd actually do it*?" Write the answer into BRIEF.md.
 
 **Kill criteria:** if the API is just a static product list with no availability or lead-time behaviour, the demo is thin, so deprioritise.
+
+## Result (Fri 13 Nov 21:52): PASS
+See `docs/sponsors/valio/README.md`. The API is price and availability only, so search, order, approval and audit are ours to build.
+Availability shows real limited stock, cut-off times, Terminal (unknown qty) vs Stock, and undeliverable items. Product data has
+structured allergens, FREE_FROM claims and labels, which is enough for mandates and allergen-safe substitution.
+Open mentor question: does a `closingTime` in the past mean the date can't be ordered?
