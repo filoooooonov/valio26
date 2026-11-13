@@ -1,0 +1,7 @@
+# Project-scoped Codex config (Codex loads .codex/config.toml for trusted projects).
+# If your Codex version ignores it, copy this block into ~/.codex/config.toml
+# and make the path absolute.
+[mcp_servers.team]
+command = "node"
+args = ["team/mcp/server.mjs"]
+env = { TEAM_TOOL = "codex" }

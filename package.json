@@ -1,0 +1,20 @@
+{
+  "name": "junction26",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "test": "node scripts/test.mjs",
+    "board": "bun team/mcp/server.ts",
+    "convex": "convex dev"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "convex": "^1.50.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "prettier": "^3.10.1",
+    "typescript": "^7.0.2"
+  }
+}

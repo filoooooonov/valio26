@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "team": {
+      "command": "node",
+      "args": ["team/mcp/server.mjs"],
+      "env": { "TEAM_TOOL": "claude" }
+    }
+  }
+}

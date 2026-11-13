@@ -1,0 +1,33 @@
+# deps / build
+node_modules/
+dist/
+build/
+.next/
+.vercel/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# secrets
+.env
+.env.*
+!.env.example
+
+# claude / agents (personal)
+.claude/settings.local.json
+.claude/worktrees/
+
+# data dumps (keep small samples in data/sample/)
+data/raw/
+*.sql.gz
+*.dump
+*.parquet
+*.zip
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
