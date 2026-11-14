@@ -1,5 +1,6 @@
 ﻿import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { AuditEvent, Basket, BasketLine, Order } from "../api";
+import { api, auditExportUrl } from "../api";
 import "./replacement-dialog.css";
 import { useProductImage } from "./OrderPanel";
 import { Icon } from "../icons";
@@ -138,8 +139,9 @@ export function SwapSheet({ line, date, locked, onClose, onChoose, onCheck, onUn
             <span className={'replacement-option__availability' + (!ok ? ' replacement-option__availability--unavailable' : '')}><Icon name={ok ? 'circle-check' : 'circle-x'} className="i-14" />{delivery}</span>
           </span>
           <ReplacementPhoto sku={o.sku} name={niceName(o.name)} />
-          <span className="replacement-option__copy"><strong>{niceName(o.name)}</strong></span>
+          <span className="replacement-option__copy">{o.tier && <span className={`tier tier--${o.tier}`}>{o.tier === "best" ? "Best" : o.tier === "better" ? "Better" : "Good"}</span>}<strong>{niceName(o.name)}</strong></span>
           <span className="replacement-option__facts"><span>{qtyLabel(o.qty, o.pack)}</span><span className="replacement-option__price"><b>{money(o.total)}</b><span>{Math.abs(o.total - original.total) < .005 ? 'Same price' : money(Math.abs(o.total - original.total)) + (o.total < original.total ? ' less' : ' more')}</span></span></span>
+          {o.tierWhy && <span className="replacement-option__why">{o.tierWhy}</span>}
           <span className={'replacement-option__note' + (!ok ? ' replacement-option__problem' : '')}>{note}</span>
         </label>;
       })}
@@ -206,6 +208,11 @@ export function LogSheet({
   events: AuditEvent[];
   onClose: () => void;
 }) {
+  const [view, setView] = useState<"buyer" | "valio">("buyer");
+  const [chain, setChain] = useState<null | { intact: boolean; count: number; head: string | null }>(null);
+  useEffect(() => { let on = true; api.auditVerify(basket.id).then(r => { if (on) setChain(r); }).catch(() => {}); return () => { on = false; }; }, [basket.id, events.length]);
+  const BUYER_KINDS = new Set(["request","plan","menu","swap","edit","issues","mandate","order","recheck","decision","chat","undo"]);
+  const filteredEvents = view === "buyer" ? events.filter((e) => BUYER_KINDS.has(e.kind)) : events;
   const lines =
     order?.lines ??
     basket.lines
@@ -239,16 +246,26 @@ export function LogSheet({
           ))}
         </tbody>
       </table>
-      <h3 className="log__h">Audit trail</h3>
+      <div className="log__bar">
+        <h3 className="log__h">Audit trail</h3>
+        <div className="log__tabs" role="tablist" aria-label="Audit view">
+          <button role="tab" aria-selected={view==="buyer"} className={"log__tab" + (view==="buyer" ? " log__tab--on" : "")} onClick={() => setView("buyer")}>Buyer view</button>
+          <button role="tab" aria-selected={view==="valio"} className={"log__tab" + (view==="valio" ? " log__tab--on" : "")} onClick={() => setView("valio")}>Valio view</button>
+        </div>
+      </div>
+      {chain && <p className={"log__chain" + (chain.intact ? "" : " log__chain--bad")}>{chain.intact ? `Record intact · ${chain.count} events, each sealed with the hash of the one before` : "Record changed after it was written — do not rely on it"}{chain.head ? ` · ${chain.head.slice(0, 12)}` : ""}</p>}
       <ol className="trail">
-        {events.map((e, i) => (
+        {filteredEvents.map((e, i) => (
           <li key={i}>
             <span className="trail__time">{timeLabel(e.at)}</span>
             <span className="trail__actor">{KIND[e.kind] ?? e.kind}</span>
+            {view === "valio" && <span className="trail__who">{e.actor}</span>}
             <span className="trail__text">{logText(e)}</span>
+            {view === "valio" && e.data && <details className="trail__data"><summary>Data</summary><pre>{JSON.stringify(e.data, null, 2)}</pre></details>}
           </li>
         ))}
       </ol>
+      <a className="log__export" href={auditExportUrl(basket.id)} download>Download audit record (JSON)</a>
     </Modal>
   );
 }

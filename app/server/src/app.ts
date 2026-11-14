@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { catalogSize, getProduct, search } from "./catalog";
 import { callLog, checkStock, missingLine } from "./valio";
-import { allEvents, events } from "./audit";
+import { allEvents, events, verifyChain } from "./audit";
 import { decide, listOrders, placeOrder, type Decision } from "./orders";
 import { buildBasket, HttpError, recompute, rescaleGuests, type BasketRequest, type LineEdit } from "./plan";
 import { editCartLine, undoCartLine } from "./cartHistory";
@@ -11,14 +11,23 @@ import { parseMenuInput, suggestMenu } from "./menu";
 import { checkReplacements, proposeRecipeChange, applyRecipeChange } from './plan';
 import { productImage } from "./images";
 import { handleMcp } from "./mcp";
-import { getMandate } from "./policy";
+import { getMandate, decisionMatrix } from "./policy";
 import { baskets, orders } from "./store";
+import { receiptFor, verifyReceipt, wellKnown } from "./trust";
 
 // Agent gateway: order builder API for the webshop + outside agents. Shapes in /CONTRACT.md (v1).
 export const app = new Hono();
 app.use("/api/*", cors());
 
 app.get("/api/health", (c) => c.json({ ok: true, service: "valio-gateway", catalog: catalogSize() }));
+
+app.get("/.well-known/aimo-gateway.json", (c) => c.json(wellKnown()));
+
+app.post("/api/receipts/verify", async (c) => {
+  const body = await c.req.json<{ receipt?: unknown }>().catch(() => null);
+  if (body?.receipt == null) return c.json({ error: "receipt required" }, 400);
+  return c.json(verifyReceipt(body.receipt));
+});
 
 // Local catalogue only: never touches the Valio API.
 // One EAN lookup on valioaimo.fi per SKU, only when the UI shows that product; cached on disk (misses too).
@@ -47,7 +56,7 @@ app.post("/api/stock", async (c) => {
     const lines = skus.map(
       (s) => sc.lines.find((l) => l.sku === s) ?? missingLine(String(s), "unknown SKU: not in the Valio Aimo catalogue"),
     );
-    const body = { ...sc, skus: skus.length, lines };
+    const body = { ...sc, skus: skus.length, lines, receipts: lines.map(l => receiptFor(l, { customer: customer ?? "123", deliveryDate: date, checkedAt: sc.checkedAt })) };
     if (!known.length) return c.json({ error: `unknown SKU${unknown.length > 1 ? "s" : ""}: ${unknown.join(", ")}`, ...body }, 404);
     return c.json(body);
   } catch (e) {
@@ -84,11 +93,26 @@ app.post("/api/basket", async (c) => {
     return fail(c, e);
   }
 });
+app.get("/api/basket/:id/receipts", (c) => {
+  const basket = baskets.get(c.req.param("id"));
+  if (!basket) return c.json({ error: "basket not found" }, 404);
+  return c.json(basket.lines.filter(l => l.qty > 0).map(l => receiptFor(l.stock, { customer: basket.customer, deliveryDate: basket.date, checkedAt: basket.checkedAt })));
+});
 app.get("/api/basket/:id", (c) => {
   const b = baskets.get(c.req.param("id"));
   return b ? c.json(recompute(b)) : c.json({ error: "basket not found" }, 404);
 });
 app.get("/api/basket/:id/audit", (c) => c.json(events(c.req.param("id"))));
+app.get("/api/basket/:id/audit/verify", (c) => c.json(verifyChain(c.req.param("id"))));
+app.get("/api/basket/:id/audit/export", (c) => {
+  const id = c.req.param("id");
+  const b = baskets.get(id);
+  if (!b) return c.json({ error: "basket not found" }, 404);
+  const order = [...orders.values()].find((o) => o.basketId === id) ?? null;
+  const body = { exportedAt: new Date().toISOString(), gateway: "valio-aimo-gateway", basket: { id: b.id, customer: b.customer, date: b.date, total: b.total }, order: order && { id: order.id, status: order.status, total: order.total }, chain: verifyChain(id), events: events(id) };
+  c.header("Content-Disposition", `attachment; filename="aimo-audit-${id}.json"`);
+  return c.json(body);
+});
 app.post('/api/basket/:id/lines/:lineId/replacements/check', async c => {
   try { return c.json(await checkReplacements(c.req.param('id'),c.req.param('lineId'))); } catch(e) { return fail(c,e); }
 });
@@ -161,6 +185,7 @@ app.get("/api/orders/:id/audit", (c) => {
   return o ? c.json(events(o.basketId)) : c.json({ error: "order not found" }, 404);
 });
 app.get("/api/mandate/:customer", (c) => c.json(getMandate(c.req.param("customer"))));
+app.get("/api/mandate/:customer/matrix", (c) => { const m = getMandate(c.req.param("customer")); return c.json({ mandate: m, rows: decisionMatrix(m) }); });
 app.get("/api/mandate", (c) => c.json(getMandate(c.req.query("customer") ?? "123")));
 // Whole audit trail, newest first (each event carries its basket scope). Per order: /api/orders/:id/audit.
 app.get("/api/audit", (c) => c.json(allEvents(Math.min(Number(c.req.query("limit") ?? 200), 1000))));

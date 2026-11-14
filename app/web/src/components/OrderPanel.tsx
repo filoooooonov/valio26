@@ -646,7 +646,7 @@ function Footer({ p, b }: { p: OrderProps; b: Basket }) {
           ? `Over your ${whole(max)} limit`
           : `Over your ${whole(b.rules.maxDailyEur)} daily limit with today's orders`
         : `Inside your ${whole(max)} limit`;
-    note = `${why}${held ? ` · prices held until ${held}` : ""} · excl. VAT (${money(b.totalWithVat)} with VAT)`;
+    note = `${why}${held ? ` · order cut-off ${held}` : ""} · excl. VAT (${money(b.totalWithVat)} with VAT)`;
     const c = cheaperSwap(b);
     if (st === "needs_approval" && b.total > max && c && c.total <= max)
       alt = (
@@ -665,7 +665,7 @@ function Footer({ p, b }: { p: OrderProps; b: Basket }) {
         <span className="cta__label">Remind {firstName(b.rules.approver)}</span>
       </button>
     );
-    note = `Nothing is ordered until ${firstName(b.rules.approver)} approves${held ? ` · prices and stock held until ${held}` : ""} · excl. VAT`;
+    note = `Nothing is ordered until ${firstName(b.rules.approver)} approves${held ? ` · order cut-off ${held} · prices re-checked at approval` : ""} · excl. VAT`;
     alt = (
       <>
         Need to change something?{" "}

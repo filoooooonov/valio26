@@ -36,6 +36,10 @@ export type Option = {
   total: number;
   stock: StockLine;
   contains: string[];
+  tier?: "best" | "better" | "good"; // rank position after rankOptions: 0 best, 1 better, 2 good
+  tierWhy?: string; // one plain sentence: why this rank, compared with the best option
+  onTime?: number | null; // supplier on-time delivery rate 0..1 from Valio's delivery-reliability data, null if unknown
+  co2?: number | null; // kg CO2e per kg for the product group, null if unknown
 };
 export type Issue = {
   kind: "short" | "unavailable" | "cutoff";
@@ -139,6 +143,8 @@ export type AuditEvent = {
   kind: string;
   summary: string;
   data?: Record<string, unknown>;
+  prev?: string;
+  hash?: string;
 };
 
 export type ChatAction = {
@@ -212,7 +218,10 @@ const checkedData = <T,>(r:{status:number;data:T}) => { if (r.status >= 400) thr
 export type MenuItem = { title: string; description: string; course: "starter" | "main" | "dessert" | "drinks" | "side" | "snack" | "other" };
 export type MenuReply = { items: MenuItem[]; reply: string; planner: "llm" | "fallback" };
 
+export type MatrixRow = { decision: string; who: "gateway" | "buyer" | "approver"; rule: string };
+
 export const api = {
+  matrix: (customer: string) => call<{ rows: MatrixRow[] }>(`/mandate/${customer}/matrix`).then((r) => r.data.rows),
   undo: (id: string) => call<{ basket: Basket; canUndo: boolean }>(`/basket/${id}/undo`, { by: BUYER }).then(checkedData),
   menu: (body: { request: string; current?: MenuItem[]; instruction?: string }, signal?: AbortSignal) => call<MenuReply>("/menu", body, signal).then(checkedData),
   checkReplacements: (id:string,lineId:string) => call<Basket>(`/basket/${id}/lines/${lineId}/replacements/check`,{}).then(checkedData),
@@ -232,6 +241,7 @@ export const api = {
   basket: (id: string) => call<Basket>(`/basket/${id}`).then((r) => r.data),
   basketAudit: (id: string) =>
     call<AuditEvent[]>(`/basket/${id}/audit`).then((r) => r.data),
+  auditVerify: (basketId: string) => call<{ intact: boolean; count: number; head: string | null; brokenAt?: number }>(`/basket/${basketId}/audit/verify`).then((r) => r.data),
   edit: (
     id: string,
     lineId: string,
@@ -271,3 +281,5 @@ export const api = {
   audit: (orderId: string) =>
     call<AuditEvent[]>(`/orders/${orderId}/audit`).then((r) => r.data),
 };
+
+export const auditExportUrl = (basketId: string) => `/api/basket/${basketId}/audit/export`;

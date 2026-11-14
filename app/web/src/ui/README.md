@@ -47,6 +47,7 @@ Screens and feature components (`components/`), built before the kit; new code i
 - `OrderPanel.tsx`
 - `RecipeDialog.tsx`
 - `ReplacementNotice.tsx`
+- `RulesDialog.tsx` (Who decides what: the mandate as a 3-column decision matrix from `/api/mandate/:customer/matrix`; uses the `sheet` dialog styles)
 - `ScheduleDateTime.tsx`
 - `ScheduledMenus.tsx`
 - `Sheets.tsx`

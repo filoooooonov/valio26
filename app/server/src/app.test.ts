@@ -48,6 +48,6 @@ test("MCP endpoint lists the gateway tools", async () => {
   expect(res.status).toBe(200);
   const body = await res.json();
   expect(body.result.tools.map((t: any) => t.name).sort()).toEqual(
-    ["build_basket", "check_stock", "get_order", "place_order", "search_products"],
+    ["build_basket", "check_stock", "get_mandate", "get_order", "place_order", "search_products", "verify_receipt"],
   );
 });

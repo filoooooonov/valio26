@@ -212,7 +212,7 @@ function Approval({
       <p className="muted-12">
         Prices and stock are re-checked when you approve.
         {order.pricesHeldUntil
-          ? ` Held until ${stamp(order.pricesHeldUntil)}.`
+          ? ` Order cut-off ${stamp(order.pricesHeldUntil)}.`
           : ""}
       </p>
     </article>
@@ -226,7 +226,7 @@ function Outcome({ d, basket, onBack }: { d: { order: Order; failed?: string }; 
       <span className={"disc disc--32 " + (placed ? "disc--green" : "disc--amber")}>
         <Icon name={placed ? "circle-check" : "undo-2"} className="i-16" />
       </span>
-      <h1 className="approval__title">{placed ? "Approved and sent to Valio Aimo" : `Sent back to ${firstName(d.order.by)}`}</h1>
+      <h1 className="approval__title">{placed ? "Approved · order recorded" : `Sent back to ${firstName(d.order.by)}`}</h1>
       <dl className="facts">
         <dt>Order</dt>
         <dd>{orderLabel(d.order.id)}</dd>

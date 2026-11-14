@@ -35,6 +35,10 @@ export type Option = {
   total: number;
   stock: StockLine;
   contains: string[];
+  tier?: "best" | "better" | "good"; // rank position after rankOptions: 0 best, 1 better, 2 good
+  tierWhy?: string; // one plain sentence: why this rank, compared with the best option
+  onTime?: number | null; // supplier on-time delivery rate 0..1 from Valio's delivery-reliability data, null if unknown
+  co2?: number | null; // kg CO2e per kg for the product group, null if unknown
 };
 export type Issue = {
   kind: "short" | "unavailable" | "cutoff";
@@ -618,7 +622,7 @@ export function rankOptions(opts: Option[], baseContains: string[]): Option[] {
   const rel = (o: Option) =>
     Math.round((getProduct(o.sku)?.rel ?? 0) * 20) / 20;
   const co2 = (o: Option) => getProduct(o.sku)?.co2 ?? 99;
-  return opts
+  const sorted = opts
     .filter((o) => orderable(o.stock, o.qty))
     .sort(
       (a, b) =>
@@ -628,6 +632,46 @@ export function rankOptions(opts: Option[], baseContains: string[]): Option[] {
         co2(a) - co2(b),
     )
     .slice(0, 3);
+  return sorted.map((o, index) => {
+    const tier = (["best", "better", "good"] as const)[index];
+    const onTime = getProduct(o.sku)?.rel ?? null;
+    const co2Value = getProduct(o.sku)?.co2 ?? null;
+    return { ...o, tier, tierWhy: tierWhy(o, sorted[0], index, baseContains), onTime, co2: co2Value };
+  });
+}
+
+export function tierWhy(o: Option, best: Option, index: number, baseContains: string[]): string {
+  const extra = o.contains.filter((c) => !baseContains.includes(c));
+  const newAllergens = extra.length
+    ? `adds ${allergenNames(extra).join(", ") || extra.join(", ")}`
+    : "no new allergens";
+  const onTime = getProduct(o.sku)?.rel ?? null;
+  const bestOnTime = getProduct(best.sku)?.rel ?? null;
+  const co2Value = getProduct(o.sku)?.co2 ?? null;
+  const bestCo2 = getProduct(best.sku)?.co2 ?? null;
+  const onTimePhrase = onTime != null
+    ? `${Math.round(onTime * 100)} % on time`
+    : "no on-time history";
+  if (index === 0)
+    return `${extra.length ? "Best available" : "Closest safe match"}: ${[newAllergens, onTimePhrase].join(", ")}.`;
+  const d = r2(o.total - best.total);
+  const phrases = [d < -0.005
+    ? `${eur(-d)} cheaper than Best`
+    : d > 0.005 ? `${eur(d)} more than Best` : "same price as Best"];
+  if (onTime != null && bestOnTime != null) {
+    const rounded = Math.round(onTime * 20);
+    const bestRounded = Math.round(bestOnTime * 20);
+    if (rounded < bestRounded) phrases.push(`less reliable delivery (${onTimePhrase})`);
+    else if (rounded > bestRounded) phrases.push(`more reliable delivery (${onTimePhrase})`);
+  }
+  if (co2Value != null && bestCo2 != null) {
+    if (co2Value < bestCo2 - 0.05) phrases.push("lower CO₂");
+    else if (co2Value > bestCo2 + 0.05) phrases.push("higher CO₂");
+  }
+  if (extra.length && !best.contains.some((c) => !baseContains.includes(c)))
+    phrases.push(newAllergens);
+  const sentence = phrases.join(", ");
+  return sentence[0].toUpperCase() + sentence.slice(1) + ".";
 }
 
 // ---------- totals + mandate ----------

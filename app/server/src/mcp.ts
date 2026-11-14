@@ -7,8 +7,10 @@ import { z } from "zod";
 import { search } from "./catalog";
 import { placeOrder } from "./orders";
 import { buildBasket } from "./plan";
+import { getMandate, decisionMatrix } from "./policy";
 import { orders } from "./store";
 import { checkStock } from "./valio";
+import { receiptFor, verifyReceipt } from "./trust";
 
 const json = (x: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(x, null, 2) }] });
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -26,10 +28,21 @@ function server(): McpServer {
   s.registerTool(
     "check_stock",
     {
-      description: "Customer price, availability and cut-off for a SHORTLIST of SKUs (max 50) on a delivery date.",
+      description: "Customer price, availability and cut-off for a SHORTLIST of SKUs (max 50) on a delivery date. Each line comes with a signed offer receipt (see /.well-known/aimo-gateway.json).",
       inputSchema: { skus: z.array(z.string()).min(1).max(50), date: DATE, customer: z.string().optional() },
     },
-    async ({ skus, date, customer }) => json(await checkStock(skus, date, customer)),
+    async ({ skus, date, customer }) => {
+      const sc = await checkStock(skus, date, customer);
+      return json({ ...sc, receipts: sc.lines.map(l => receiptFor(l, { customer: customer ?? "123", deliveryDate: date, checkedAt: sc.checkedAt })) });
+    },
+  );
+  s.registerTool(
+    "verify_receipt",
+    {
+      description: "Verify a signed offer receipt from this gateway: is it authentic, unchanged and still fresh?",
+      inputSchema: { receipt: z.any() },
+    },
+    async ({ receipt }) => json(verifyReceipt(receipt)),
   );
   s.registerTool(
     "build_basket",
@@ -51,6 +64,17 @@ function server(): McpServer {
     "get_order",
     { description: "Order status, mandate verdict and reasons.", inputSchema: { orderId: z.string() } },
     async ({ orderId }) => json(orders.get(orderId) ?? { error: "order not found" }),
+  );
+  s.registerTool(
+    "get_mandate",
+    {
+      description: "The buyer's mandate: spend limits, approver, and a readable table of which decisions the gateway, the buyer or the approver makes.",
+      inputSchema: { customer: z.string().optional() },
+    },
+    async ({ customer }) => {
+      const m = getMandate(customer ?? "123");
+      return json({ mandate: m, rows: decisionMatrix(m) });
+    },
   );
   return s;
 }
