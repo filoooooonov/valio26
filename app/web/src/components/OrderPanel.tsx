@@ -1,4 +1,4 @@
-import { DecisionSummary, Pill, Popover, PurchaseOptions, ReasonList, TextLink } from "../ui";
+import { AimoLogo, DecisionSummary, Pill, Popover, PurchaseOptions, ReasonList, TextLink } from "../ui";
 import { useEffect, useState, type ReactNode, type CSSProperties } from "react";
 import {
   api,
@@ -105,7 +105,8 @@ export function OrderPanel(p: OrderProps) {
         {(p.phase === "draft" || p.phase === "review") && p.insight}
 
       </div>
-      <div className="order__lines">
+      <div className={"order__lines" + (!b ? " order__lines--empty" : "")}>
+        {!b && <div className="order__watermark" aria-hidden="true"><AimoLogo /></div>}
         {!b ? (
           <EmptyOrder planningMenu={p.planningMenu} thinking={p.phase === "thinking"} onHero={p.onHero} />
         ) : (

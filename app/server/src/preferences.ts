@@ -19,6 +19,8 @@ export type PreferenceEvent = {
   qty?: number;
   source: "synthetic_history" | "live";
   basketId?: string;
+  /** Cart line owning a live substitution choice; absent on historical events. */
+  lineId?: string;
 };
 export type PreferenceStatus =
   "usual" | "accepted_alternative" | "unfamiliar" | "rejected" | "prohibited";
@@ -78,6 +80,22 @@ const seed = seedEvents();
 
 export const preferenceEvents = (customer: string): PreferenceEvent[] =>
   [...seed, ...live].filter((e) => e.customer === customer);
+
+const isChoiceFor = (e: PreferenceEvent, customer: string, basketId: string, lineId: string, fromSku: string) =>
+  e.customer === customer && e.basketId === basketId && e.kind.startsWith("substitution_") &&
+  (e.lineId ? e.lineId === lineId : e.forSku === fromSku);
+
+/** Current choice evidence only. Legacy events are matched by original SKU, never timestamp. */
+export function choiceMemory(customer: string, basketId: string, lineId: string, fromSku: string): PreferenceEvent[] {
+  return structuredClone(live.filter(e => isChoiceFor(e, customer, basketId, lineId, fromSku)));
+}
+
+/** Changing/undoing a cart choice replaces that line's evidence, preserving other lines and synthetic history. */
+export function restoreChoiceMemory(customer: string, basketId: string, lineId: string, fromSku: string, snapshot: PreferenceEvent[]) {
+  live = live.filter(e => !isChoiceFor(e, customer, basketId, lineId, fromSku));
+  live.push(...structuredClone(snapshot));
+  writeLedger("preferences", live);
+}
 
 /** Append-only. */
 export function recordPreference(
@@ -258,15 +276,4 @@ export function purchaseRecord(customer: string) {
       .map((e) => ({ sku: e.sku, qty: e.qty ?? 0 })),
   }));
   return orders;
-}
-
-/** Undo of a replacement choice (cart undo): the undone choice is not purchase memory. Removes the live events that
- *  choice recorded for this basket (same timestamp), never synthetic history. */
-export function retractLastChoice(customer: string, basketId: string): number {
-  const last = [...live].reverse().find((e) => e.customer === customer && e.basketId === basketId && e.kind === "substitution_accepted");
-  if (!last) return 0;
-  const before = live.length;
-  live = live.filter((e) => !(e.customer === customer && e.basketId === basketId && e.at === last.at && e.kind.startsWith("substitution_")));
-  writeLedger("preferences", live);
-  return before - live.length;
 }

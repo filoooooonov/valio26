@@ -6,9 +6,22 @@ export type PurchaseItem = {
   unit: "l" | "kg" | "pcs";
 };
 export type PurchasingIntent = "DIRECT_PURCHASE" | "MENU_PLANNING" | "REORDER";
+/** "same as last week", "the same products as last week", "last week's order". Shared with reorder.ts. */
+export const LAST_WEEK_RE =
+  /\bsame\s+(?:(?:order|products?|items?|things|stuff)\s+)?as\s+last\s+week\b|\blast\s+week'?s\s+(?:order|products?|items?)\b/i;
+/** "30% more customers this weekend": a change in trade with no dish or quantity named scales the usual order. */
+export const SCALED_TRADE_RE =
+  /\b\d+(?:[.,]\d+)?\s*%\s*(?:more|fewer|less|extra)\s+(?:customers|guests|covers|diners|visitors|business|trade)\b/i;
 /** "my usual order", "the usual", "same as last week", "regular/normal order" (CONTRACT S48). */
-export const REORDER_RE =
-  /\b(?:my|our|the)\s+usual\b|\busual\s+(?:\w+\s+){0,2}order\b|\bsame\s+(?:order\s+)?as\s+last\s+week\b|\blast\s+week'?s\s+order\b|\b(?:regular|normal)\s+(?:\w+\s+){0,2}order\b|\breorder\b/i;
+export const REORDER_RE = new RegExp(
+  [
+    /\b(?:my|our|the)\s+usual\b|\busual\s+(?:\w+\s+){0,2}order\b/.source,
+    LAST_WEEK_RE.source,
+    /\b(?:regular|normal)\s+(?:\w+\s+){0,2}order\b|\breorder\b/.source,
+    SCALED_TRADE_RE.source,
+  ].join("|"),
+  "i",
+);
 export function purchasingIntent(
   request: string,
   items?: PurchaseItem[],

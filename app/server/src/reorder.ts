@@ -2,7 +2,7 @@
 // needs: the normal planner then checks CURRENT price and stock in one batched call, and unavailable usual products
 // become issues whose replacement options are ranked by preference. History never sets prices or stock.
 import { getProduct, search } from "./catalog";
-import { directDraft, parsePurchaseItems } from "./intent";
+import { directDraft, LAST_WEEK_RE, parsePurchaseItems } from "./intent";
 import type { Draft } from "./llm";
 import { preferenceEvents, preferenceOf, purchaseRecord } from "./preferences";
 import { hasProfile } from "./history";
@@ -20,8 +20,7 @@ const CATEGORIES: { words: RegExp; label: string; cat: RegExp }[] = [
   { words: /\b(?:dry goods|dry|pantry)\b/i, label: "dry goods", cat: /^2[12]/ },
   { words: /\b(?:frozen|freezer)\b/i, label: "frozen", cat: /^41/ },
 ];
-const LAST_WEEK =
-  /\bsame\s+(?:order\s+)?as\s+last\s+week\b|\blast\s+week'?s\s+order\b/i;
+const LAST_WEEK = LAST_WEEK_RE;
 const NONFOOD = /^(20|6)/;
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
 

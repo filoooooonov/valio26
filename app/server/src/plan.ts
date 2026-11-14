@@ -35,6 +35,7 @@ import {
   PREFERENCE_TIER,
   rankByPreference,
   recordPreference,
+  restoreChoiceMemory,
   type Preference,
 } from "./preferences";
 import { activePermission } from "./policy";
@@ -1498,6 +1499,10 @@ export function editLine(
   if (e.chooseOption) {
     if (!l.issue) throw new HttpError(400, "this line has no issue to decide");
     const c = e.chooseOption;
+    // Safe replay: do not learn twice or reset a quantity edited after this choice.
+    const sameChoice = l.issue.decided === c && l.sku === c;
+    if (sameChoice && l.issue.decidedBy === by) return recompute(b);
+    const from = l.replaced?.sku ?? l.sku;
     if (c === "remove") {
       l.qty = 0;
       l.total = 0;
@@ -1515,7 +1520,7 @@ export function editLine(
       // S48 learning: a person's (or buyer agent's) choice is purchase memory; automatic policy/gateway swaps are not.
       // Learning never touches the mandate or permissions.
       if (!/^(policy:|gateway)/.test(by)) {
-        const from = l.replaced?.sku ?? l.sku;
+        restoreChoiceMemory(b.customer, b.id, l.id, from, []);
         const at = new Date().toISOString();
         recordPreference({
           at,
@@ -1524,9 +1529,10 @@ export function editLine(
           sku: o.sku,
           forSku: from,
           basketId: b.id,
+          lineId: l.id,
         });
         const first = l.issue.options[0];
-        if (first && first.sku !== o.sku && !l.issue.decided)
+        if (first && first.sku !== o.sku)
           recordPreference({
             at,
             customer: b.customer,
@@ -1534,6 +1540,7 @@ export function editLine(
             sku: first.sku,
             forSku: from,
             basketId: b.id,
+            lineId: l.id,
           });
       }
       l.replaced = l.replaced ?? {
@@ -1542,7 +1549,7 @@ export function editLine(
         originalTotal: l.total,
       }; // re-deciding keeps the original product
       const p = getProduct(o.sku);
-      Object.assign(l, {
+      if (!sameChoice) Object.assign(l, {
         quantityIssue: o.quantityIssue,
         sku: o.sku,
         name: o.name,
@@ -1561,6 +1568,8 @@ export function editLine(
       });
     }
     delete l.excludedQty;
+    if (c === "keep" || c === "remove")
+      restoreChoiceMemory(b.customer, b.id, l.id, from, []);
     l.issue.decided = c;
     l.issue.decidedBy = by;
     audit(

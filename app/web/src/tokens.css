@@ -108,6 +108,8 @@
   --ring-w: 2px;
   --logo-w: 90px;
   --logo-h: 30px;
+  --empty-logo-scale: 2;
+  --empty-logo-opacity: 0.1;
   --divider-h: 24px;
 
   /* radii */

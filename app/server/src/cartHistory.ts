@@ -9,9 +9,9 @@ import {
   type LineEdit,
 } from "./plan";
 import { baskets } from "./store";
-import { retractLastChoice } from "./preferences";
+import { choiceMemory, restoreChoiceMemory, type PreferenceEvent } from "./preferences";
 
-type Entry = { line: BasketLine; after: string };
+type Entry = { line: BasketLine; after: string; choices: PreferenceEvent[] };
 const histories = new WeakMap<Basket, Entry[]>();
 // Purchase-memory labels are derived (S48) and may change when another basket learns; they are not cart changes.
 const DERIVED = new Set(["preference", "offerPermission"]);
@@ -34,12 +34,13 @@ export function editCartLine(
   if (!line) throw new HttpError(404, "line not found");
   const before = fingerprint(b);
   const previous = structuredClone(line);
+  const choices = choiceMemory(b.customer, b.id, line.id, line.replaced?.sku ?? line.sku);
   const result = editLine(basketId, lineId, edit);
   const after = fingerprint(result);
   if (before !== after) {
     const history = histories.get(b) ?? [];
     if (history.length && history.at(-1)!.after !== before) history.length = 0;
-    history.push({ line: previous, after });
+    history.push({ line: previous, after, choices });
     if (history.length > 30) history.shift();
     histories.set(b, history);
   }
@@ -63,13 +64,8 @@ export function undoCartLine(basketId: string, by = "buyer") {
   const index = b.lines.findIndex((l) => l.id === entry.line.id);
   if (index < 0) throw new HttpError(409, "This item is no longer in the cart");
   const current = b.lines[index];
-  if (
-    current.issue?.decided &&
-    !entry.line.issue?.decided &&
-    current.issue.decided !== "keep" &&
-    current.issue.decided !== "remove"
-  )
-    retractLastChoice(b.customer, b.id);
+  if (current.issue?.decided !== entry.line.issue?.decided || current.issue?.decidedBy !== entry.line.issue?.decidedBy)
+    restoreChoiceMemory(b.customer, b.id, entry.line.id, entry.line.replaced?.sku ?? entry.line.sku, entry.choices);
   b.lines[index] = structuredClone(entry.line);
   history!.pop();
   recompute(b);

@@ -915,6 +915,20 @@ a.btn:active {
   color: var(--text-2);
   line-height: var(--lh-body);
 }
+.order__lines--empty {
+  position: relative;
+}
+.order__watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--logo-w);
+  height: var(--logo-h);
+  transform: translate(-50%, -50%) scale(var(--empty-logo-scale));
+  opacity: var(--empty-logo-opacity);
+  pointer-events: none;
+  user-select: none;
+}
 .skeleton__row {
   display: flex;
   gap: var(--s-12);
