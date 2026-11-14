@@ -64,3 +64,29 @@
 .menu-edit-dialog__actions { display: flex; justify-content: flex-end; gap: var(--s-12); margin-top: var(--s-12); }
 .menu-edit-dialog__actions button { min-height: var(--hit); }
 .menu-edit-dialog__save { background: var(--teal); color: var(--white); }
+
+/* ---------- S50 minimal inline menu review (order panel) ---------- */
+.menu-review { display: flex; flex-direction: column; gap: var(--s-20); padding: var(--s-4) 0 var(--s-20); }
+.menu-review__head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); flex-wrap: wrap; }
+.menu-review__head .order__title { margin: 0; }
+.menu-review__guests { display: flex; align-items: center; gap: var(--s-10); color: var(--text-2); font-size: var(--fs-13); }
+.menu-review__planning { display: flex; align-items: center; gap: var(--s-8); color: var(--text-2); font-size: var(--fs-14); }
+.menu-review__dishes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.menu-dish { display: grid; grid-template-columns: var(--s-24) minmax(0,1fr) auto var(--hit); align-items: center; gap: var(--s-8); min-height: var(--hit); padding: var(--s-6) 0; border-bottom: var(--hair-w) solid var(--petrol-15); }
+.menu-dish__icon { color: var(--teal); }
+.menu-dish__name { color: var(--teal); font-weight: var(--w-bold); font-size: var(--fs-15); overflow-wrap: anywhere; }
+.menu-review__none { color: var(--text-2); font-size: var(--fs-13); padding: var(--s-8) 0; }
+.menu-review .menu-add--refined { display: flex; align-items: center; gap: var(--s-8); padding: var(--s-6) var(--s-10); background: var(--white); border: var(--hair-w) solid var(--petrol-15); border-radius: var(--r-12); color: var(--teal); }
+.menu-review .menu-add--refined input { flex: 1 1 0; min-width: 0; width: auto; padding: var(--s-8) 0; border: 0; background: transparent; font-size: var(--fs-13); }
+.menu-review__diet { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-4); }
+.menu-review__diet legend { font-size: var(--fs-13); font-weight: var(--w-bold); color: var(--ink); padding: 0; }
+.menu-review__diet legend small { color: var(--text-2); font-weight: var(--w-regular); margin-left: var(--s-6); }
+.menu-review__diet .event-diets { margin-top: var(--s-6); }
+.menu-review__diet button.event-diet { border: 0; font: inherit; font-size: var(--fs-12); }
+.menu-review__sub { margin-top: var(--s-8); color: var(--text-2); font-size: var(--fs-12); }
+.menu-review__other { margin-top: var(--s-8); font: inherit; font-size: var(--fs-13); padding: var(--s-8) 0; border: 0; border-bottom: var(--hair-w) solid var(--petrol-15); background: transparent; color: var(--ink); }
+.menu-review__other:focus { outline: none; border-bottom-color: var(--teal); }
+.menu-review__hint { display: flex; align-items: center; gap: var(--s-6); margin-top: var(--s-8); color: var(--text-2); font-size: var(--fs-12); }
+.menu-review__foot { display: flex; flex-direction: column; gap: var(--s-8); }
+.menu-review__go { width: 100%; justify-content: center; }
+.menu-review__missing { color: var(--text-2); font-size: var(--fs-12); text-align: center; }

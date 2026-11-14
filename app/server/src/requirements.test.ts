@@ -12,7 +12,7 @@ test('event requirements distinguish missing details from explicit none and actu
 
 test('confirmed constraints carry guest count, dietary needs, budget and notes to the planner', () => {
   const text = requirementsText({ people: 60, dietary: ['Vegan', 'Peanut allergy'], budget: 350, notes: 'No pork' });
-  expect(text).toContain('60 people'); expect(text).toContain('Vegan, Peanut allergy'); expect(text).toContain('EUR 350'); expect(text).toContain('No pork');
+  expect(text).toContain('60 people'); expect(text).toContain('Dietary requirements: Vegan.'); expect(text).toContain('no peanuts'); expect(text).toContain('EUR 350'); expect(text).toContain('No pork');
 });
 
 test('delivery popup prefills explicit dates and rejects invalid calendar dates', () => {

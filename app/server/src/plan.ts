@@ -15,9 +15,15 @@ import {
   directDraft,
   parsePurchaseItems,
   purchasingIntent,
+  requestAllergens,
   type PurchaseItem,
 } from "./intent";
-import { blockingChecks, stockToConfirm, validatePurchase } from "./validation";
+import {
+  allergenCode,
+  blockingChecks,
+  stockToConfirm,
+  validatePurchase,
+} from "./validation";
 import { audit } from "./audit";
 import { getProduct, search, type Product } from "./catalog";
 import { getLlm, type Candidate, type Draft, type PickInput } from "./llm";
@@ -1160,13 +1166,7 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
     forbiddenAllergens: [
       ...new Set([
         ...(req.forbiddenAllergens ?? []),
-        ...[
-          ...req.request.matchAll(
-            /(?:no|without|exclude|free from)\s+(peanuts?|nuts?|milk|fish|eggs?|soy|sesame)|(?:peanuts?|nuts?|milk|fish|eggs?|soy|sesame)(?= allergy| allerg)/gi,
-          ),
-        ].map((m) =>
-          (m[1] ?? m[0]).toLowerCase().replace(/^(peanut|nut|egg)s?$/, "$1s"),
-        ),
+        ...requestAllergens(req.request),
       ]),
     ],
     requestBudgetEur:
@@ -1342,12 +1342,42 @@ export function permittedSwap(customer: string, orig: BasketLine, o: Option) {
     return undefined;
   return perm;
 }
+/** Hard constraints a substitute must provably meet before it can be chosen without the buyer: no forbidden
+ *  allergen declared (contains or may contain), explicit free-from evidence for each, and the line's diet. */
+export function breaksHardRule(b: Basket, l: BasketLine, sku: string): boolean {
+  const p = getProduct(sku);
+  if (!p) return true;
+  const forbidden = [
+    ...new Set(
+      [...b.rules.forbiddenAllergens, ...(b.forbiddenAllergens ?? [])].map(
+        allergenCode,
+      ),
+    ),
+  ];
+  if (
+    forbidden.some(
+      (a) =>
+        p.contains.includes(a) ||
+        p.mayContain.includes(a) ||
+        !p.freeFromAllergen?.includes(a),
+    )
+  )
+    return true;
+  const diet =
+    l.requiredDiet ??
+    (b.intent === "DIRECT_PURCHASE"
+      ? (b.requiredDiet ?? [])
+      : (b.dishes.find((d) => d.id === l.dishId)?.diet ?? []));
+  return !fits(p, diet);
+}
 export function autoSwapSameUse(b: Basket): void {
   if (!b.rules.substitutionsPermitted) return;
   for (const l of b.lines) {
     if (!l.issue || l.issue.decided) continue;
-    // 1. explicit permission for the pair (first permitted option in preference/rank order)
+    // 1. explicit permission for the pair (first permitted option in preference/rank order).
+    // Never silently pick a substitute that could break a hard allergen or diet rule: the buyer decides.
     const permitted = l.issue.options
+      .filter((o) => !breaksHardRule(b, l, o.sku))
       .map((o) => ({ o, perm: permittedSwap(b.customer, l, o) }))
       .find((x) => x.perm);
     if (permitted) {
@@ -1363,6 +1393,7 @@ export function autoSwapSameUse(b: Basket): void {
       b.rules.autoSwapSameUse &&
       o &&
       o.preference?.status !== "rejected" &&
+      !breaksHardRule(b, l, o.sku) &&
       isSameUse(l, o, b.rules.maxSubstituteIncreasePct)
     )
       editLine(b.id, l.id, { chooseOption: o.sku, by: SAME_USE_BY });
@@ -1549,23 +1580,24 @@ export function editLine(
         originalTotal: l.total,
       }; // re-deciding keeps the original product
       const p = getProduct(o.sku);
-      if (!sameChoice) Object.assign(l, {
-        quantityIssue: o.quantityIssue,
-        sku: o.sku,
-        name: o.name,
-        brand: p?.brand ?? "",
-        qty: o.qty,
-        pack: o.pack,
-        why: o.why,
-        stock: o.stock,
-        total: o.total,
-        contains: o.contains,
-        frozen: o.frozen ?? isFrozenProduct(p),
-        claims: p?.claims ?? [],
-        reliability: p?.rel ?? undefined,
-        co2: p?.co2 ?? undefined,
-        image: p?.image ?? undefined,
-      });
+      if (!sameChoice)
+        Object.assign(l, {
+          quantityIssue: o.quantityIssue,
+          sku: o.sku,
+          name: o.name,
+          brand: p?.brand ?? "",
+          qty: o.qty,
+          pack: o.pack,
+          why: o.why,
+          stock: o.stock,
+          total: o.total,
+          contains: o.contains,
+          frozen: o.frozen ?? isFrozenProduct(p),
+          claims: p?.claims ?? [],
+          reliability: p?.rel ?? undefined,
+          co2: p?.co2 ?? undefined,
+          image: p?.image ?? undefined,
+        });
     }
     delete l.excludedQty;
     if (c === "keep" || c === "remove")

@@ -41,6 +41,8 @@ export type OrderProps = {
   onDelivery?: () => void;
   insight?: ReactNode;
   planningMenu?: boolean;
+  /** Minimal inline menu review (S50), shown in place of the empty cart while a menu is being agreed. */
+  menuReview?: ReactNode;
   phase: Phase;
   basket: Basket | null;
   order: Order | null;
@@ -68,6 +70,12 @@ export type OrderProps = {
 export function OrderPanel(p: OrderProps) {
   const b = p.basket;
   if (p.phase === "placed" && p.order && b) return <OrderDone p={p} b={b} order={p.order} />;
+  if (!b && p.menuReview && p.phase !== "thinking")
+    return (
+      <section className="order" aria-label="Menu review">
+        <div className="order__lines">{p.menuReview}</div>
+      </section>
+    );
   const eyebrow =
     p.phase === "review"
       ? "Review and confirm · step 2 of 3"

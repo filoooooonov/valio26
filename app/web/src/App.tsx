@@ -1,4 +1,4 @@
-import { purchasingIntent } from "../../server/src/intent";
+import { requestRoute } from "../../server/src/intent";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   api,
@@ -26,7 +26,6 @@ import {
 } from "./menu";
 import { MenuProposal } from "./components/MenuProposal";
 import { OrderHistory } from "./components/OrderHistory";
-import { EventRequirements } from "./components/EventRequirements";
 import {
   DeliveryPicker,
   type DeliveryChoice,
@@ -36,7 +35,7 @@ import { AlternativeDraftReview } from "./components/AlternativeDraftReview";
 import { MenuEconomics } from "./components/MinunAimo";
 import { SAMPLE_CONTEXT_MARKER } from "./minunAimo";
 import { Header, PhoneTabs } from "./components/Header";
-import { TextLink } from "./ui";
+import { Chip, TextLink } from "./ui";
 import { Chat, type LocalItem, type ChatError } from "./components/Chat";
 import { OrderPanel } from "./components/OrderPanel";
 import { SwapSheet, LogSheet } from "./components/Sheets";
@@ -90,6 +89,11 @@ function Shop() {
   const menuSubmitting = useRef(false);
   const menuCall = useRef<AbortController | null>(null);
   const [menuEditing, setMenuEditing] = useState(false);
+  // An event request with no dishes and no menu ask: one question, never a forced menu (S50).
+  const [askMenu, setAskMenu] = useState<{
+    request: string;
+    mode: "choose" | "dishes";
+  } | null>(null);
   const [basket, setBasket] = useState<Basket | null>(null);
   const [alternativeDraft, setAlternativeDraft] =
     useState<RecipeProposal | null>(null);
@@ -217,11 +221,14 @@ function Shop() {
       ? { ...delivery, date: requestDeliveryDate(request, delivery.date) }
       : null;
     if (chosenDelivery) setDelivery(chosenDelivery);
-    const requirements =
-      known.people !== null && known.dietary !== null && delivery
-        ? { people: known.people, dietary: known.dietary, notes: "" }
-        : undefined;
-    // Instant offline draft (labelled planning) so event details can be confirmed while the gateway plans the real menu.
+    // Guests and diets come from the request; unknown diets mean none (no extra question). Delivery is not asked here.
+    const requirements = {
+      people: known.people ?? 0,
+      dietary: known.dietary ?? [],
+      notes: "",
+    };
+    setAskMenu(null);
+    // Instant offline draft (labelled planning) while the gateway suggests the real menu.
     setMenu({
       ...suggestMenu(request),
       requirements,
@@ -235,7 +242,8 @@ function Shop() {
     setApprovedSummary(null);
     setError(null);
     setReviewing(false);
-    setTab("assistant");
+    // The menu review lives in the order panel; on a phone that is the Order tab.
+    setTab("order");
     setDraft("");
     say({ kind: "user", who: BUYER, text: request });
     menuCall.current?.abort();
@@ -305,7 +313,7 @@ function Shop() {
   async function approveMenu() {
     if (
       !menu?.requirements ||
-      !menu.delivery ||
+      menu.requirements.people < 1 ||
       menu.planning ||
       menuEditing ||
       menuSubmitting.current ||
@@ -507,16 +515,79 @@ function Shop() {
     }
   }
 
+  /** A new request with no cart yet: route it (S50). Menu planning only when asked for, or chosen. */
+  function startRequest(t: string) {
+    const route = requestRoute(t);
+    // Answer to "Do you already have a menu?": a dish list, or "suggest one". A new full request starts over.
+    let request = t;
+    let r = route;
+    const answersAsk =
+      r === "ASK_MENU" ||
+      r === "KNOWN_DISH" ||
+      (r === "MENU_PLANNING" && detectRequirements(t).people === null);
+    if (
+      askMenu &&
+      answersAsk &&
+      /\b(already (?:have|know)|i know|we know|own menu|my menu|our menu)\b/i.test(
+        t,
+      )
+    )
+      return haveMenu(t);
+    if (askMenu && answersAsk) {
+      setAskMenu(null);
+      if (
+        r === "MENU_PLANNING" ||
+        /\b(suggest|you (?:choose|decide|pick)|surprise|plan|ideas?|no menu|don'?t have)\b/i.test(
+          t,
+        )
+      )
+        return propose(askMenu.request);
+      request = `${askMenu.request.replace(/[\s.!?]+$/, "")}: ${t.replace(/^(?:we(?:'re| are)? (?:making|cooking|serving)|i(?:'m| am)? (?:making|cooking|serving))\s+/i, "")}`;
+      r = "KNOWN_DISH";
+    } else if (askMenu) setAskMenu(null);
+    if (r === "ASK_MENU") {
+      setLocal([]);
+      say({ kind: "user", who: BUYER, text: t });
+      say({
+        kind: "assistant",
+        text: "Do you already know what you're cooking, or should I suggest a menu?",
+      });
+      setAskMenu({ request: t, mode: "choose" });
+      return;
+    }
+    if (r === "MENU_PLANNING") return propose(request);
+    // Direct purchases, usual-order reorders (CONTRACT S48) and named dishes ("ingredients for lasagna for 50")
+    // skip menu review and build the cart straight away.
+    {
+      const requestedDate = requestDeliveryDate(
+        request,
+        delivery?.date ?? DELIVERY,
+      );
+      return build(
+        request,
+        r === "KNOWN_DISH"
+          ? (detectRequirements(request).people ?? undefined)
+          : undefined,
+        undefined,
+        requestedDate
+          ? ({ ...(delivery ?? {}), date: requestedDate } as DeliveryChoice)
+          : (delivery ?? undefined),
+      );
+    }
+  }
+
   async function send(text: string) {
     const t = text.trim();
     if (!t) return;
     setDraft("");
     if (building || menuSubmitting.current) return;
     // A new product request ("I need 1,000 litres of …") replaces an open menu draft; menu edits ("add 2 kg salmon") stay edits.
+    const route = requestRoute(t);
     if (
       !basket &&
       menu &&
-      purchasingIntent(t) !== "MENU_PLANNING" &&
+      route !== "MENU_PLANNING" &&
+      route !== "ASK_MENU" &&
       !/^(add|remove|drop|change|replace|swap|use|make|without|more|less|no)\b/i.test(
         t,
       )
@@ -530,24 +601,7 @@ function Shop() {
       }
       return void editMenu(t);
     }
-    if (!basket) {
-      // Direct purchases and usual-order reorders (CONTRACT S48) skip menu planning and build a cart straight away.
-      if (purchasingIntent(t) !== "MENU_PLANNING") {
-        const requestedDate = requestDeliveryDate(
-          t,
-          delivery?.date ?? DELIVERY,
-        );
-        return build(
-          t,
-          undefined,
-          undefined,
-          requestedDate
-            ? ({ ...(delivery ?? {}), date: requestedDate } as DeliveryChoice)
-            : (delivery ?? undefined),
-        );
-      }
-      return propose(t);
-    }
+    if (!basket) return startRequest(t);
     if (order?.status === "pending_approval") {
       say({ kind: "user", who: BUYER, text: t });
       say({
@@ -585,6 +639,17 @@ function Shop() {
       setLocal((items) => items.filter((item) => item.key !== pendingKey));
       setBusy(false);
     }
+  }
+
+  function haveMenu(text = "I already have a menu") {
+    if (!askMenu) return;
+    say({ kind: "user", who: BUYER, text });
+    say({
+      kind: "assistant",
+      text: "Great. Which dishes are you making? For example: lasagna, green salad, apple pie.",
+    });
+    setAskMenu({ ...askMenu, mode: "dishes" });
+    requestAnimationFrame(() => composerRef.current?.focus());
   }
 
   async function suggestRecipe(line: BasketLine) {
@@ -675,6 +740,7 @@ function Shop() {
   function reset() {
     abort.current?.abort();
     setMenu(null);
+    setAskMenu(null);
     setApprovedSummary(null);
     menuSubmitting.current = false;
     setBasket(null);
@@ -823,43 +889,25 @@ function Shop() {
                   No thanks
                 </TextLink>
               </section>
+            ) : askMenu?.mode === "choose" && !building ? (
+              <div className="chips" role="group" aria-label="Menu choice">
+                <Chip icon="list" onClick={() => haveMenu()}>
+                  I already have a menu
+                </Chip>
+                <Chip
+                  icon="utensils"
+                  onClick={() => {
+                    const r = askMenu.request;
+                    setAskMenu(null);
+                    propose(r);
+                  }}
+                >
+                  Suggest a menu for me
+                </Chip>
+              </div>
             ) : null
           }
           phase={phase}
-          menuProposal={
-            menu && !building ? (
-              !menu.requirements ? (
-                <EventRequirements
-                  key={menu.request}
-                  initial={detectRequirements(menu.request)}
-                  delivery={delivery}
-                  defaultDate={requestDeliveryDate(menu.request, DELIVERY)}
-                  onConfirm={(requirements, choice) => {
-                    setDelivery(choice);
-                    setMenu((current) =>
-                      current
-                        ? { ...current, requirements, delivery: choice }
-                        : current,
-                    );
-                  }}
-                />
-              ) : (
-                <MenuProposal
-                  compact
-                  menu={menu}
-                  busy={busy || !!building || menuEditing || !!menu.planning}
-                  onChange={setMenu}
-                  onApprove={approveMenu}
-                  onInstruction={(text) => void editMenu(text)}
-                />
-              )
-            ) : null
-          }
-          menuReviewTitle={
-            menu && !menu.requirements
-              ? "A few event details"
-              : "Review your menu"
-          }
           planningMenu={!!menu}
           basket={basket}
           thread={thread}
@@ -886,15 +934,17 @@ function Shop() {
           onRetryOrder={placeOrder}
           onLog={() => setLogOpen(true)}
           onAttach={noAttach}
-          onHero={() => propose(HERO)}
-          onAgain={() =>
-            basket &&
-            propose(
-              (approvedSummary ?? displayMenuRequest(basket.request))
-                .split("\nApproved menu:")[0]
-                .replace(/on \w+day/i, "next week"),
+          onHero={() => startRequest(HERO)}
+          onAgain={() => {
+            if (!basket) return;
+            const again = (
+              approvedSummary ?? displayMenuRequest(basket.request)
             )
-          }
+              .split("\nApproved menu:")[0]
+              .replace(/on \w+day/i, "next week");
+            reset();
+            startRequest(again);
+          }}
         />
         <OrderPanel
           canUndo={undoCount > 0}
@@ -910,6 +960,17 @@ function Shop() {
           }
           phase={phase}
           planningMenu={!!menu}
+          menuReview={
+            menu && !building ? (
+              <MenuProposal
+                menu={menu}
+                busy={busy || !!building || menuEditing || !!menu.planning}
+                onChange={setMenu}
+                onApprove={approveMenu}
+                onInstruction={(text) => void editMenu(text)}
+              />
+            ) : null
+          }
           basket={basket}
           order={order}
           event={event}
@@ -941,13 +1002,20 @@ function Shop() {
           onView={() => setLogOpen(true)}
           onDone={reset}
           onPrefill={prefill}
-          onHero={() => propose(HERO)}
+          onHero={() => startRequest(HERO)}
         />
       </main>
       {historyOpen && (
         <OrderHistory
           onClose={() => setHistoryOpen(false)}
-          onReorder={!basket ? () => { setHistoryOpen(false); void send("Prepare my usual weekend order."); } : undefined}
+          onReorder={
+            !basket
+              ? () => {
+                  setHistoryOpen(false);
+                  void send("Prepare my usual weekend order.");
+                }
+              : undefined
+          }
         />
       )}
       {deliveryOpen && (

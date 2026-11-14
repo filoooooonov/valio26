@@ -69,3 +69,12 @@ export function displayMenuRequest(request: string) {
  const categories = request.slice(index + marker.length).split('\n').filter(line => line.startsWith('- ')).map(line => line.slice(2).split(':')[0].trim());
  return request.slice(0, index) + '\nApproved menu: ' + categories.join(', ');
 }
+
+/** Short review title: "Three-course dinner", "Buffet menu", or "Your menu". */
+export function menuTitle(menu: MenuDraft) {
+ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+ const course = menu.request.match(/\b(two|three|four|five|[2-5])[- ]course\s+(dinner|lunch|menu|meal|brunch)?/i);
+ if (course) return cap(`${course[1]}-course ${course[2] ?? 'menu'}`);
+ const kind = menu.request.match(/\b(dinner|lunch|buffet|brunch|breakfast|party|wedding|catering)\b/i)?.[1];
+ return kind ? cap(`${kind} menu`) : 'Your menu';
+}

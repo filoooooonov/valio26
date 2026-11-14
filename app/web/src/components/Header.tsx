@@ -33,18 +33,33 @@ export function Header({
       </a>
       <span className="hdr__div" aria-hidden="true" />
       <span className="hdr__shop">Delivery wholesale</span>
-      {onHistory && <button type="button" className="hdr__history" onClick={onHistory}><Icon name="clock" className="i-16" />Order history</button>}
+      {onHistory && (
+        <button type="button" className="hdr__history" onClick={onHistory}>
+          <Icon name="clock" className="i-16" />
+          Order history
+        </button>
+      )}
       <span className="hdr__spacer" />
       <Segmented pickup={pickup} onPickup={onPickup} disabled={locked} />
-      <button type="button" className={"hdr__slot" + (onDelivery ? " hdr__slot--interactive" : "")} aria-label="Choose delivery details" disabled={locked || !onDelivery} onClick={onDelivery}>
+      <button
+        type="button"
+        className={"hdr__slot" + (onDelivery ? " hdr__slot--interactive" : "")}
+        aria-label="Choose delivery details"
+        disabled={locked || !onDelivery}
+        onClick={onDelivery}
+      >
         <Icon name="truck" className="i-20" />
         <div>
           <div className="hdr__slot-day">
-            {delivery ? `${dayLabel(delivery.date)}, ${delivery.time}` : delivery === null ? "Choose delivery" : `${dayLabel(date)}, ${SLOT}`}
+            {delivery
+              ? `${dayLabel(delivery.date)}, ${delivery.time}`
+              : `${dayLabel(date)}, ${SLOT}`}
             <Icon name="chevron-down" className="i-14" />
           </div>
           <div className="hdr__slot-sub">
-            {delivery ? delivery.placeName : delivery === null ? "Place, date and time" : "Bistro Kallio, Helsinki"}{orderBy && delivery !== null ? ` · order by ${stamp(orderBy)}` : ""}
+            {/* No choice yet: say plainly this is the demo account's preset, not something the buyer picked. */}
+            {delivery ? delivery.placeName : "Default · Bistro Kallio"}
+            {orderBy ? ` · order by ${stamp(orderBy)}` : ""}
           </div>
         </div>
       </button>
@@ -68,11 +83,28 @@ export function Segmented({
   label?: string;
 }) {
   return (
-    <div className="seg" role="radiogroup" aria-label="Delivery or pickup" data-disabled={disabled || undefined}>
-      <button role="radio" aria-checked={!pickup} className="seg__opt" disabled={disabled} onClick={() => onPickup(false)}>
+    <div
+      className="seg"
+      role="radiogroup"
+      aria-label="Delivery or pickup"
+      data-disabled={disabled || undefined}
+    >
+      <button
+        role="radio"
+        aria-checked={!pickup}
+        className="seg__opt"
+        disabled={disabled}
+        onClick={() => onPickup(false)}
+      >
         {label ?? "Delivery"}
       </button>
-      <button role="radio" aria-checked={pickup} className="seg__opt" disabled={disabled} onClick={() => onPickup(true)}>
+      <button
+        role="radio"
+        aria-checked={pickup}
+        className="seg__opt"
+        disabled={disabled}
+        onClick={() => onPickup(true)}
+      >
         Pickup
       </button>
     </div>
@@ -93,11 +125,22 @@ export function PhoneTabs({
 }) {
   return (
     <nav className="tabs" role="tablist" aria-label="Assistant or order">
-      <button role="tab" aria-selected={tab === "assistant"} className="tabs__tab" onClick={() => onTab("assistant")}>
+      <button
+        role="tab"
+        aria-selected={tab === "assistant"}
+        className="tabs__tab"
+        onClick={() => onTab("assistant")}
+      >
         <AssistantGlyph /> Assistant
       </button>
-      <button role="tab" aria-selected={tab === "order"} className="tabs__tab" onClick={() => onTab("order")}>
-        <Icon name="shopping-basket" className="i-16" /> Order{hasBasket ? ` · ${money(total)}` : ""}
+      <button
+        role="tab"
+        aria-selected={tab === "order"}
+        className="tabs__tab"
+        onClick={() => onTab("order")}
+      >
+        <Icon name="shopping-basket" className="i-16" /> Order
+        {hasBasket ? ` · ${money(total)}` : ""}
       </button>
     </nav>
   );

@@ -45,7 +45,7 @@ Screens and feature components (`components/`), built before the kit; new code i
 - `EventRequirements.tsx`
 - `Header.tsx`
 - `Mark.tsx`
-- `MenuProposal.tsx`
+- `MenuProposal.tsx`: minimal inline menu review in the order panel (title, guests Stepper, dishes with Edit/Remove, add, compact diet + allergy toggles, one "Find ingredients" Button); no prices, stock or delivery
 - `Mikko.tsx`
 - `MinunAimo.tsx`
 - `OrderPanel.tsx`

@@ -173,7 +173,7 @@ export function Chat(p: Props) {
         if (!following.current || nearBottom) pinned.current = nearBottom;
         if (nearBottom) { following.current = false; setHasNewMessages(false); }
       }}>
-        {p.phase === "empty" && !p.error && !p.planningMenu && (
+        {p.phase === "empty" && !p.error && !p.planningMenu && !p.local.length && (
           <Intro onHero={p.onHero} onSend={p.onSend} onAttach={p.onAttach} />
         )}
         {p.building && !p.basket && (
