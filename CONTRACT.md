@@ -103,6 +103,7 @@ Daily limit = placed + pending orders today for the customer, so splitting one o
 State is in memory: restarting the server clears baskets and orders.
 
 ## Cart line undo (S39)
+Line edits also accept `{included: boolean}` as a standalone operation. Excluding an available/resolved line stores its previous sales quantity in `BasketLine.excludedQty` and sets `qty`/`total` to zero. Including restores that saved quantity. Explicit quantity edits or replacement/removal decisions clear `excludedQty`. Excluded rows stay visible after reload; ordinary removed rows stay hidden.
 POST /api/basket/:id/undo {by?: string} returns {basket: Basket, canUndo: boolean}. The server keeps up to 30 successful web line edits (quantity, removal, replacement) per in-memory basket, using server-owned snapshots. Undo restores the previous line and recomputes totals and mandate, with an audit event; no product lookup is needed. Missing baskets return 404. Empty history, intervening basket changes, and pending/placed orders return 409. Menu/recipe changes, guest rescaling and chat actions are outside this line-edit history. Unchecked cart items remain visible with quantity zero and can be included again; the explicit remove action hides them.
 
 ## Env vars
