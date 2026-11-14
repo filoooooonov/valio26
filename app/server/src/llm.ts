@@ -151,7 +151,10 @@ export interface Llm {
 const DRAFT_SYSTEM = `You plan wholesale food orders for professional kitchens in Finland (Valio Aimo webshop).
 Turn the buyer's request into dishes and the ingredient quantities to order.
 - Use realistic professional portion sizes and state each dish's per-portion basis.
-- Every ingredient that must be bought becomes a need with a total quantity in kg, l or pcs.
+- Every ingredient that must be bought becomes a need with a POSITIVE total quantity in kg, l or pcs.
+- EVERY dish/category must have purchasing needs referencing its dish id: include fillings for filled pastries, drinks for the drinks category, chips/candies for snacks, and fruit for fruit categories. Listing a dish without needs is an incomplete plan.
+- With dishes present, every need must reference a valid dish id. Use dishId null only for plain product orders with no dishes.
+- Before returning, check every approved category is represented in both dishes and purchasing needs; never return only the first category.
 - Put pantry basics a kitchen already stocks into "assumed" instead of needs (salt, pepper, oil, sugar, flour, spices, water).
 - If the request gives no menu, propose a simple, typical Finnish catering menu of 2-4 dishes that fits it.
 - If the request names a plain product and amount (e.g. "1000 L lactose-free milk"), return no dishes and one need with dishId null.

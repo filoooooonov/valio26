@@ -5,3 +5,12 @@
 command = "node"
 args = ["team/mcp/server.mjs"]
 env = { TEAM_TOOL = "codex" }
+
+[mcp_servers.team.tools.read_inbox]
+approval_mode = "approve"
+
+[mcp_servers.team.tools.board]
+approval_mode = "approve"
+
+[mcp_servers.team.tools.post_status]
+approval_mode = "approve"

@@ -1,0 +1,117 @@
+{
+  "url": "http://localhost:5173/?b=b_5gzrni",
+  "rows": [
+    {
+      "name": "Salmon fillet c-cutSuggested · answer in chatAssistant",
+      "swap": true,
+      "stock": "Fri 6–8",
+      "details": true,
+      "yellow": "rgb(242, 247, 248)"
+    },
+    {
+      "name": "Potato puikula hand-peeled 5kg",
+      "swap": false,
+      "stock": "Fri 6–8",
+      "details": true,
+      "yellow": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "name": "Valio cooking cream 15 % 1 l UHT lactose free",
+      "swap": false,
+      "stock": "Fri 6–8",
+      "details": true,
+      "yellow": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "name": "Knorr Fish bouillon 1,5kg/100L",
+      "swap": false,
+      "stock": "Fri 6–8",
+      "details": true,
+      "yellow": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "name": "Dill 100g",
+      "swap": false,
+      "stock": "Fri 6–8",
+      "details": true,
+      "yellow": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "name": "Sevan Red lentils 5kgSwapped · same use",
+      "swap": false,
+      "stock": "Fri 6–8",
+      "details": true,
+      "yellow": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "name": "Mutti Polpa finely chopped tomatoes 2500gSwapped · same use",
+      "swap": false,
+      "stock": "Fri 6–8",
+      "details": true,
+      "yellow": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "name": "Valcom 1l coconut milkSwapped · same use",
+      "swap": false,
+      "stock": "Fri 6–8",
+      "details": true,
+      "yellow": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "name": "Knorr Organic Vegetable bouillon powder 1,1kg/137L",
+      "swap": false,
+      "stock": "Fri 6–8",
+      "details": true,
+      "yellow": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "name": "Järvikylä 300g Raikas salad mix",
+      "swap": false,
+      "stock": "Fri 6–8",
+      "details": true,
+      "yellow": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "name": "Cucumber 1cl FIN",
+      "swap": false,
+      "stock": "Fri 6–8",
+      "details": true,
+      "yellow": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "name": "Cherry tomato red 250g pun finland",
+      "swap": false,
+      "stock": "Fri 6–8",
+      "details": true,
+      "yellow": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "name": "Vaasan Holegrain rye bread 100x38gSwapped · same use",
+      "swap": false,
+      "stock": "Fri 6–8",
+      "details": true,
+      "yellow": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "name": "Keiju Catering margarine 60 600 g",
+      "swap": false,
+      "stock": "Fri 6–8",
+      "details": true,
+      "yellow": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "name": "Leek 1.cl FR/NL",
+      "swap": false,
+      "stock": "Fri 6–8",
+      "details": true,
+      "yellow": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "name": "Carrot washed 1kg bagNeeds your answer",
+      "swap": true,
+      "stock": "No delivery Fri",
+      "details": true,
+      "yellow": "rgb(242, 247, 248)"
+    }
+  ]
+}

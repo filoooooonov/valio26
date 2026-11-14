@@ -32,3 +32,8 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .gstack/
+
+# Generated demo recordings and video render intermediates
+artifacts/demo-video/
+video/out/
+video/public/

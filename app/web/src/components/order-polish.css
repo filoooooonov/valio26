@@ -29,3 +29,11 @@
 
 .order-delivery { display: flex; align-items: center; gap: var(--s-8); color: var(--teal); font-size: var(--fs-13); line-height: var(--lh-body); margin-top: var(--s-8); }
 .order-delivery .icon { flex: none; }
+
+.line__resolve { display: inline-flex; align-items: center; gap: var(--s-8); min-height: var(--hit); padding: var(--s-8) 0; background: transparent; border: 0; color: var(--teal); font: inherit; font-size: var(--fs-13); font-weight: var(--w-medium); cursor: pointer; text-align: left; }
+.line__resolve:not(:disabled):hover { text-decoration: underline; text-underline-offset: var(--s-3); }
+.line__resolve:focus-visible { outline: var(--ring-w) solid var(--teal); outline-offset: var(--s-3); border-radius: var(--r-6); }
+.line__resolve:disabled { opacity: .5; cursor: default; }
+.order .line--open { transition: background var(--dur-hover) var(--ease-out); }
+.order .line--open:has(.line__resolve:not(:disabled)):hover { background: var(--blueberry-light); }
+.line--open .line__missing-name:not(:disabled):hover { text-decoration: underline; text-underline-offset: var(--s-3); }

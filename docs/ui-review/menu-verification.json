@@ -1,0 +1,767 @@
+{
+  "calls": [
+    {
+      "method": "POST",
+      "url": "http://localhost:5173/api/basket",
+      "body": "{\"request\":\"Ingredients for a catering event for 50 people on Saturday, one vegan option\\n\\nAPPROVED MENU ONLY:\\n- Filled croissants: Mini croissants with savoury fillings; include a vegan filling if needed.\\n- Soft drinks: Water, juice and soft drinks in portions suitable for the guest count.\\n- Fruits: Fresh seasonal fruit, easy to share and serve.\\nUse ONLY the approved categories above. The initial request provides guest count, date and dietary requirements; its unapproved dishes are superseded. Do not add removed or unselected categories or extra dishes. Include products for every approved category. Keep guest quantities and dietary requirements from the request.\",\"date\":\"2026-11-20\"}"
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:5173/api/basket/b_n7xiqe/audit",
+      "body": null
+    }
+  ],
+  "basket": {
+    "id": "b_n7xiqe",
+    "customer": "123",
+    "request": "Ingredients for a catering event for 50 people on Saturday, one vegan option\n\nAPPROVED MENU ONLY:\n- Filled croissants: Mini croissants with savoury fillings; include a vegan filling if needed.\n- Soft drinks: Water, juice and soft drinks in portions suitable for the guest count.\n- Fruits: Fresh seasonal fruit, easy to share and serve.\nUse ONLY the approved categories above. The initial request provides guest count, date and dietary requirements; its unapproved dishes are superseded. Do not add removed or unselected categories or extra dishes. Include products for every approved category. Keep guest quantities and dietary requirements from the request.",
+    "people": 50,
+    "date": "2026-11-20",
+    "planner": "llm",
+    "dishes": [
+      {
+        "id": "filled-croissants",
+        "name": "Filled mini croissants",
+        "portions": 45,
+        "basis": "3 mini croissants each with ham-cheese filling",
+        "diet": []
+      },
+      {
+        "id": "vegan-croissants",
+        "name": "Vegan filled mini croissants",
+        "portions": 5,
+        "basis": "3 vegan mini croissants each with hummus and vegetable filling",
+        "diet": [
+          "vegan"
+        ]
+      },
+      {
+        "id": "soft-drinks",
+        "name": "Soft drinks",
+        "portions": 50,
+        "basis": "0.5 l drinks per person: water, juice, soft drinks",
+        "diet": []
+      },
+      {
+        "id": "fruits",
+        "name": "Seasonal fruit platter",
+        "portions": 50,
+        "basis": "150 g fruit each",
+        "diet": [
+          "vegan"
+        ]
+      }
+    ],
+    "lines": [
+      {
+        "id": "l1",
+        "dishId": "filled-croissants",
+        "needIds": [
+          "mini-croissant"
+        ],
+        "sku": "465341",
+        "name": "Schulstad Bakery Solutions Minicroissant 150x30g",
+        "brand": "Schulstad Bakery Solutions",
+        "qty": 1,
+        "pack": "4.5 kg",
+        "why": "45 × 3 pcs = 135 pcs → 1 × 4.5 kg (pieces per pack unknown, check the amount)",
+        "stock": {
+          "sku": "465341",
+          "price": 37.92,
+          "priceWithTax": 43.04,
+          "taxRate": 13.5,
+          "comparisonPrice": 8.43,
+          "comparisonUnit": "KG",
+          "customerPrice": false,
+          "listPrice": 46.25,
+          "validTo": "9999-12-31T00:00:00+0200",
+          "available": 51,
+          "availableDate": "2026-11-16",
+          "closingTime": "2026-11-15T17:00:00+0200",
+          "cutoffPassed": false,
+          "logistic": "Stock",
+          "deliverable": true,
+          "status": "ok",
+          "salesUnit": "KI"
+        },
+        "total": 37.92,
+        "contains": [
+          "egg",
+          "milk",
+          "gluten",
+          "wheat"
+        ],
+        "claims": [
+          "LOW_LACTOSE"
+        ],
+        "co2": 1.42
+      },
+      {
+        "id": "l2",
+        "dishId": "filled-croissants",
+        "needIds": [
+          "ham"
+        ],
+        "sku": "476768",
+        "name": "HK Smoked pork ham sliced 1,5 kg",
+        "brand": "HK",
+        "qty": 1,
+        "pack": "1.5 kg",
+        "why": "45 × 30 g = 1.4 kg → 1 × 1.5 kg",
+        "stock": {
+          "sku": "476768",
+          "price": 15.43,
+          "priceWithTax": 17.51,
+          "taxRate": 13.5,
+          "comparisonPrice": 10.29,
+          "comparisonUnit": "KG",
+          "customerPrice": false,
+          "listPrice": 18.15,
+          "validTo": "9999-12-31T00:00:00+0200",
+          "available": 15,
+          "availableDate": "2026-11-16",
+          "closingTime": "2026-11-15T17:00:00+0200",
+          "cutoffPassed": false,
+          "logistic": "Stock",
+          "deliverable": true,
+          "status": "ok",
+          "salesUnit": "ST"
+        },
+        "total": 15.43,
+        "contains": [],
+        "claims": [
+          "FREE_FROM_GLUTEN",
+          "FREE_FROM_LACTOSE",
+          "HIGH_PROTEIN"
+        ],
+        "reliability": 1,
+        "co2": 10.09,
+        "image": "https://imgfly.scarabresearch.com/w_500/https://api.valioaimo.fi/medias/?context=bWFzdGVyfHJvb3R8MjczMzQ1fGltYWdlL3BuZ3xhR0poTDJnMVlTODVNVFUzTWpRek1UQTVOREEyfDc4Yzc3MmQ2YzBmNDhjZDA2MzQ1MzhiNTFmYzNkODUxNjM2NTkzNWNkYTMzZDZlNjc2ZWFhZDE5ZGY0YTVjMTU"
+      },
+      {
+        "id": "l3",
+        "dishId": "filled-croissants",
+        "needIds": [
+          "cheese"
+        ],
+        "sku": "463400",
+        "name": "Valio Hyvä suomalainen Arki® cheese slices e500 g",
+        "brand": "Valio",
+        "qty": 3,
+        "pack": "500 g",
+        "why": "45 × 25 g = 1.2 kg → 3 × 500 g",
+        "stock": {
+          "sku": "463400",
+          "price": 3.62,
+          "priceWithTax": 4.11,
+          "taxRate": 13.5,
+          "comparisonPrice": 7.24,
+          "comparisonUnit": "KG",
+          "customerPrice": false,
+          "listPrice": 4.26,
+          "validTo": "9999-12-31T00:00:00+0200",
+          "available": null,
+          "availableDate": "2026-11-16",
+          "closingTime": "2026-11-15T17:00:00+0200",
+          "cutoffPassed": false,
+          "logistic": "Stock",
+          "deliverable": true,
+          "status": "ok",
+          "salesUnit": "ST"
+        },
+        "total": 10.86,
+        "contains": [
+          "milk"
+        ],
+        "claims": [
+          "FREE_FROM_COLOURING_AGENTS",
+          "FREE_FROM_LACTOSE",
+          "FREE_FROM_PRESERVATIVES",
+          "FREE_FROM_SWEETENERS",
+          "NO_ADDED_SUGARS",
+          "VEGETARIAN"
+        ],
+        "co2": 5.21,
+        "image": "https://www.valio.fi/cdn-cgi/image/format=auto/https://cdn-wp.valio.fi/valio-wp-network/sites/2/2026/09/valio-hyva-suomalainen-arki-juustoviipale-33831-500x500.png"
+      },
+      {
+        "id": "l4",
+        "dishId": null,
+        "needIds": [
+          "lettuce"
+        ],
+        "sku": "460276",
+        "name": "LETTUCE ICEBERG FOLIO FI",
+        "brand": "",
+        "qty": 1,
+        "pack": "by kg",
+        "why": "600 g → 1 kg (sold by kg)",
+        "stock": {
+          "sku": "460276",
+          "price": 2.65,
+          "priceWithTax": 3.01,
+          "taxRate": 13.5,
+          "comparisonPrice": 2.65,
+          "comparisonUnit": "KG",
+          "customerPrice": false,
+          "listPrice": 3.12,
+          "validTo": "9999-12-31T00:00:00+0200",
+          "available": 1173,
+          "availableDate": "2026-11-16",
+          "closingTime": "2026-11-15T17:00:00+0200",
+          "cutoffPassed": false,
+          "logistic": "Stock",
+          "deliverable": true,
+          "status": "ok",
+          "salesUnit": "KG"
+        },
+        "total": 2.65,
+        "contains": [],
+        "claims": [],
+        "reliability": 0.998,
+        "co2": 1.22,
+        "issue": {
+          "kind": "unavailable",
+          "text": "No delivery date for Fri, 20 Nov.",
+          "options": [
+            {
+              "sku": "460276",
+              "name": "LETTUCE ICEBERG FOLIO FI",
+              "reason": "no new allergens · in stock, available from Mon, 16 Nov · 100 % on time · €2.65/kg",
+              "delta": -2.31,
+              "qty": 1,
+              "pack": "by kg",
+              "why": "600 g → 1 kg (sold by kg)",
+              "total": 2.65,
+              "stock": {
+                "sku": "460276",
+                "price": 2.65,
+                "priceWithTax": 3.01,
+                "taxRate": 13.5,
+                "comparisonPrice": 2.65,
+                "comparisonUnit": "KG",
+                "customerPrice": false,
+                "listPrice": 3.12,
+                "validTo": "9999-12-31T00:00:00+0200",
+                "available": 1173,
+                "availableDate": "2026-11-16",
+                "closingTime": "2026-11-15T17:00:00+0200",
+                "cutoffPassed": false,
+                "logistic": "Stock",
+                "deliverable": true,
+                "status": "ok",
+                "salesUnit": "KG"
+              },
+              "contains": []
+            },
+            {
+              "sku": "460252",
+              "name": "ROMAINE LETTUCE FI",
+              "reason": "no new allergens · in stock, available from Mon, 16 Nov · 99 % on time · €3.14/kg",
+              "delta": -1.82,
+              "qty": 1,
+              "pack": "by kg",
+              "why": "600 g → 1 kg (sold by kg)",
+              "total": 3.14,
+              "stock": {
+                "sku": "460252",
+                "price": 3.14,
+                "priceWithTax": 3.56,
+                "taxRate": 13.5,
+                "comparisonPrice": 3.14,
+                "comparisonUnit": "KG",
+                "customerPrice": false,
+                "listPrice": 3.7,
+                "validTo": "9999-12-31T00:00:00+0200",
+                "available": null,
+                "availableDate": "2026-11-16",
+                "closingTime": "2026-11-15T17:00:00+0200",
+                "cutoffPassed": false,
+                "logistic": "Stock",
+                "deliverable": true,
+                "status": "ok",
+                "salesUnit": "KG"
+              },
+              "contains": []
+            },
+            {
+              "sku": "460253",
+              "name": "MIXED LETTUCE FI",
+              "reason": "no new allergens · in stock, available from Mon, 16 Nov · 100 % on time · €4.18/kg",
+              "delta": 7.58,
+              "qty": 1,
+              "pack": "3 kg",
+              "why": "600 g → 1 × 3 kg",
+              "total": 12.54,
+              "stock": {
+                "sku": "460253",
+                "price": 12.54,
+                "priceWithTax": 14.23,
+                "taxRate": 13.5,
+                "comparisonPrice": 4.18,
+                "comparisonUnit": "KG",
+                "customerPrice": false,
+                "listPrice": 14.75,
+                "validTo": "9999-12-31T00:00:00+0200",
+                "available": 22,
+                "availableDate": "2026-11-16",
+                "closingTime": "2026-11-15T17:00:00+0200",
+                "cutoffPassed": false,
+                "logistic": "Stock",
+                "deliverable": true,
+                "status": "ok",
+                "salesUnit": "KI"
+              },
+              "contains": []
+            }
+          ],
+          "decided": "460276",
+          "decidedBy": "gateway (same-use rule)"
+        },
+        "replaced": {
+          "sku": "460201",
+          "name": "LETTUCE FINLAND"
+        }
+      },
+      {
+        "id": "l5",
+        "dishId": null,
+        "needIds": [
+          "tomato"
+        ],
+        "sku": "460027",
+        "name": "TOMATO NL/BE/ES 1.CL",
+        "brand": "",
+        "qty": 1.5,
+        "pack": "by kg",
+        "why": "1.2 kg → 1.5 kg (sold by kg)",
+        "stock": {
+          "sku": "460027",
+          "price": 2.15,
+          "priceWithTax": 2.44,
+          "taxRate": 13.5,
+          "comparisonPrice": 2.15,
+          "comparisonUnit": "KG",
+          "customerPrice": false,
+          "listPrice": 2.53,
+          "validTo": "9999-12-31T00:00:00+0200",
+          "available": null,
+          "availableDate": "2026-11-16",
+          "closingTime": "2026-11-15T17:00:00+0200",
+          "cutoffPassed": false,
+          "logistic": "Stock",
+          "deliverable": true,
+          "status": "ok",
+          "salesUnit": "KG"
+        },
+        "total": 3.22,
+        "contains": [],
+        "claims": [],
+        "reliability": 0.999,
+        "co2": 1.96,
+        "image": "https://imgfly.scarabresearch.com/w_500/https://api.valioaimo.fi/medias/?context=bWFzdGVyfHJvb3R8MjE5MzV8aW1hZ2UvanBlZ3xhREZoTDJnNU1pODRPRGN6TnpBek1EUTNNVGs0fDBlMmM1OGNjOTUwNjYyYTVlNWFlMjlhNjNmM2IxZjljZmZjZWIyNjg4ZmUzY2NiZGRlZjgwMTBkYWI2ZDI1OGE"
+      },
+      {
+        "id": "l6",
+        "dishId": "vegan-croissants",
+        "needIds": [
+          "vegan-croissant"
+        ],
+        "sku": "465285",
+        "name": "Reuter & Stolt Croissang Vegan 56pcs 80g (vegan), ready to bake deepfrost",
+        "brand": "Reuter & Stolt",
+        "qty": 1,
+        "pack": "4.48 kg",
+        "why": "5 × 3 pcs = 15 pcs → 1 × 4.48 kg (pieces per pack unknown, check the amount)",
+        "stock": {
+          "sku": "465285",
+          "price": 33.28,
+          "priceWithTax": 37.77,
+          "taxRate": 13.5,
+          "comparisonPrice": 7.43,
+          "comparisonUnit": "KG",
+          "customerPrice": false,
+          "listPrice": 40.59,
+          "validTo": "9999-12-31T00:00:00+0200",
+          "available": null,
+          "availableDate": "2026-11-16",
+          "closingTime": "2026-11-12T15:00:00+0200",
+          "cutoffPassed": true,
+          "logistic": "Terminal",
+          "deliverable": false,
+          "status": "cutoff_passed",
+          "salesUnit": "KI"
+        },
+        "total": 33.28,
+        "contains": [
+          "gluten",
+          "barley",
+          "oats",
+          "wheat"
+        ],
+        "claims": [
+          "VEGAN"
+        ],
+        "reliability": 0.981,
+        "co2": 1.42,
+        "issue": {
+          "kind": "cutoff",
+          "text": "Ordering is closed for Fri, 20 Nov: cut-off Thu, 12 Nov, 15:00 passed (supplier item). No deliverable alternative found.",
+          "options": []
+        }
+      },
+      {
+        "id": "l7",
+        "dishId": "vegan-croissants",
+        "needIds": [
+          "hummus"
+        ],
+        "sku": "466595",
+        "name": "Sevan Original Hummus 2,5kg",
+        "brand": "Sevan",
+        "qty": 1,
+        "pack": "2.5 kg",
+        "why": "5 × 40 g = 200 g → 1 × 2.5 kg",
+        "stock": {
+          "sku": "466595",
+          "price": 18.99,
+          "priceWithTax": 21.55,
+          "taxRate": 13.5,
+          "comparisonPrice": 7.6,
+          "comparisonUnit": "KG",
+          "customerPrice": false,
+          "listPrice": 22.34,
+          "validTo": "9999-12-31T00:00:00+0200",
+          "available": 279,
+          "availableDate": "2026-11-16",
+          "closingTime": "2026-11-15T17:00:00+0200",
+          "cutoffPassed": false,
+          "logistic": "Stock",
+          "deliverable": true,
+          "status": "ok",
+          "salesUnit": "ST"
+        },
+        "total": 18.99,
+        "contains": [
+          "sesame"
+        ],
+        "claims": [
+          "FREE_FROM_GLUTEN",
+          "FREE_FROM_LACTOSE",
+          "VEGAN"
+        ],
+        "reliability": 0.997,
+        "co2": 3.45,
+        "issue": {
+          "kind": "cutoff",
+          "text": "Ordering is closed for Fri, 20 Nov: cut-off Thu, 12 Nov, 15:00 passed (supplier item).",
+          "options": [
+            {
+              "sku": "466595",
+              "name": "Sevan Original Hummus 2,5kg",
+              "reason": "no new allergens · in stock, available from Mon, 16 Nov · 100 % on time · €7.60/kg",
+              "delta": 9.96,
+              "qty": 1,
+              "pack": "2.5 kg",
+              "why": "5 × 40 g = 200 g → 1 × 2.5 kg",
+              "total": 18.99,
+              "stock": {
+                "sku": "466595",
+                "price": 18.99,
+                "priceWithTax": 21.55,
+                "taxRate": 13.5,
+                "comparisonPrice": 7.6,
+                "comparisonUnit": "KG",
+                "customerPrice": false,
+                "listPrice": 22.34,
+                "validTo": "9999-12-31T00:00:00+0200",
+                "available": 279,
+                "availableDate": "2026-11-16",
+                "closingTime": "2026-11-15T17:00:00+0200",
+                "cutoffPassed": false,
+                "logistic": "Stock",
+                "deliverable": true,
+                "status": "ok",
+                "salesUnit": "ST"
+              },
+              "contains": [
+                "sesame"
+              ]
+            }
+          ],
+          "decided": "466595",
+          "decidedBy": "gateway (same-use rule)"
+        },
+        "replaced": {
+          "sku": "471610",
+          "name": "Baba Original Hummus 1kg"
+        }
+      },
+      {
+        "id": "l8",
+        "dishId": "vegan-croissants",
+        "needIds": [
+          "cucumber"
+        ],
+        "sku": "460131",
+        "name": "CUCUMBER 1CL FIN",
+        "brand": "",
+        "qty": 0.5,
+        "pack": "by kg",
+        "why": "5 × 40 g = 500 g → 500 g (sold by kg)",
+        "stock": {
+          "sku": "460131",
+          "price": 2.1,
+          "priceWithTax": 2.38,
+          "taxRate": 13.5,
+          "comparisonPrice": 2.1,
+          "comparisonUnit": "KG",
+          "customerPrice": false,
+          "listPrice": 2.47,
+          "validTo": "9999-12-31T00:00:00+0200",
+          "available": null,
+          "availableDate": "2026-11-16",
+          "closingTime": "2026-11-15T17:00:00+0200",
+          "cutoffPassed": false,
+          "logistic": "Stock",
+          "deliverable": true,
+          "status": "ok",
+          "salesUnit": "KG"
+        },
+        "total": 1.05,
+        "contains": [],
+        "claims": [],
+        "reliability": 0.99,
+        "co2": 0.825,
+        "image": "https://imgfly.scarabresearch.com/w_500/https://api.valioaimo.fi/medias/1208.jpg?context=bWFzdGVyfHJvb3R8NDE5OTh8aW1hZ2UvanBlZ3xhRGMxTDJneE1pODRPREV6TURrME1UUXhPVGd5THpFeU1EZ3VhbkJufGJiNjM3MGVjOGI3OWUyNmQ4NDFjZTBhMGExMDVkMjVlODA0MzQ0NDk5ODNmOTNkNmFiMjhiNTNmYTZiOGQ2Y2M"
+      },
+      {
+        "id": "l9",
+        "dishId": "soft-drinks",
+        "needIds": [
+          "water"
+        ],
+        "sku": "477519",
+        "name": "12 x Villi Mineral Water 0.5 l",
+        "brand": "Villi",
+        "qty": 2,
+        "pack": "6.01 l",
+        "why": "50 × 200 ml = 10 l → 2 × 6.01 l",
+        "stock": {
+          "sku": "477519",
+          "price": 6.19,
+          "priceWithTax": 7.03,
+          "taxRate": 13.5,
+          "comparisonPrice": 1.03,
+          "comparisonUnit": "L",
+          "customerPrice": false,
+          "listPrice": 7.74,
+          "validTo": "9999-12-31T00:00:00+0200",
+          "available": null,
+          "availableDate": "2026-11-16",
+          "closingTime": "2026-11-15T17:00:00+0200",
+          "cutoffPassed": false,
+          "logistic": "Stock",
+          "deliverable": true,
+          "status": "ok",
+          "salesUnit": "KI"
+        },
+        "total": 12.38,
+        "contains": [],
+        "claims": []
+      },
+      {
+        "id": "l10",
+        "dishId": "soft-drinks",
+        "needIds": [
+          "juice"
+        ],
+        "sku": "476601",
+        "name": "Valio orange juice 1 l traditional",
+        "brand": "Valio",
+        "qty": 8,
+        "pack": "1 l",
+        "why": "50 × 150 ml = 7.5 l → 8 × 1 l",
+        "stock": {
+          "sku": "476601",
+          "price": 2.65,
+          "priceWithTax": 3.01,
+          "taxRate": 13.5,
+          "comparisonPrice": 2.65,
+          "comparisonUnit": "L",
+          "customerPrice": false,
+          "listPrice": 3.31,
+          "validTo": "9999-12-31T00:00:00+0200",
+          "available": null,
+          "availableDate": "2026-11-16",
+          "closingTime": "2026-11-15T17:00:00+0200",
+          "cutoffPassed": false,
+          "logistic": "Stock",
+          "deliverable": true,
+          "status": "ok",
+          "salesUnit": "ST"
+        },
+        "total": 21.2,
+        "contains": [],
+        "claims": [
+          "FREE_FROM_ADDITIVES",
+          "FREE_FROM_COLOURING_AGENTS",
+          "FREE_FROM_FAT",
+          "FREE_FROM_PRESERVATIVES",
+          "FREE_FROM_SWEETENERS",
+          "LOW_SODIUM_SALT",
+          "NO_ADDED_SUGARS",
+          "VEGAN"
+        ],
+        "co2": 3.355
+      },
+      {
+        "id": "l11",
+        "dishId": "soft-drinks",
+        "needIds": [
+          "soda"
+        ],
+        "sku": "477438",
+        "name": "12 x Pepsi soft drink 1,5 l",
+        "brand": "Pepsi",
+        "qty": 1,
+        "pack": "18.01 l",
+        "why": "50 × 150 ml = 7.5 l → 1 × 18.01 l",
+        "stock": {
+          "sku": "477438",
+          "price": 38.01,
+          "priceWithTax": 43.14,
+          "taxRate": 13.5,
+          "comparisonPrice": 2.11,
+          "comparisonUnit": "L",
+          "customerPrice": false,
+          "listPrice": 47.51,
+          "validTo": "9999-12-31T00:00:00+0200",
+          "available": 8,
+          "availableDate": "2026-11-16",
+          "closingTime": "2026-11-15T17:00:00+0200",
+          "cutoffPassed": false,
+          "logistic": "Stock",
+          "deliverable": true,
+          "status": "ok",
+          "salesUnit": "KLE"
+        },
+        "total": 38.01,
+        "contains": [],
+        "claims": [
+          "VEGAN",
+          "VEGETARIAN"
+        ],
+        "co2": 0.585,
+        "image": "https://imgfly.scarabresearch.com/w_500/https://api.valioaimo.fi/medias/?context=bWFzdGVyfHJvb3R8MzQwOTA2M3xpbWFnZS9wbmd8YUdZM0wyZ3dOeTg1TVRZME5EazVPREV5TXpneXw1NTFjNDE0ZTA0NGJiYWM1ZWVjNzM1OWI4MmNjOTY0YzRlNzY1OWUxOGI4YTUxMWE0ODViZDU5NjFiNGUxM2Zh"
+      },
+      {
+        "id": "l12",
+        "dishId": "fruits",
+        "needIds": [
+          "grapes"
+        ],
+        "sku": "461126",
+        "name": "GRAPES GREEN 4,5 KG BOX ES",
+        "brand": "",
+        "qty": 2.5,
+        "pack": "by kg",
+        "why": "50 × 50 g = 2.5 kg → 2.5 kg (sold by kg)",
+        "stock": {
+          "sku": "461126",
+          "price": 4.44,
+          "priceWithTax": 5.04,
+          "taxRate": 13.5,
+          "comparisonPrice": 4.44,
+          "comparisonUnit": "KG",
+          "customerPrice": false,
+          "listPrice": 5.22,
+          "validTo": "9999-12-31T00:00:00+0200",
+          "available": null,
+          "availableDate": "2026-11-16",
+          "closingTime": "2026-11-15T17:00:00+0200",
+          "cutoffPassed": false,
+          "logistic": "Stock",
+          "deliverable": true,
+          "status": "ok",
+          "salesUnit": "KG"
+        },
+        "total": 11.1,
+        "contains": [],
+        "claims": [],
+        "reliability": 0.99,
+        "co2": 0.385
+      },
+      {
+        "id": "l13",
+        "dishId": "fruits",
+        "needIds": [
+          "apples"
+        ],
+        "sku": "460926",
+        "name": "APPLES GRANNY SMITH 2KG BAG FRANCE",
+        "brand": "",
+        "qty": 2,
+        "pack": "2 kg",
+        "why": "50 × 50 g = 2.5 kg → 2 × 2 kg",
+        "stock": {
+          "sku": "460926",
+          "price": 6.39,
+          "priceWithTax": 7.25,
+          "taxRate": 13.5,
+          "comparisonPrice": 3.2,
+          "comparisonUnit": "KG",
+          "customerPrice": false,
+          "listPrice": 7.52,
+          "validTo": "9999-12-31T00:00:00+0200",
+          "available": null,
+          "availableDate": "2026-11-16",
+          "closingTime": "2026-11-15T17:00:00+0200",
+          "cutoffPassed": false,
+          "logistic": "Stock",
+          "deliverable": true,
+          "status": "ok",
+          "salesUnit": "ST"
+        },
+        "total": 12.78,
+        "contains": [],
+        "claims": [],
+        "reliability": 0.994,
+        "co2": 0.165
+      }
+    ],
+    "assumed": [
+      "butter",
+      "salt",
+      "pepper",
+      "ice"
+    ],
+    "notes": [
+      "No catalogue match for \"clementines\" (2.5 kg), add it by hand.",
+      "Schulstad Bakery Solutions Minicroissant 150x30g: pieces per pack unknown, check the amount.",
+      "Reuter & Stolt Croissang Vegan 56pcs 80g (vegan), ready to bake deepfrost: pieces per pack unknown, check the amount."
+    ],
+    "checkedAt": "2026-11-14T08:56:11.635Z",
+    "apiCalls": 4,
+    "total": 185.59,
+    "totalWithVat": 210.67,
+    "openIssues": 1,
+    "totalIfAccepted": 185.59,
+    "pricesHeldUntil": "2026-11-15T17:00:00+0200",
+    "rules": {
+      "customer": "123",
+      "maxOrderEur": 500,
+      "maxDailyEur": 1500,
+      "swapsNeedOk": true,
+      "autoSwapSameUse": true,
+      "approver": "Mikko L."
+    },
+    "mandate": {
+      "state": "needs_your_ok",
+      "reasons": [
+        "1 product can't be delivered as asked, so it needs your choice first: Reuter & Stolt Croissang Vegan 56pcs 80g (vegan), ready to bake deepfrost."
+      ]
+    },
+    "createdAt": "2026-11-14T08:56:11.687Z"
+  }
+}

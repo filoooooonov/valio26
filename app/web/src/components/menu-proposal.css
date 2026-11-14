@@ -34,6 +34,13 @@
 .menu-proposal__foot { display: flex; flex-direction: column; gap: var(--s-8); }
 .menu-proposal__foot .menu-proposal__approve { min-height: var(--hit); display: flex; justify-content: center; gap: var(--s-10); padding: var(--s-12); }
 .menu-proposal__foot p { color: var(--text-2); font-size: var(--fs-12); text-align: center; }
+.menu-proposal__body { display: flex; flex-direction: column; gap: var(--s-16); min-height: 0; }
+.menu-proposal.menu-proposal--popup { padding: 0; gap: 0; border-radius: 0; min-height: 0; overflow: hidden; }
+.menu-proposal--popup .menu-proposal__body { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding: var(--s-4) var(--s-20) var(--s-16); }
+.menu-proposal--popup .menu-proposal__body::-webkit-scrollbar { display: none; }
+.menu-proposal--popup .menu-proposal__foot { flex: none; padding: var(--s-12) var(--s-20) var(--s-16); background: var(--white); }
+.menu-proposal--popup .menu-item { padding-top: var(--s-12); padding-bottom: var(--s-12); }
+.menu-proposal--popup .menu-proposal__approve { font-size: var(--fs-14); }
 @media(max-width:780px) { .menu-proposal--refined { padding: var(--s-16); } .menu-proposal__head h3 { font-size: var(--fs-18); } .menu-item { grid-template-columns: minmax(0,1fr) var(--hit); gap: var(--s-6); } .menu-item__select--row { gap: var(--s-10); grid-template-columns: var(--s-32) minmax(0,1fr); } .menu-add--refined > .icon { display: none; } }
 @media(prefers-reduced-motion:reduce) { .menu-round-check, .menu-round-check::before, .menu-inline, .menu-proposal--refined .minun-toggle input[type="checkbox"], .menu-proposal--refined .minun-toggle input[type="checkbox"]::before { transition: none; } }
 
@@ -44,6 +51,8 @@
 .menu-edit-dialog[open]::backdrop { animation: menu-backdrop-in var(--dur-drawer) var(--ease-out) both; }
 @keyframes menu-popup-in { from { opacity: 0; transform: translateY(var(--s-10)) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes menu-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+.menu-edit-dialog[data-popup-closing]::backdrop { animation: menu-backdrop-out 200ms cubic-bezier(.4,0,.2,1) both; }
+@keyframes menu-backdrop-out { to { opacity: 0; } }
 @media(prefers-reduced-motion:reduce) { .menu-edit-dialog[open], .menu-edit-dialog[open]::backdrop { animation: none; } }
 .menu-edit-dialog form { display: flex; flex-direction: column; gap: var(--s-12); }
 .menu-edit-dialog h3 { font-size: var(--fs-22); color: var(--teal); margin-bottom: var(--s-8); }

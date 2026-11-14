@@ -103,7 +103,7 @@ export function mandateSentence(
     return `${t}That's inside your ${whole(b.rules.maxOrderEur)} limit, so you can place it yourself.`;
   const n = reason.match(/^(\d+) products?/)?.[1];
   return n
-    ? `${n} more ${n === "1" ? "line needs" : "lines need"} your answer below.`
+    ? `${n} ${n === "1" ? "item needs" : "items need"} your attention. Click an item to review its options.`
     : "";
 }
 

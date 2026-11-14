@@ -27,7 +27,7 @@ export function addCategory(menu: MenuDraft, text: string): MenuDraft {
  return { ...menu, categories: found ? menu.categories.map(c => c.id === found.id ? { ...c, selected: true } : c) : [...menu.categories, category(title, title === 'Fruits' ? 'Fresh seasonal fruit, easy to share and serve.' : 'Choose suitable products for this category.', menu.categories.length)] };
 }
 export function editMenuFromChat(menu: MenuDraft, text: string): MenuDraft | null {
- const add = text.match(/^(?:add|include)\s+(.+?)[.!]?$/i);
+ const add = text.match(/^(?:(?:please|also)\s+)*(?:add|include)\s+(?:also\s+)?(.+?)[.!]?$/i);
  if (add) return addCategory(menu, add[1]);
  const remove = text.match(/^(?:remove|skip|no|leave out)\s+(.+?)[.!]?$/i);
  if (remove) return { ...menu, categories: menu.categories.map(c => c.title.toLowerCase().includes(remove[1].toLowerCase()) ? { ...c, selected: false } : c) };

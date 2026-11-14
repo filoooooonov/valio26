@@ -25,6 +25,8 @@ import {
 import { firstName, orderLabel, PEOPLE, shortName, type Item } from "../thread";
 import type { Phase } from "../App";
 import { AssistantBadge, ThinkingMark } from "./Mark";
+import { ReplacementNotice } from './ReplacementNotice';
+import { closePopup } from './popupMotion';
 import "./chat-polish.css";
 
 export type LocalItem =
@@ -71,6 +73,31 @@ type Props = {
 
 export function Chat(p: Props) {
   const scroller = useRef<HTMLDivElement>(null);
+  const chatRoot = useRef<HTMLElement>(null);
+  const composerDock = useRef<HTMLDivElement>(null);
+  const reviewTrigger = useRef<HTMLButtonElement>(null);
+  const reviewPanel = useRef<HTMLDivElement>(null);
+  const hasMenuReview = !!p.menuProposal && !!p.planningMenu;
+  const [menuReviewOpen, setMenuReviewOpen] = useState(false);
+  const closeMenuReview = () => closePopup(reviewPanel.current, () => { setMenuReviewOpen(false); requestAnimationFrame(() => reviewTrigger.current?.focus()); });
+  useLayoutEffect(() => {
+    setMenuReviewOpen(hasMenuReview);
+    if (hasMenuReview) requestAnimationFrame(() => reviewPanel.current?.focus({ preventScroll: true }));
+  }, [hasMenuReview]);
+  useLayoutEffect(() => {
+    const root = chatRoot.current, dock = composerDock.current;
+    if (!root || !dock || !hasMenuReview) return;
+    const measure = () => {
+      const head = root.querySelector('.chat__head');
+      if (!head) return;
+      const available = Math.max(150, dock.getBoundingClientRect().top - head.getBoundingClientRect().bottom - 28);
+      dock.style.setProperty('--menu-review-max-height', available + 'px');
+    };
+    measure();
+    const observer = new ResizeObserver(measure); observer.observe(root); observer.observe(dock);
+    window.addEventListener('resize', measure); window.visualViewport?.addEventListener('resize', measure);
+    return () => { observer.disconnect(); window.removeEventListener('resize', measure); window.visualViewport?.removeEventListener('resize', measure); };
+  }, [hasMenuReview]);
   const items = [...p.thread, ...p.local].sort(
     (a, b) => Date.parse(a.at) - Date.parse(b.at),
   );
@@ -78,12 +105,6 @@ export function Chat(p: Props) {
     p.basket && (p.phase === "draft" || p.phase === "review")
       ? p.basket.lines.filter(lineIsOpen)
       : [];
-  // Lines with real options get one card each; lines with no substitute are one decision together.
-  const noSub = open.filter(
-    (l) => !l.issue!.options.length && l.issue!.kind !== "short",
-  );
-  const withOpts = open.filter((l) => !noSub.includes(l));
-  const cards = withOpts.length + (noSub.length ? 1 : 0);
   const firstAt = items.find((i) => i.kind === "user")?.at;
 
   const pinned = useRef(true);
@@ -124,7 +145,9 @@ export function Chat(p: Props) {
   }, [p.order?.id, p.order?.status, p.busy]);
 
   return (
-    <section className="chat" aria-label="Aimo assistant">
+    <section ref={chatRoot} className={'chat' + (hasMenuReview && menuReviewOpen ? ' chat--menu-reviewing' : '')} aria-label="Aimo assistant" onKeyDown={event => {
+      if (event.key === 'Escape' && hasMenuReview && menuReviewOpen && !(event.target as HTMLElement).closest('dialog[open]')) { event.preventDefault(); closeMenuReview(); }
+    }}>
       <div className="chat__head">
         <AssistantBadge />
         <h2 className="chat__title">Aimo assistant</h2>
@@ -134,7 +157,7 @@ export function Chat(p: Props) {
         </button>
       </div>
 
-      <div className="thread" ref={scroller} aria-live="polite" aria-relevant="additions" onWheel={() => { following.current = false; }} onTouchStart={() => { following.current = false; }} onPointerDown={() => { following.current = false; }} onScroll={() => {
+      <div className="thread" ref={scroller} inert={hasMenuReview && menuReviewOpen} aria-live="polite" aria-relevant="additions" onWheel={() => { following.current = false; }} onTouchStart={() => { following.current = false; }} onPointerDown={() => { following.current = false; }} onScroll={() => {
         const el = scroller.current;
         if (!el) return;
         const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
@@ -155,34 +178,7 @@ export function Chat(p: Props) {
         {items.map((it) => (
           <Turn key={it.key} it={it} p={p} firstAt={firstAt} />
         ))}
-        {p.menuProposal}
-        {withOpts.map((l, i) => (
-          <Question
-            key={l.id}
-            line={l}
-            index={i}
-            count={cards}
-            basket={p.basket!}
-            busy={p.busy}
-            onChoose={p.onChoose}
-            onSeeAll={p.onSeeAll}
-          />
-        ))}
-        {noSub.length > 0 && (
-          <NoSubstitute
-            lines={noSub}
-            index={withOpts.length}
-            count={cards}
-            date={p.basket!.date}
-            busy={p.busy}
-            onRemove={() => p.onRemoveMany(noSub.map((l) => l.id))}
-            onFind={() => p.onFindAlternatives ? p.onFindAlternatives(noSub) :
-              p.onSend(
-                `Find another ${noSub.map((l) => shortName(l.name)).join(", ")} that can arrive ${weekdayLong(p.basket!.date)}`,
-              )
-            }
-          />
-        )}
+        {p.basket && <ReplacementNotice lines={open} date={p.basket.date} busy={p.busy} onReview={p.onSeeAll} />}
         {p.alternativeProposal}
         {p.phase === "waiting" && p.order && <Waiting order={p.order} />}
         {p.stale && p.basket && (
@@ -197,7 +193,16 @@ export function Chat(p: Props) {
       {hasNewMessages && <button className="chat-latest" onClick={() => jumpToLatest()} aria-label="Jump to latest message">Latest messages <Icon name="arrow-right" className="i-14" /></button>}
       {successToast === p.order?.id && p.order?.status === "placed" && <div className="chat-success-toast" role="status" aria-live="polite"><Icon name="circle-check" className="i-22" /><div><b>Order confirmed</b><span>{orderLabel(p.order.id)} is recorded in this demo gateway.</span></div><button className="round round--plain" aria-label="Dismiss order confirmation" onClick={() => setSuccessToast(null)}><Icon name="x" className="i-16" /></button></div>}
       {!p.planningMenu && <Suggestions p={p} />}
-      <Composer p={p} />
+      <div className="chat-composer-dock" ref={composerDock}>
+        {hasMenuReview && <>
+          <button ref={reviewTrigger} type="button" className="chat-menu-trigger" aria-expanded={menuReviewOpen} aria-controls="menu-review-popup" onClick={() => setMenuReviewOpen(open => !open)}><Icon name="list" className="i-16" />Review menu<Icon name="chevron-down" className="i-14" /></button>
+          <div id="menu-review-popup" ref={reviewPanel} className="chat-menu-review" role="dialog" aria-modal="false" aria-labelledby="menu-review-heading" tabIndex={-1} hidden={!menuReviewOpen}>
+            <div className="chat-menu-review__head"><h3 id="menu-review-heading">Review your menu</h3><button type="button" className="round round--plain" aria-label="Close menu review" onClick={closeMenuReview}><Icon name="x" className="i-18" /></button></div>
+            {p.menuProposal}
+          </div>
+        </>}
+        <Composer p={p} />
+      </div>
       <p className="foot">
         Rules are checked by Valio Aimo on every order, not by the assistant.
       </p>

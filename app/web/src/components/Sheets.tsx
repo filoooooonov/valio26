@@ -1,17 +1,17 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { AuditEvent, Basket, BasketLine, Order } from "../api";
+import { useProductImage } from "./OrderPanel";
+import "./replacement-dialog.css";
 import { Icon } from "../icons";
 import {
   dayLabel,
-  lineIsOpen,
   money,
   niceName,
   qtyLabel,
   SLOT,
   timeLabel,
-  weekday,
 } from "../format";
-import { orderLabel, shortName } from "../thread";
+import { orderLabel } from "../thread";
 
 function Modal({
   title,
@@ -61,152 +61,71 @@ function Modal({
   );
 }
 
-// Swap sheet (states board): the line's real alternatives, compared on Friday delivery, on-time record and price.
-export function SwapSheet({
-  line,
-  date,
-  locked,
-  onClose,
-  onChoose,
-}: {
-  line: BasketLine;
-  date: string;
-  locked: boolean;
-  onClose: () => void;
-  onChoose: (sku: string) => void;
+/** Keep the native modal and focus trap alive through its closing motion. */
+export function useReplacementClose(dialog: RefObject<HTMLDialogElement | null>, onClose: () => void) {
+  const [closing, setClosing] = useState(false);
+  const started = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (timer.current !== null) clearTimeout(timer.current); }, []);
+  function close(after?: () => void) {
+    if (started.current) return;
+    started.current = true;
+    const finish = () => { timer.current = null; dialog.current?.close(); onClose(); after?.(); };
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { finish(); return; }
+    setClosing(true);
+    timer.current = setTimeout(finish, 200);
+  }
+  return { closing, close };
+}
+
+function ReplacementImage({ sku, name }: { sku: string; name: string }) {
+  const url = useProductImage(sku);
+  const [failed, setFailed] = useState(false);
+  return <span className="replacement-image">{url && !failed ? <img src={url} alt={name} onError={() => setFailed(true)} /> : <Icon name="package" className="i-22" />}</span>;
+}
+
+// All choices come from the gateway's checked alternatives. Opening the dialog never accepts a swap.
+export function SwapSheet({ line, date, locked, onClose, onChoose, onFindAlternatives }: {
+  line: BasketLine; date: string; locked: boolean; onClose: () => void; onChoose: (sku: string) => void; onFindAlternatives?: () => void;
 }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
   const issue = line.issue;
   const opts = issue?.options ?? [];
-  const current =
-    issue?.decided && issue.decided !== "remove"
-      ? line.sku
-      : lineIsOpen(line)
-        ? opts[0]?.sku
-        : line.sku;
-  const [pick, setPick] = useState<string | undefined>(current);
-  const day = weekday(date);
-  const original =
-    line.replaced ??
-    (lineIsOpen(line) ? { sku: line.sku, name: line.name } : null);
-  const rows = [
-    ...opts.map((o) => ({
-      sku: o.sku,
-      name: niceName(o.name),
-      ok: o.stock.deliverable && !o.stock.cutoffPassed,
-      meta: o.reason
-        .split(" · ")
-        .filter((x) => !/^no new allergens$/.test(x))
-        .slice(0, 2)
-        .join(" · "),
-      price: money(o.total),
-      qty: qtyLabel(o.qty, o.pack),
-    })),
-  ];
-  if (!issue)
-    return (
-      <Modal title={shortName(line.name)} onClose={onClose}>
-        <p className="sheet__sub">
-          No alternatives needed: this arrives {day} {SLOT} at your price.
-        </p>
-        <div className="opt opt--on">
-          <span className="radio radio--on" />
-          <span className="grow">
-            <b className="opt__name">{niceName(line.name)}</b>
-            <span className="opt__meta opt__meta--ok">
-              <Icon name="circle-check" className="i-14" /> {day} {SLOT}
-            </span>
-          </span>
-          <span className="opt__price">
-            <b>{money(line.total)}</b>
-            <span>{qtyLabel(line.qty, line.pack)}</span>
-          </span>
-        </div>
-        <button className="cta-block" onClick={onClose}>
-          Keep it
-        </button>
-      </Modal>
-    );
-  return (
-    <Modal title={shortName(original?.name ?? line.name)} onClose={onClose}>
-      <p className="sheet__sub">
-        Compared on {day} delivery, on-time record and price.
-      </p>
-      <div className="opts" role="radiogroup" aria-label="Alternatives">
-        {rows.map((r) => (
-          <button
-            key={r.sku}
-            role="radio"
-            aria-checked={pick === r.sku}
-            className={"opt" + (pick === r.sku ? " opt--on" : "")}
-            disabled={locked}
-            onClick={() => setPick(r.sku)}
-          >
-            <span className={"radio" + (pick === r.sku ? " radio--on" : "")} />
-            <span className="grow">
-              <b className="opt__name">{r.name}</b>
-              <span
-                className={
-                  "opt__meta" + (r.ok ? " opt__meta--ok" : " opt__meta--bad")
-                }
-              >
-                <Icon
-                  name={r.ok ? "circle-check" : "circle-x"}
-                  className="i-14"
-                />{" "}
-                {r.meta}
-              </span>
-            </span>
-            <span className="opt__price">
-              <b>{r.price}</b>
-              <span>{r.qty}</span>
-            </span>
-          </button>
-        ))}
-        {original && (
-          <div className="opt opt--disabled" aria-disabled="true">
-            <span className="radio" />
-            <span className="grow">
-              <b className="opt__name">
-                {niceName(original.name)} (your usual)
-              </b>
-              <span className="opt__meta opt__meta--bad">
-                <Icon name="circle-x" className="i-14" /> {issue.text}
-              </span>
-            </span>
-            <span className="opt__price">
-              <span>—</span>
-            </span>
-          </div>
-        )}
-        <button
-          role="radio"
-          aria-checked={pick === "remove"}
-          className={"opt" + (pick === "remove" ? " opt--on" : "")}
-          disabled={locked}
-          onClick={() => setPick("remove")}
-        >
-          <span className={"radio" + (pick === "remove" ? " radio--on" : "")} />
-          <span className="grow">
-            <b className="opt__name">Don't order it</b>
-            <span className="opt__meta">I'll leave it out of this order</span>
-          </span>
-        </button>
-      </div>
-      <button
-        className="cta-block"
-        disabled={locked || !pick}
-        onClick={() =>
-          pick === current && !lineIsOpen(line)
-            ? onClose()
-            : pick && onChoose(pick)
-        }
-      >
-        {pick === "remove"
-          ? "Don't order it"
-          : `Use ${shortName(rows.find((r) => r.sku === pick)?.name ?? "this")}`}
-      </button>
-    </Modal>
-  );
+  const [pick, setPick] = useState<string | undefined>(undefined);
+  const original = line.replaced ?? line;
+  const usable = (o: (typeof opts)[number]) => o.qty > 0 && o.stock.deliverable && !o.stock.cutoffPassed && (o.stock.available == null || o.qty <= o.stock.available);
+  const available = opts.filter(usable);
+  const selected = opts.find(o => o.sku === pick && usable(o));
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    dialog.current?.showModal(); closeButton.current?.focus();
+    return () => { dialog.current?.close(); previous?.focus?.(); };
+  }, []);
+  const { closing, close } = useReplacementClose(dialog, onClose);
+  const choose = (sku: string) => { if (!locked) close(() => onChoose(sku)); };
+  const reason = issue?.kind === 'short' && line.stock.available != null ? 'Only ' + line.stock.available + ' available; you requested ' + line.qty + '.' : issue?.kind === 'cutoff' ? 'The order cut-off has passed.' : 'Unavailable for the requested delivery.';
+  return <dialog ref={dialog} className={"replacement-dialog" + (closing ? " replacement-dialog--closing" : "")} aria-busy={closing || undefined} aria-labelledby="replacement-heading" onCancel={event => { event.preventDefault(); close(); }} onClick={event => {
+    if (event.target !== event.currentTarget) return;
+    const box = event.currentTarget.getBoundingClientRect();
+    if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) close();
+  }}>
+    <header className="replacement-dialog__head"><div><p className="replacement-dialog__eyebrow">Choose a replacement</p><h2 id="replacement-heading">{niceName(original.name)}</h2></div><button ref={closeButton} type="button" className="round" aria-label="Close replacements" onClick={() => close()}><Icon name="x" className="i-18" /></button></header>
+    <p className="replacement-dialog__delivery"><Icon name="truck" className="i-16" /> Requested delivery: {dayLabel(date)}, {SLOT}</p>
+    <p className="replacement-dialog__reason">{reason}</p>
+    {!available.length && <div className="replacement-dialog__empty"><h3>No verified replacement</h3><p>No checked alternative can fulfil this quantity and delivery.</p>{onFindAlternatives && <button className="btn btn--outline" type="button" disabled={locked || closing} onClick={() => { if (!locked) close(onFindAlternatives); }}>Find another</button>}</div>}
+    {opts.length > 0 && <fieldset className="replacement-options" disabled={locked}><legend>Checked alternatives <span>Price difference versus the original</span></legend>
+      {opts.map(o => { const ok = usable(o); const note = o.stock.cutoffPassed ? 'Order cut-off passed' : !o.stock.deliverable ? 'Unavailable for this delivery' : o.stock.available != null && o.qty > o.stock.available ? 'Insufficient stock for this quantity' : o.qty <= 0 ? 'No orderable quantity' : o.reason.split(/\s*\u00b7\s*/).find(x => /^adds /i.test(x)) ?? null;
+        return <label key={o.sku} className={'replacement-option' + (pick === o.sku ? ' replacement-option--selected' : '') + (!ok ? ' replacement-option--disabled' : '')}>
+          <input type="radio" name="replacement-choice" value={o.sku} aria-label={niceName(o.name)} checked={pick === o.sku} disabled={locked || closing || !ok} onChange={() => setPick(o.sku)} />
+          <ReplacementImage sku={o.sku} name={niceName(o.name)} />
+          <span className="replacement-option__copy"><strong>{niceName(o.name)}</strong><span>{qtyLabel(o.qty, o.pack)}</span>{note && <span className={!ok ? 'replacement-option__problem' : ''}>{note}</span>}</span>
+          <span className="replacement-option__price"><b>{money(o.total)}</b><span>{Math.abs(o.delta) < .005 ? 'Same price' : (o.delta > 0 ? '+' : '-') + money(Math.abs(o.delta))}</span></span>
+        </label>;
+      })}
+    </fieldset>}
+    <footer className="replacement-dialog__actions"><button type="button" className="btn btn--outline" disabled={locked} onClick={() => choose('remove')}>Remove item</button><button type="button" className="btn replacement-dialog__use" disabled={locked || closing || !selected} onClick={() => selected && choose(selected.sku)}>Use replacement</button></footer>
+  </dialog>;
 }
 
 const KIND: Record<string, string> = {

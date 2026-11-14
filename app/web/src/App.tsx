@@ -13,6 +13,7 @@ import {
 } from "./api";
 import { suggestMenu, editMenuFromChat, menuSummary, displayMenuRequest, plannerRequest, fallbackMatchesMenu, type MenuDraft } from "./menu";
 import { MenuProposal } from "./components/MenuProposal";
+import { AlternativeDraftReview } from "./components/AlternativeDraftReview";
 import { MenuEconomics } from "./components/MinunAimo";
 import { SAMPLE_CONTEXT_MARKER } from "./minunAimo";
 import { Header, PhoneTabs } from "./components/Header";
@@ -21,7 +22,7 @@ import { OrderPanel } from "./components/OrderPanel";
 import { SwapSheet, LogSheet } from "./components/Sheets";
 import { MikkoView } from "./components/Mikko";
 import { StatesView } from "./components/States";
-import { addDays, money, niceName, timeLabel } from "./format";
+import { addDays, lineIsOpen, niceName, timeLabel } from "./format";
 import { buildThread, firstName, shortName } from "./thread";
 
 // In-webshop assistant (owner: aleksei). Flow: request -> draft (answer questions in chat) -> review ->
@@ -62,6 +63,7 @@ function Shop() {
   const menuSubmitting = useRef(false);
   const [basket, setBasket] = useState<Basket | null>(null);
   const [alternativeDraft, setAlternativeDraft] = useState<Basket | null>(null);
+  const [alternativeReviewOpen, setAlternativeReviewOpen] = useState(false);
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [order, setOrder] = useState<Order | null>(null);
   const [local, setLocal] = useState<LocalItem[]>([]);
@@ -307,7 +309,7 @@ function Shop() {
       const changed = editMenuFromChat(menu, t);
       say({ kind: "user", who: BUYER, text: t });
       if (changed) { setMenu(changed); say({ kind: "assistant", text: "Updated the menu. Review your selections, then find products when you are ready." }); }
-      else say({ kind: "assistant", text: "Edit the menu below, or say add fruit / remove soft drinks. Then choose Find products for this menu." });
+      else say({ kind: "assistant", text: "Open Review menu to edit, or say add fruit / remove soft drinks. Then choose Find products for this menu." });
       return;
     }
     if (!basket) return propose(t);
@@ -347,7 +349,7 @@ function Shop() {
     const names = lines.map(line => niceName(line.name)).join(', ');
     const ac = new AbortController();
     abort.current?.abort(); abort.current = ac;
-    setError(null); setAlternativeDraft(null); setBusy(true);
+    setError(null); setAlternativeDraft(null); setAlternativeReviewOpen(false); setBusy(true);
     say({ kind: 'user', who: BUYER, text: `Find alternatives for ${names}.` });
     try {
       const request = source.request + `\n\nFind alternative catalogue products for these unavailable ingredients: ${names}. Keep the approved menu, guest count, diets and all other requested dishes. Look for equivalent ingredients in a different brand or suitable pack size. Do not drop requested ingredients or change the menu to hide an unavailable product. Return a full revised purchasing draft; prices and delivery will be checked by the gateway.`;
@@ -359,7 +361,7 @@ function Shop() {
         say({ kind: 'assistant', text: `I checked again but couldn't find a complete deliverable replacement for ${names}. Your current basket is unchanged. You can leave these items out or describe a different ingredient in the chat.` });
       } else {
         setAlternativeDraft(next);
-        say({ kind: 'assistant', text: `I prepared an alternative draft for ${names}. Review it below; your current basket is unchanged until you choose to use it.` });
+        say({ kind: 'assistant', text: `I prepared an alternative draft for ${names}. Click Review revised draft to open it.` });
       }
     } catch (error) {
       if ((error as Error).name !== 'AbortError') setError({ title: 'Could not find alternatives', text: `${(error as Error).message} Your current basket is unchanged.`, retry: () => findAlternatives(lines) });
@@ -463,12 +465,8 @@ function Shop() {
   }
 
   function focusQuestion() {
-    setTab("assistant");
-    requestAnimationFrame(() => {
-      const q = document.querySelector<HTMLElement>("[data-question] button");
-      q?.scrollIntoView({ block: "center", behavior: "smooth" });
-      q?.focus({ preventScroll: true });
-    });
+    const missing = basket?.lines.find(lineIsOpen);
+    if (missing) setSheet(missing.id);
   }
   function prefill(text: string) {
     setDraft(text);
@@ -519,9 +517,9 @@ function Shop() {
       <main className="workspace">
         <Chat
           onFindAlternatives={findAlternatives}
-          alternativeProposal={alternativeDraft ? <section className="alternative-proposal card" aria-label="Alternative draft ready"><h3>Alternative draft ready</h3><p>{alternativeDraft.lines.length} products · {money(alternativeDraft.total)} excl. VAT.{alternativeDraft.openIssues ? ` ${alternativeDraft.openIssues} items still need a choice.` : ' All proposed lines can be delivered.'}</p><details><summary>Review the proposed products</summary><ul>{alternativeDraft.lines.filter(line => line.qty > 0).map(line => <li key={line.id}>{niceName(line.name)}{line.issue && !line.issue.decided ? ' — needs a choice' : ''}</li>)}</ul></details><p className="card__small">This replaces the whole draft. Review quantities and any earlier changes before using it.</p><div className="answers"><button className="ans ans--primary" disabled={busy} onClick={async () => { const next = alternativeDraft; setOrder(null); setReviewing(false); await adopt(next); }}>Use revised draft</button><button className="ans" onClick={() => setAlternativeDraft(null)}>Keep current basket</button></div></section> : null}
+          alternativeProposal={alternativeDraft ? <section className="replacement-notice" aria-label="Alternative draft ready"><p>A revised draft is ready to review.</p><button className="replacement-notice__review" disabled={busy} onClick={() => setAlternativeReviewOpen(true)}>Review revised draft</button></section> : null}
           phase={phase}
-          menuProposal={menu && !building ? <MenuProposal menu={menu} busy={busy || !!building} onChange={setMenu} onApprove={approveMenu} /> : null}
+          menuProposal={menu && !building ? <MenuProposal compact menu={menu} busy={busy || !!building} onChange={setMenu} onApprove={approveMenu} /> : null}
           planningMenu={!!menu}
           basket={basket}
           thread={thread}
@@ -588,8 +586,12 @@ function Shop() {
           onHero={() => propose(HERO)}
         />
       </main>
+      {alternativeReviewOpen && alternativeDraft && <AlternativeDraftReview basket={alternativeDraft} busy={busy} onClose={() => setAlternativeReviewOpen(false)} onUse={async () => {
+        const next = alternativeDraft; setAlternativeReviewOpen(false); setOrder(null); setReviewing(false); await adopt(next);
+      }} />}
       {sheetLine && basket && (
         <SwapSheet
+          onFindAlternatives={() => { if (sheetLine) void findAlternatives([sheetLine]); }}
           line={sheetLine}
           date={basket.date}
           locked={phase === "waiting" || phase === "placed"}

@@ -3,6 +3,7 @@ import type { MenuCategory, MenuDraft } from '../menu';
 import { addCategory } from '../menu';
 import { MinunAimoContext } from './MinunAimo';
 import { Icon } from '../icons';
+import { closePopup } from './popupMotion';
 import './menu-proposal.css';
 
 function MenuEditor({ item, onSave, onCancel }: { item: MenuCategory; onSave: (next: MenuCategory) => void; onCancel: () => void }) {
@@ -11,10 +12,10 @@ function MenuEditor({ item, onSave, onCancel }: { item: MenuCategory; onSave: (n
   const [name, setName] = useState(item.title);
   const [note, setNote] = useState(item.description);
   useLayoutEffect(() => { dialog.current?.showModal(); nameInput.current?.focus(); nameInput.current?.select(); return () => { dialog.current?.close(); }; }, []);
-  const cancel = () => { dialog.current?.close(); onCancel(); };
+  const cancel = () => closePopup(dialog.current, () => { dialog.current?.close(); onCancel(); });
   function save(event: FormEvent) {
     event.preventDefault(); if (!name.trim()) { nameInput.current?.focus(); return; }
-    dialog.current?.close(); onSave({ ...item, title: name.trim(), description: note.trim() });
+    closePopup(dialog.current, () => { dialog.current?.close(); onSave({ ...item, title: name.trim(), description: note.trim() }); });
   }
   return <dialog ref={dialog} className="menu-edit-dialog" aria-labelledby="menu-edit-heading" onCancel={event => { event.preventDefault(); cancel(); }} onClick={event => {
     if (event.target !== event.currentTarget) return;
@@ -40,11 +41,13 @@ function MenuRow({ item, busy, onChange }: { item: MenuCategory; busy: boolean; 
   </div>;
 }
 
-export function MenuProposal({ menu, busy, onChange, onApprove }: { menu: MenuDraft; busy: boolean; onChange: (menu: MenuDraft) => void; onApprove: () => void }) {
+export function MenuProposal({ menu, busy, onChange, onApprove, compact = false }: { menu: MenuDraft; busy: boolean; onChange: (menu: MenuDraft) => void; onApprove: () => void; compact?: boolean }) {
+  const section = useRef<HTMLElement>(null);
   const [addition, setAddition] = useState('');
   const selected = menu.categories.filter(item => item.selected).length;
-  return <section className="menu-proposal menu-proposal--refined" aria-labelledby="menu-heading">
-    <header className="menu-proposal__head"><div><h3 id="menu-heading">Your menu</h3><p>Select what to include. Open Edit to change a name or note.</p></div><span className="menu-proposal__count">{selected} selected</span></header>
+  return <section ref={section} className={'menu-proposal menu-proposal--refined' + (compact ? ' menu-proposal--popup' : '')} aria-labelledby={compact ? undefined : 'menu-heading'} aria-label={compact ? 'Menu choices' : undefined}>
+    {!compact && <header className="menu-proposal__head"><div><h3 id="menu-heading">Your menu</h3><p>Select what to include. Open Edit to change a name or note.</p></div><span className="menu-proposal__count">{selected} selected</span></header>}
+    <div className="menu-proposal__body">
     <fieldset disabled={busy}><legend className="sr-only">Dishes and items to include</legend>
       {menu.categories.map(item => <MenuRow key={item.id} item={item} busy={busy} onChange={next => onChange({ ...menu, categories: menu.categories.map(current => current.id === next.id ? next : current) })} />)}
     </fieldset>
@@ -52,6 +55,7 @@ export function MenuProposal({ menu, busy, onChange, onApprove }: { menu: MenuDr
       <label className="sr-only" htmlFor="menu-add">Add a dish or item</label><Icon name="plus" className="i-16" /><input id="menu-add" placeholder="Add a dish or item, e.g. fruit or juice" value={addition} disabled={busy} onChange={event => setAddition(event.target.value)} /><button type="submit" disabled={busy || !addition.trim()}>Add</button>
     </form>
     <MinunAimoContext enabled={!!menu.useMinunAimo} onChange={useMinunAimo => onChange({ ...menu, useMinunAimo })} />
-    <div className="menu-proposal__foot"><button className="btn btn--primary menu-proposal__approve" onClick={onApprove} disabled={busy || !selected || menu.categories.some(item => item.selected && !item.title.trim())}>{busy ? 'Finding products...' : 'Find products for this menu'}<Icon name="arrow-right" className="i-16" /></button><p>Prices and availability are checked after approval.</p></div>
+    </div>
+    <div className="menu-proposal__foot"><button className="btn btn--primary menu-proposal__approve" onClick={() => compact ? closePopup(section.current?.closest<HTMLElement>('.chat-menu-review') ?? null, onApprove) : onApprove()} disabled={busy || !selected || menu.categories.some(item => item.selected && !item.title.trim())}>{busy ? 'Finding products...' : 'Find products for this menu'}<Icon name="arrow-right" className="i-16" /></button><p>Prices and availability are checked after approval.</p></div>
   </section>;
 }

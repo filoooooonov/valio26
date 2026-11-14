@@ -4,7 +4,6 @@ import {
   isNotFound,
   type Basket,
   type BasketLine,
-  type Option,
   type Order,
 } from "../api";
 import { dishIcon, Icon, productIcon, type IconName } from "../icons";
@@ -374,21 +373,18 @@ export function LineRow({
   revealIndex?: number;
 }) {
   const open = lineIsOpen(l);
-  const opt: Option | undefined = open ? l.issue!.options[0] : undefined;
   const off = !open && (l.qty === 0 || l.issue?.decided === "remove");
-  const sku = opt?.sku ?? l.sku;
-  const name = niceName(opt?.name ?? l.name);
-  const frozenItem = (opt ? opt.frozen : l.frozen) ?? /\b(?:frozen|deep[ -]?frozen|deepfrost|FRO)\b/i.test(opt?.name ?? l.name);
-  const stock = opt?.stock ?? l.stock;
-  const total = opt?.total ?? l.total;
-  const qty = opt?.qty ?? l.qty;
-  const pack = opt?.pack ?? l.pack;
+  const sku = l.sku;
+  const name = niceName(l.name);
+  const frozenItem = l.frozen ?? /\b(?:frozen|deep[ -]?frozen|deepfrost|FRO)\b/i.test(l.name);
+  const stock = l.stock;
+  const total = l.total;
+  const qty = l.qty;
+  const pack = l.pack;
   const busy = p.busyLine === l.id;
 
   let tag: { text: string; tone: string } | null = null;
-  if (open && opt) tag = { text: "Choose an alternative", tone: "amber" };
-  else if (open) tag = { text: "Needs your answer", tone: "amber" };
-  else if (l.replaced && isAutoSwap(l.issue?.decidedBy))
+  if (!open && l.replaced && isAutoSwap(l.issue?.decidedBy))
     tag = { text: "Swapped", tone: "blue" };
   else if (l.replaced || (l.issue?.decided && l.issue.decided !== "remove"))
     tag = { text: "Chosen by you", tone: "green" };
@@ -398,9 +394,7 @@ export function LineRow({
       tone: "grey",
     };
 
-  const why0 = opt
-    ? `Instead of your usual ${shortName(l.name)} (${reasonShort(l, b.date)}) · ${opt.why} · ${sku}`
-    : l.replaced
+  const why0 = l.replaced
       ? `Instead of ${shortName(l.replaced.name)} (${reasonShort(l, b.date)}) · ${l.why} · ${sku}`
       : open
         ? `${cleanIssue(l.issue!.text)} · ${sku}`
@@ -439,6 +433,7 @@ export function LineRow({
         (placed ? " line--placed" : "")
       }
       aria-busy={busy || undefined}
+      onClick={open && !frozen && !busy && !p.busy ? event => { if (!(event.target as Element).closest("button, input, a, summary, details, textarea, select")) p.onSwap(l.id); } : undefined}
       style={{ "--product-delay": `${Math.min(revealIndex * 12, 90)}ms` } as CSSProperties}
     >
       {!placed && (
@@ -448,7 +443,7 @@ export function LineRow({
           aria-checked={!open && !off}
           aria-label={`Include ${name}`}
           disabled={frozen || busy || p.busy}
-          onClick={() => p.onToggle(l.id)}
+          onClick={() => open ? p.onSwap(l.id) : p.onToggle(l.id)}
         >
           <span className="check__box">
             {!open && !off && <Icon name="check" className="i-14" />}
@@ -458,13 +453,13 @@ export function LineRow({
       <ProductTile
         sku={sku}
         name={name}
-        contains={opt?.contains ?? l.contains}
+        contains={l.contains}
       />
       <div className="line__text">
         <div className="line__name">
-          <span>{name}</span>
+          {open && !frozen ? <button type="button" className="line__missing-name" disabled={busy || p.busy} aria-label={"Review replacements for " + name} onClick={() => p.onSwap(l.id)}>{name}</button> : <span>{name}</span>}
           {frozenItem && <span className="line__frozen" role="img" aria-label="Frozen" title="Frozen"><Icon name="snowflake" className="i-16" /></span>}
-          {tag && (
+          {tag && !open && (
             <span className={"tag tag--" + tag.tone}>
               {tag.text}
             </span>
@@ -474,13 +469,14 @@ export function LineRow({
           <Icon name={st.icon} className="i-14" />
           {st.text}
         </div>}
-        <details className="line__details">
+        {open && !frozen && <button type="button" className="line__resolve" disabled={busy || p.busy} onClick={() => p.onSwap(l.id)}>{l.issue!.options.length ? 'Choose replacement' : 'Review options'}<Icon name="arrow-right" className="i-16" /></button>}
+        {!open && <details className="line__details">
           <summary aria-label={`Product details for ${name}`}>Product details</summary>
-          <p className="line__catalogue">{opt?.name ?? l.name}</p>
+          <p className="line__catalogue">{l.name}</p>
           <p className="line__catalogue">SKU {sku}</p>
           <div className="line__why">{why}</div>
           {!off && <div className="line__unit">{sub}</div>}
-        </details>
+        </details>}
         {atLimit && !frozen && (
           <div className="line__limit">
             That's all Valio has for {weekday(b.date)} ({n2(stock.available!)})
@@ -490,7 +486,7 @@ export function LineRow({
       <div className="price">
         <b className={off ? "price__off" : ""}>{off ? "—" : money(total)}</b>
       </div>
-      {frozen ? (
+      {frozen || open ? (
         <span className="line__qty">{qtyLabel(qty, pack)}</span>
       ) : off ? (
         <span className="line__qty line__qty--off">0</span>
@@ -525,7 +521,7 @@ export function LineRow({
           </button>
         </div>
       )}
-      {!frozen && needsAlternative && (
+      {!frozen && !open && needsAlternative && (
         <button
           className={"swapbtn" + (open ? " swapbtn--amber" : "")}
           aria-label={`Alternatives for ${name}`}

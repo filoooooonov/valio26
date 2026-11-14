@@ -1,0 +1,79 @@
+<div id="aimo-recurring-concept">
+<style>
+#aimo-recurring-concept{--a-bg:light-dark(#ffffff,#10272d);--a-ink:light-dark(#173743,#e5f1f4);--a-teal:light-dark(#005670,#7ed4e4);--a-muted:light-dark(#66747a,#a8c0c5);--a-line:light-dark(#e2e9eb,#304a52);--a-soft:light-dark(#f2f7f8,#1a363e);--a-purple:light-dark(#eee8f5,#342c49);--a-plum:light-dark(#543778,#d3b9f1);--a-lime:light-dark(#c0e021,#bddb3a);font:14px/1.45 Arial,Helvetica,sans-serif;color:var(--a-ink);background:var(--a-bg);border:1px solid var(--a-line);border-radius:16px;overflow:hidden}
+#aimo-recurring-concept *{box-sizing:border-box}
+#aimo-recurring-concept button,#aimo-recurring-concept input,#aimo-recurring-concept select{font:inherit}
+#aimo-recurring-concept button{color:var(--a-teal);background:transparent;border:1px solid var(--a-line);border-radius:24px;padding:9px 15px;min-height:40px}
+#aimo-recurring-concept button.primary{background:var(--a-teal);color:var(--a-bg);border-color:var(--a-teal)}
+#aimo-recurring-concept button[aria-pressed=true]{background:var(--a-soft);border-color:var(--a-teal)}
+#aimo-recurring-concept button:disabled{opacity:.45}
+#aimo-recurring-concept header{display:flex;align-items:center;gap:22px;padding:18px 26px;border-bottom:1px solid var(--a-line);flex-wrap:wrap}
+#aimo-recurring-concept .brand{font-style:italic;font-size:26px;font-weight:700;color:var(--a-teal)}
+#aimo-recurring-concept nav{display:flex;gap:5px;flex-wrap:wrap}
+#aimo-recurring-concept nav button{border:0;border-radius:6px}
+#aimo-recurring-concept .location{margin-left:auto;color:var(--a-muted);font-size:12px}
+#aimo-recurring-concept main{padding:24px 26px;min-height:500px}
+#aimo-recurring-concept h2{font-size:25px;line-height:1.2;color:var(--a-teal);margin:0 0 8px}
+#aimo-recurring-concept h3{font-size:16px;margin:0 0 6px;font-weight:600}
+#aimo-recurring-concept p{margin:0}
+#aimo-recurring-concept .muted{color:var(--a-muted)}
+#aimo-recurring-concept .heading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:25px;flex-wrap:wrap}
+#aimo-recurring-concept .heading p{color:var(--a-muted)}
+#aimo-recurring-concept .delivery{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:22px;align-items:center;padding:22px 0;border-bottom:1px solid var(--a-line)}
+#aimo-recurring-concept .day{color:var(--a-teal);font-weight:600}
+#aimo-recurring-concept .small{font-size:12px;color:var(--a-muted);margin-top:5px}
+#aimo-recurring-concept .state{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--a-teal);margin-top:8px}
+#aimo-recurring-concept .state:before{content:'✓';font-weight:700}
+#aimo-recurring-concept .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#aimo-recurring-concept .quiet{margin-top:24px;background:var(--a-soft);padding:16px 18px;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+#aimo-recurring-concept .quiet p{max-width:560px}
+#aimo-recurring-concept .suggestion{border-bottom:1px solid var(--a-line);padding:22px 0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px}
+#aimo-recurring-concept .eyebrow{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--a-plum);margin-bottom:7px}
+#aimo-recurring-concept .panel{margin-top:18px;padding:20px;background:var(--a-soft);border-radius:12px}
+#aimo-recurring-concept .panel h3{color:var(--a-teal)}
+#aimo-recurring-concept .panel p{margin-bottom:12px}
+#aimo-recurring-concept .rule{display:flex;justify-content:space-between;gap:20px;padding:10px 0;border-bottom:1px solid var(--a-line)}
+#aimo-recurring-concept .alert{background:var(--a-purple);color:var(--a-plum);padding:18px;border-radius:10px;margin-bottom:20px}
+#aimo-recurring-concept .alert .actions{margin-top:12px}
+#aimo-recurring-concept .event{padding:13px 0;border-bottom:1px solid var(--a-line)}
+#aimo-recurring-concept .settings{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px}
+#aimo-recurring-concept label{display:flex;gap:8px;align-items:center}
+#aimo-recurring-concept select{background:var(--a-bg);color:var(--a-ink);border:1px solid var(--a-line);padding:8px;border-radius:6px}
+#aimo-recurring-concept footer{padding:12px 26px;background:var(--a-soft);color:var(--a-muted);font-size:12px;display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap}
+#aimo-recurring-concept [hidden]{display:none!important}
+@media(max-width:600px){#aimo-recurring-concept main,#aimo-recurring-concept header{padding:18px}#aimo-recurring-concept .location{margin-left:0}#aimo-recurring-concept .delivery{grid-template-columns:1fr;gap:9px}#aimo-recurring-concept .suggestion{grid-template-columns:1fr}#aimo-recurring-concept .rule{flex-wrap:wrap}}
+</style>
+<header><span class="brand">Aimo</span><nav aria-label="Workspace"><button class="cursor-interaction" data-view="orders" aria-pressed="true">Upcoming orders</button><button class="cursor-interaction" data-view="menus" aria-pressed="false">Menus &amp; schedules</button><button class="cursor-interaction" data-view="ideas" aria-pressed="false">Suggestions</button></nav><span class="location">Restaurant Kaleva · Concept</span></header>
+<main>
+<section data-screen="orders">
+<div class="heading"><div><h2>Your week, taken care of</h2><p>Two scheduled deliveries. Routine orders run automatically.</p></div><button class="cursor-interaction" data-act="oneoff">One-off order</button></div>
+<div id="aimo-issue" class="alert" hidden><h3>Thursday needs one decision</h3><p>The usual salmon cannot arrive. Trout meets your dietary rules, but fish substitutions require your approval.</p><div class="actions"><button class="cursor-interaction" data-act="resolve">Review replacement</button><button class="cursor-interaction" data-act="skip">Skip this delivery</button></div></div>
+<div class="delivery"><div><div class="day">Mon 16 Nov</div><div class="small">Delivery 06–08</div></div><div><h3>Weekday lunch</h3><p class="muted">Autumn menu · 80 portions · Every Monday</p><span class="state" id="aimo-monday-state">Scheduled · no action needed</span><div class="small">Order sends Friday at 14:00 · within your agreed rules</div></div><div class="actions"><button class="cursor-interaction" data-act="details">View plan</button><button class="cursor-interaction" data-act="skip-monday">Skip once</button></div></div>
+<div class="delivery"><div><div class="day">Thu 19 Nov</div><div class="small">Delivery 06–08</div></div><div><h3>Weekend preparation</h3><p class="muted">Autumn menu · 120 portions · Every Thursday</p><span class="state" id="aimo-thursday-state">Scheduled · no action needed</span><div class="small">Order sends Tuesday at 14:00 · within your agreed rules</div></div><div class="actions"><button class="cursor-interaction" data-act="details">View plan</button></div></div>
+<div class="quiet"><div><h3>A campaign fits next week's menu</h3><p class="muted">A seasonal vegetable offer could reduce ingredient costs. Your current menu stays as planned.</p></div><button class="cursor-interaction" data-act="ideas">See suggestion</button></div>
+<div id="aimo-order-panel" class="panel" hidden><h3>Weekday lunch · recurring plan</h3><div class="rule"><span>Menu</span><span id="aimo-menu-name">Autumn menu</span></div><div class="rule"><span>Automatic ordering</span><span>Approved menu and rules</span></div><div class="rule"><span>Changes</span><span>Change once or update future deliveries</span></div><div class="actions" style="margin-top:16px"><button class="cursor-interaction" data-act="menus">Edit recurring plan</button><button class="cursor-interaction" data-act="close-details">Close</button></div></div>
+<div class="settings"><label>Explore an order issue <select id="aimo-scenario"><option value="routine">Routine week</option><option value="issue">Unavailable ingredient</option></select></label></div>
+</section>
+<section data-screen="menus" hidden>
+<div class="heading"><div><h2>Menus &amp; schedules</h2><p>Approve a plan once. Set when its recurring orders run.</p></div></div>
+<div class="delivery"><div class="day">Active menu</div><div><h3 id="aimo-active-menu">Autumn menu</h3><p class="muted">Monday lunch and Thursday preparation</p><div class="small">Salmon soup · roast vegetables · rye bread</div></div><button class="cursor-interaction" data-act="season">Plan seasonal change</button></div>
+<div class="panel"><h3>Ordering rules</h3><div class="rule"><span>Routine orders</span><span>Automatic within the approved plan</span></div><div class="rule"><span>Like-for-like substitutions</span><span>Allowed when agreed constraints hold</span></div><div class="rule"><span>Allergens, budget or menu changes</span><span>Ask the customer</span></div><div class="actions" style="margin-top:15px"><button class="cursor-interaction" data-act="pause">Pause recurring orders</button></div><p id="aimo-pause-status" class="small" aria-live="polite"></p></div>
+<div id="aimo-season-panel" class="panel" hidden><h3>Winter menu</h3><p>Root vegetable soup, roast chicken and seasonal sides. Preview the ingredient changes before scheduling the switch.</p><div class="rule"><span>Effective from</span><span>Monday 30 November</span></div><div class="rule"><span>Affects</span><span>Both weekly orders from that date</span></div><div class="actions" style="margin-top:15px"><button class="primary cursor-interaction" data-act="apply-season">Approve winter menu from 30 Nov</button><button class="cursor-interaction" data-act="cancel-season">Keep autumn menu</button></div></div>
+</section>
+<section data-screen="ideas" hidden>
+<div class="heading"><div><h2>Suggestions for your menu</h2><p>Optional improvements. Nothing changes until you approve.</p></div></div>
+<div class="suggestion"><div><div class="eyebrow">Campaign · seasonal vegetables</div><h3>Try roast root vegetables as next week's side</h3><p class="muted">Fits the existing menu. Compare the offer, serving cost and ingredient changes.</p><div class="small">Campaign dates, customer prices and stock would be verified before applying.</div></div><button class="cursor-interaction" data-act="compare">Compare change</button></div>
+<div class="suggestion"><div><div class="eyebrow">Menu rotation</div><h3>Ready for a little variety?</h3><p class="muted">Your lunch menu has repeated for six weeks. Explore a new dish while keeping your dietary and budget rules.</p></div><button class="cursor-interaction" data-act="season">Explore seasonal menu</button></div>
+<div id="aimo-compare" class="panel" hidden><h3>One delivery or the recurring menu?</h3><div class="rule"><span>Current side</span><span>Steamed vegetables</span></div><div class="rule"><span>Suggested side</span><span>Roast root vegetables</span></div><p class="small">A temporary offer never silently rewrites your recurring menu.</p><div class="actions" style="margin-top:15px"><button class="primary cursor-interaction" data-act="apply-once">Apply to next delivery only</button><button class="cursor-interaction" data-act="change-menu">Review recurring menu change</button><button class="cursor-interaction" data-act="dismiss">Not now</button></div></div>
+</section>
+<p id="aimo-feedback" aria-live="polite" style="margin-top:18px;color:var(--a-teal)"></p>
+</main>
+<footer><span>Concept with illustrative schedules and suggestions</span><span>Assistant available when you want to make a change</span></footer>
+<script>
+(()=>{const root=document.getElementById('aimo-recurring-concept');const el=id=>root.querySelector('#'+id);const feedback=message=>el('aimo-feedback').textContent=message;const view=name=>{root.querySelectorAll('[data-screen]').forEach(p=>p.hidden=p.dataset.screen!==name);root.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===name)));feedback('');};root.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>view(b.dataset.view));
+root.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{switch(b.dataset.act){case'oneoff':feedback('The existing menu-first chat opens for a one-off order. Recurring plans stay in place.');break;case'details':el('aimo-order-panel').hidden=false;break;case'close-details':el('aimo-order-panel').hidden=true;break;case'ideas':view('ideas');break;case'menus':view('menus');break;case'skip-monday':el('aimo-monday-state').textContent='Skipped once · following Monday unchanged';break;case'skip':el('aimo-issue').hidden=true;el('aimo-thursday-state').textContent='Skipped once · recurring plan unchanged';break;case'resolve':el('aimo-issue').hidden=true;el('aimo-thursday-state').textContent='Replacement approved · ready for automatic ordering';feedback('One delivery updated. Your recurring menu has not changed.');break;case'season':view('menus');el('aimo-season-panel').hidden=false;break;case'cancel-season':el('aimo-season-panel').hidden=true;break;case'apply-season':el('aimo-active-menu').textContent='Autumn menu · Winter starts 30 Nov';el('aimo-menu-name').textContent='Winter menu from 30 Nov';el('aimo-season-panel').hidden=true;feedback('Both weekly schedules switch on 30 Nov. Earlier deliveries keep the current menu.');break;case'pause':el('aimo-pause-status').textContent='Recurring orders paused. Resume without rebuilding the menu.';b.textContent='Resume recurring orders';b.dataset.act='resume';break;case'resume':el('aimo-pause-status').textContent='Recurring orders active.';b.textContent='Pause recurring orders';b.dataset.act='pause';break;case'compare':el('aimo-compare').hidden=false;break;case'apply-once':el('aimo-compare').hidden=true;feedback('Applied to the next delivery only. Future menus stay unchanged.');break;case'change-menu':view('menus');el('aimo-season-panel').hidden=false;feedback('Review the proposed recurring menu and its start date before approval.');break;case'dismiss':el('aimo-compare').hidden=true;feedback('Suggestion dismissed. Your orders continue as scheduled.');break;}});
+const recurringButton=root.querySelector('[data-act="change-menu"]');recurringButton.onclick=()=>{if(recurringButton.dataset.confirm==='yes'){el('aimo-compare').hidden=true;feedback('Roast root vegetables scheduled for future deliveries from 30 Nov. Other menu items stay unchanged.');recurringButton.dataset.confirm='no';recurringButton.textContent='Review recurring menu change';}else{el('aimo-compare').querySelector('h3').textContent='Change the recurring side from 30 November';recurringButton.dataset.confirm='yes';recurringButton.textContent='Approve recurring change from 30 Nov';}};
+el('aimo-scenario').onchange=e=>{const issue=e.target.value==='issue';el('aimo-issue').hidden=!issue;el('aimo-thursday-state').textContent=issue?'Waiting for your decision · automatic send held':'Scheduled · no action needed';};
+})();
+</script>
+</div>

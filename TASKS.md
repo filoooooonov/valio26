@@ -27,3 +27,39 @@ Rubric: demo 30 · user need 20 · guardrails 20 · exceptions 15 · openness 15
 ## Done
 - [x] T1 Real judging criteria: official handout transcribed in `challenges/valio-trade-agents/HANDOUT.md` (Fri 23:40)
 - [x] T0 Pick challenge and lock in `valio-trade-agents` (Fri 22:45)
+
+## Demo verification follow-up (14 Nov)
+- [ ] S13 @aleksei Remove false sponsor-submission, stock-reservation and guaranteed change-window copy; orders are local because sponsor has no order API (rubric: openness, guardrails) - files: app/web/src/components/OrderPanel.tsx, Mikko.tsx, Chat.tsx, thread.ts
+- [ ] S14 @aleksei Check unrequested gluten-free guest count in the hero basket header; do not infer guest dietary requirements from planned dishes (rubric: user need) - files: app/web/src/format.ts, components/OrderPanel.tsx
+
+S4/S7 browser flow verified live on 14 Nov; detailed evidence: docs/demo-verification.md. Existing app claims prevented these wording fixes.
+
+Video setup and captioned demo completed locally by the second agent: artifacts/demo-video/final.mp4 (50.70s, 1080p H.264); checker passed buyer placement/audit, real MCP self-approval rejection and human approval. Reusable commands: tools/demo-video/README.md. S10 remains open for valio-voice/pitch; app copy follow-ups S13/S14 remain blocked by existing claims. Evidence publication was rejected by automatic approval review; files remain local.
+
+- [x] @aleksei-codex S15 Smooth demo video: larger cursor, eased mouse travel, click feedback, eased camera zooms, transitions and readable pacing; hands-on demo instructions (rubric: demo) - files: tools/demo-video/, DEMO.md. Local-only revision; evidence publication remains blocked by automatic review.
+
+- [x] @aleksei-codex S16 Product-list cleanup requested by user: compact details disclosure, calmer brand status colors, hide chat scrollbar, alternatives only for problem items. User explicitly authorized app/web takeover from earlier Claude session. Files: app/web/src/components/OrderPanel.tsx, app/web/src/app.css.
+
+- [x] @aleksei-codex S17 Menu-first chat: suggest editable food categories/descriptions, let buyer select/remove/add fruit or other categories, require explicit menu approval before any basket/product/price/stock fetch; approved categories constrain the live planner. Files: app/web/src/App.tsx, components/Chat.tsx, MenuProposal.tsx, menu.ts, app.css.
+
+S15-S17 complete locally: smooth preview 107.05s preserved; no re-recording after user stop. Compact cart desktop/mobile verified; menu edits make zero lookup requests before approval. Approved live basket b_n7xiqe includes croissants, soft drinks and fruit; removed chips/candies absent. Build passed and fast suite 38/38. No generated evidence published.
+
+- [x] @aleksei-codex S18 Reject incomplete menu plans before catalogue/API calls, retry once with missing-dish feedback. Audited user regression b_0izcss: three dishes but one ingredient and no warnings. Files: app/server/src/plan.ts, llm.ts, menu-completeness.test.ts. Local-only work.
+
+S18 verified live using the exact user event request: HTTP200 basket b_hw3qny has all three menu groups and13 product lines, including tomato, cucumber, fillings, chips, candy and Pepsi. Regression suite41pass0fail. New request needed after backend watch reload.
+
+- [x] @aleksei-codex S19 UI polish: gentle fetched-product entries, stable images on disclosure, cleaner catalogue display names with originals retained, dedicated local-order confirmation and green chat success, respectful smooth scrolling and immediate own messages. Desktop/mobile/reduced-motion checked; build and41tests pass.
+- [x] @aleksei-codex S20 Labelled synthetic Minun Aimo profile opt-in: sample selling price, recipe-package cost target and operating EBITDA; approved planner context plus live basket food-cost comparison and verified cheaper options. Live b_ikq9jc9products, zero lookup before approval, cost3.97/guest vs sampletarget3.75. Source is sample data, no account integration; savings already included in proposed estimate are labelled. No video recorded.
+
+- [x] @aleksei-codex S21 Frozen product indicator: accessible muted snowflake beside product names, catalogue storage metadata with explicit-name fallback only when labels absent, follows substitution SKU, ambiguous storage stays unmarked. CONTRACT own localcommit f09640a before code; build passes,43tests pass. No video recorded.
+
+- [x] @aleksei-codex S22 Menu editor design pass:32px roundcheckboxes, whole-rowselectionwithdishicons, accurateAdddishoritemcopy, smoothnativeEditpopupwithSave/Cancel/Escape/focusreturn/reducedmotion, mobilefit andzeroAPIbeforeapprovalverified.
+- [x] @aleksei-codex S23 Deliveryissues: compactoriginalproblem with restrainedredicon, Nov20date, unboxedrealproductimage+replacementfacts+relativeprice andtruck; no QuestionN headings. Findanother performsrealreplanwithreviewbeforereplacingbasketandexplicitnoresult/errorfeedback.
+- [x] @aleksei-codex S24 Demo brand assets/typography:officialAimo32pxfavicon, self-hostedGeistfonts+OFLlicense, cleanedproductnamesdisplayCAPS, month-firstdates andtruckdeliveryicons. No video recorded; generatedscreenshots/evidence remainlocal.
+
+S22/S23 final refinements: menu white against lavender; whole-row selection and32px circles verified; menu icons subsequently removed per user request. Edit popup has300ms easedentry and reducedmotion. Live Findanotherreplan producedreviewabledraft while original b_tzpfc4 remainedunchanged. Favicon andselfhostedGeistloaded, capsproductnames/month-firstdates/truckicons checked. No recording or credentialstorage.
+
+- [x] @aleksei-codex S25 Menu review floats above the composer, dims/inerts chat history, contains scrolling, preserves chat edits, and closes/reopens with focus return. Desktop1600x1000, mobile390x844 and short1366x700 verified; zero product requests before approval. Menu icons removed, row alignment fixed, progress track uses blueberry. Thinking mark loops a continuous eased draw/erase mask with static reduced-motion fallback.
+- [x] @aleksei-codex S26 Chat only announces missing items and links to a separate native replacement popup. Cart missing rows retain original products and open the same popup. Explicit radio selection, checked stock/quantity/cutoff, product photos and relative price; no selection accepted on open. Find another is connected; revised whole-draft choices also move into their own popup. Read-only live-basket checks plus intercepted revised-draft response verified; no basket/order mutation or new video recording. Shared delivery summary under confirm; product dividers removed while dish dividers remain. Build and43fast tests pass.
+
+- [x] @aleksei-codex S27 Unavailable cart rows hide product details and disabled steppers; visible Choose replacement/Review options actions replace the icon-only swap control and redundant status pill. Hover affordance and keyboard-focus action; live read-only desktop/mobile checked. Menu review, menu editor, replacement and revised-draft popups retain their DOM through200ms eased dismissal, with reduced-motion immediate closure. Escape/backdrop/action timing checked; no live basket/order changes or video recordings.

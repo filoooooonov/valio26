@@ -24,6 +24,7 @@ export type Dish = {
   diet: string[];
 };
 export type Option = {
+  frozen?: boolean;
   sku: string;
   name: string;
   reason: string;
@@ -43,6 +44,7 @@ export type Issue = {
   decidedBy?: string;
 };
 export type BasketLine = {
+  frozen?: boolean;
   id: string;
   dishId: string | null;
   needIds: string[];
@@ -492,6 +494,13 @@ const orderable = (st: StockLine, qty: number) =>
 
 type Group = { sku: string; needs: Need[]; ranked: string[] };
 
+/** Catalogue storage label is authoritative; numeric temp codes are undocumented. */
+export function isFrozenProduct(p?: Pick<Product, "labels" | "en" | "fi" | "sv">): boolean {
+  if (!p) return false;
+  if (p.labels.length) return p.labels.includes("freezeTemperature") && !p.labels.some(label => /^(?:warm|cool)Temperature$/.test(label));
+  return /\b(?:frozen|deep[ -]?frozen|deepfrost|FRO)\b/i.test([p.en, p.fi, p.sv].join(" "));
+}
+
 function makeLine(
   g: Group,
   st: StockLine,
@@ -525,6 +534,7 @@ function makeLine(
     total: r2(sq.qty * st.price),
     contains: allergenNames(p?.contains ?? []),
     claims: p?.claims ?? [],
+    frozen: isFrozenProduct(p),
     reliability: p?.rel ?? undefined,
     co2: p?.co2 ?? undefined,
     image: p?.image ?? undefined,
@@ -582,6 +592,7 @@ function optionFor(
     total: l.total,
     stock: st,
     contains: l.contains,
+    frozen: l.frozen,
   };
 }
 
@@ -643,6 +654,24 @@ export type BasketRequest = {
   customer?: string;
 };
 
+/** Reject structurally valid LLM plans that silently leave part of the menu unpurchased. */
+export function draftCompletenessIssues(draft: Draft): string[] {
+  const issues: string[] = [];
+  const dishIds = new Set(draft.dishes.map(d => d.id));
+  const positive = draft.needs.filter(n => Number.isFinite(n.totalQty) && n.totalQty > 0);
+  if (!positive.length) issues.push("No positive purchasing needs were provided");
+  for (const dish of draft.dishes)
+    if (!positive.some(n => n.dishId === dish.id))
+      issues.push("Missing purchasing needs for " + dish.name + " (" + dish.id + ")");
+  for (const need of draft.needs) {
+    if (!Number.isFinite(need.totalQty) || need.totalQty <= 0)
+      issues.push("Need " + need.id + " must have a positive totalQty");
+    if (need.dishId === null ? draft.dishes.length > 0 : !dishIds.has(need.dishId))
+      issues.push("Need " + need.id + " must reference a valid dish; dishId null is only for product orders without dishes");
+  }
+  return issues;
+}
+
 export async function buildBasket(req: BasketRequest): Promise<Basket> {
   const id = newId("b");
   const customer = req.customer || "123";
@@ -667,6 +696,21 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
       draft = fallbackDraft(req.request, req.people);
     }
   } else draft = fallbackDraft(req.request, req.people);
+  // Validate before catalogue lookup or any price/availability call, including custom Llm implementations.
+  if (planner === "llm" && llm) {
+    let missing = draftCompletenessIssues(draft);
+    if (missing.length) {
+      audit(id, "gateway", "plan_retry", "Incomplete menu plan; retrying before any product lookup", { issues: missing });
+      try {
+        draft = await llm.draft(req.request + "\n\nREPAIR INCOMPLETE PLAN: " + missing.join("; ") + ". Return the full corrected plan, not a patch. Every approved dish/category needs its own positive purchasing needs, including drinks, snacks and fillings. Keep all approved categories and reference valid dish ids.", req.people, req.date);
+      } catch {
+        throw new HttpError(502, "Could not complete the approved menu after one retry. No products were looked up or ordered; please retry.");
+      }
+      missing = draftCompletenessIssues(draft);
+      if (missing.length)
+        throw new HttpError(502, "Could not complete the approved menu after one retry: " + missing.join("; ") + ". No products were looked up or ordered; please retry.");
+    }
+  }
   const people = req.people ?? draft.people;
   const dishes: Dish[] = draft.dishes.map((d) => ({
     ...d,
@@ -964,6 +1008,7 @@ export function editLine(
         stock: o.stock,
         total: o.total,
         contains: o.contains,
+        frozen: o.frozen ?? isFrozenProduct(p),
         claims: p?.claims ?? [],
         reliability: p?.rel ?? undefined,
         co2: p?.co2 ?? undefined,
