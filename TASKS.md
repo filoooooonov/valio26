@@ -1,6 +1,6 @@
 # TASKS.md: claim before starting
 
-- [~] @aleksei-codex S36 Remove the loading spinner from product-search progress (rubric: demo) - files: app/web/src/components/Chat.tsx.
+- [x] @aleksei-codex S36 Removed the loading spinner from product-search progress; progress labels and completed checks retained. Build and69fast tests pass (rubric: demo) - files: app/web/src/components/Chat.tsx.
 
 How to use it: change `[ ]` to `[~] @owner` and **commit + push** before you start. Mark `[x]` when done and
 merged. Keep tasks to 2h or less, and split anything bigger.

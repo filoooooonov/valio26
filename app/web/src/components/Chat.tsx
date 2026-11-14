@@ -690,10 +690,7 @@ export function Thinking({ since }: { since: number }) {
               className={i < cur ? "step step--done" : "step step--now"}
             >
               <span className="step__dot">
-                <Icon
-                  name={i < cur ? "check" : "loader"}
-                  className={"i-14" + (i < cur ? "" : " spin")}
-                />
+                {i < cur && <Icon name="check" className="i-14" />}
               </span>
               <span className="grow">
                 <b className="step__title">{i < cur ? done : now + "…"}</b>
