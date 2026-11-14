@@ -20,6 +20,9 @@ import { AlternativeDraftReview } from "./components/AlternativeDraftReview";
 import { MenuEconomics } from "./components/MinunAimo";
 import { SAMPLE_CONTEXT_MARKER } from "./minunAimo";
 import { Header, PhoneTabs } from "./components/Header";
+import { ScheduledMenus, newSchedule } from './components/ScheduledMenus';
+import { SCHEDULE_KEY, readSchedules, type Schedule } from './recurring';
+import { Icon } from './icons';
 import { Chat, type LocalItem, type ChatError } from "./components/Chat";
 import { OrderPanel } from "./components/OrderPanel";
 import { SwapSheet, LogSheet } from "./components/Sheets";
@@ -61,6 +64,11 @@ function setUrl(b?: string, o?: string) {
 }
 
 function Shop() {
+  const [screen, setScreen] = useState<'shop' | 'schedules'>(params.get('view') === 'schedules' ? 'schedules' : 'shop');
+  const [schedules, setSchedules] = useState(readSchedules);
+  const [scheduleEditor, setScheduleEditor] = useState<Schedule | null>(null);
+  const [scheduleNotice, setScheduleNotice] = useState('');
+  const [scheduleLimit, setScheduleLimit] = useState<number | null>(null);
   const [menu, setMenu] = useState<MenuDraft | null>(null);
   const [delivery, setDelivery] = useState<DeliveryChoice | null>(null);
   const [deliveryOpen, setDeliveryOpen] = useState(false);
@@ -182,6 +190,7 @@ function Shop() {
 
   function propose(request: string) {
     if (building || menuSubmitting.current) return;
+    setScheduleLimit(null);
     const known = detectRequirements(request);
     const chosenDelivery = delivery ? { ...delivery, date: requestDeliveryDate(request, delivery.date) } : null;
     if (chosenDelivery) setDelivery(chosenDelivery);
@@ -452,6 +461,7 @@ function Shop() {
 
   function reset() {
     abort.current?.abort();
+    setScheduleLimit(null);
     setMenu(null);
     setApprovedSummary(null);
     menuSubmitting.current = false;
@@ -509,6 +519,35 @@ function Shop() {
   const sheetLine = basket?.lines.find((l) => l.id === sheet) ?? null;
   const event = basket ? addDays(basket.date, 1) : addDays(DELIVERY, 1);
 
+  function navigate(next: 'shop' | 'schedules') {
+    setScreen(next);
+    const url = new URL(location.href);
+    if (next === 'schedules') url.searchParams.set('view', 'schedules'); else url.searchParams.delete('view');
+    history.replaceState(null, '', url);
+  }
+  function saveSchedules(next: Schedule[]) {
+    try { localStorage.setItem(SCHEDULE_KEY, JSON.stringify(next)); setSchedules(next); return true; }
+    catch { setScheduleNotice('Could not save on this device. Check browser storage settings and try again.'); return false; }
+  }
+  function saveSchedule(s: Schedule) {
+    const saved = saveSchedules(schedules.some(v => v.id === s.id) ? schedules.map(v => v.id === s.id ? s : v) : [...schedules, s]);
+    if (saved) setScheduleNotice(`“${s.name}” saved on this device.`);
+    return saved;
+  }
+  function repeatOrder() {
+    const dishes = menu?.categories.filter(c => c.selected).map(c => c.title) ?? basket?.dishes.map(d => d.name) ?? [];
+    setScheduleEditor(newSchedule({ name: dishes.join(', '), dishes, people: menu?.requirements?.people ?? basket?.people ?? 50, dietary: menu?.requirements?.dietary.join(', ') ?? [...new Set(basket?.dishes.flatMap(d => d.diet) ?? [])].join(', '), estimate: basket?.total ?? null, delivery: menu?.delivery ?? delivery ?? undefined }, delivery));
+    setScheduleNotice(''); navigate('schedules');
+  }
+  function prepareSchedule(s: Schedule, date: string) {
+    const choice = { ...s.delivery, date };
+    const request = `Ingredients for ${s.people} people: ${s.dishes.join(', ')}. Dietary needs and allergies: ${s.dietary || 'Confirm before preparing products'}. Review threshold: EUR ${s.limit} per delivery. Require human review before ordering.`;
+    reset(); setDelivery(choice); setScheduleLimit(s.limit);
+    setMenu({ request, categories: s.dishes.map((title,i) => ({ id: `scheduled-${i}`, title, description: '', selected: true })), delivery: choice });
+    say({ kind: 'user', who: BUYER, text: request });
+    navigate('shop');
+  }
+
   return (
     <div className="app" data-tab={tab}>
       <Header
@@ -521,6 +560,11 @@ function Shop() {
         onPickup={setPickup}
         locked={phase === "waiting" || phase === "placed" || !!building || busy}
       />
+      <nav className="shop-nav" aria-label="Shop sections">
+        <button aria-current={screen === 'shop' ? 'page' : undefined} onClick={() => navigate('shop')}><Icon name="shopping-basket" className="i-16" />Shopping assistant</button>
+        <button aria-current={screen === 'schedules' ? 'page' : undefined} onClick={() => navigate('schedules')}><Icon name="repeat" className="i-16" />Scheduled menus</button>
+      </nav>
+      {screen === 'schedules' ? <ScheduledMenus schedules={schedules} editor={scheduleEditor} onEdit={s => { setScheduleEditor(s); setScheduleNotice(''); }} onSave={saveSchedule} onDelete={id => { if (saveSchedules(schedules.filter(s => s.id !== id))) { setScheduleEditor(null); setScheduleNotice('Schedule deleted from this device.'); } }} onPrepare={prepareSchedule} onBack={() => navigate('shop')} delivery={delivery} notice={scheduleNotice} /> : <>
       <PhoneTabs
         tab={tab}
         onTab={setTab}
@@ -569,8 +613,9 @@ function Shop() {
           }
         />
         <OrderPanel
+          onRepeat={repeatOrder}
           deliveryTime={delivery?.time}
-          insight={basket?.request.includes(SAMPLE_CONTEXT_MARKER) ? <MenuEconomics basket={basket} onReview={setSheet} /> : undefined}
+          insight={<>{basket?.request.includes(SAMPLE_CONTEXT_MARKER) && <MenuEconomics basket={basket} onReview={setSheet} />}{basket && scheduleLimit !== null && basket.total > scheduleLimit && <p className="schedule-notice" role="status">This draft exceeds your saved review threshold of €{scheduleLimit.toFixed(2)}. Review the total before ordering.</p>}</>}
           phase={phase}
           planningMenu={!!menu}
           basket={basket}
@@ -604,6 +649,7 @@ function Shop() {
           onHero={() => propose(HERO)}
         />
       </main>
+      </>}
       {deliveryOpen && <DeliveryPicker value={delivery} defaultDate={menu ? requestDeliveryDate(menu.request, DELIVERY) : basket?.date ?? DELIVERY} onClose={() => setDeliveryOpen(false)} onConfirm={choice => {
         setDelivery(choice);
         setMenu(current => current ? { ...current, delivery: choice } : current);

@@ -91,7 +91,8 @@ export function Chat(p: Props) {
     const measure = () => {
       const head = root.querySelector('.chat__head');
       if (!head) return;
-      const available = Math.max(150, dock.getBoundingClientRect().top - head.getBoundingClientRect().bottom - 28);
+      const top = Math.max(root.getBoundingClientRect().top + 16, head.getBoundingClientRect().bottom);
+      const available = Math.max(100, dock.getBoundingClientRect().top - top - 28);
       dock.style.setProperty('--menu-review-max-height', available + 'px');
     };
     measure();

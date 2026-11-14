@@ -31,6 +31,7 @@ import "./order-polish.css";
 import { RecipeDialog } from "./RecipeDialog";
 
 export type OrderProps = {
+  onRepeat?: () => void;
   deliveryTime?: string;
   insight?: ReactNode;
   planningMenu?: boolean;
@@ -80,6 +81,7 @@ export function OrderPanel(p: OrderProps) {
         </h1>
         {b && <Controls p={p} b={b} />}
         {(p.phase === "draft" || p.phase === "review") && p.insight}
+        {(b || p.planningMenu) && p.onRepeat && <button className="schedule-text schedule-repeat" onClick={p.onRepeat}><Icon name="repeat" className="i-16" />Repeat this order</button>}
       </div>
       <div className="order__lines">
         {!b ? (
