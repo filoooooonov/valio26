@@ -142,3 +142,13 @@ type OfferReceipt = { claims: OfferClaims; kid: string; alg: "Ed25519"; sig: str
 ```
 MCP: `check_stock` returns the same `receipts`; new tool `verify_receipt { receipt }`. Key: `GATEWAY_SIGNING_KEY` (PKCS8 PEM,
 optional); without it a key is generated at start (receipts then don't survive a restart; stated in TRUST.md).
+
+## Additive audit chain + decision matrix (T-AUDIT, T-MATRIX)
+```
+GET /api/basket/:id/audit/verify   -> { intact: boolean, count: number, head: string | null, brokenAt?: number }
+GET /api/basket/:id/audit/export   -> attachment aimo-audit-<id>.json: { exportedAt, gateway, basket, order, chain, events }
+GET /api/mandate/:customer/matrix  -> { mandate: Mandate, rows: { decision: string, who: "gateway"|"buyer"|"approver", rule: string }[] }
+```
+AuditEvent gains optional `prev` (hash of the previous event in the basket, "genesis" for the first) and `hash`
+(sha256 hex over sorted-keys JSON of {at, actor, kind, summary, data, prev}). MCP: new tool `get_mandate { customer? }`
+returns the same body as the matrix route.
