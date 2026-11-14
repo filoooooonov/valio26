@@ -17,7 +17,9 @@ export type StockLine = {
   closingTime?: string;
   cutoffPassed: boolean;
   logistic?: string;
-  deliverable: boolean;
+  deliverable: boolean; // has a delivery date by `date`, a price, AND ordering is still open (cut-off not passed)
+  // One machine-readable verdict per line: ok | short | cutoff_passed | no_delivery | no_price | not_found
+  status: "ok" | "short" | "cutoff_passed" | "no_delivery" | "no_price" | "not_found";
   salesUnit: string;
   error?: string;
 };
@@ -121,8 +123,9 @@ export async function checkStock(
   };
 }
 
-function missingLine(sku: string): StockLine {
+export function missingLine(sku: string, error = "not returned by API"): StockLine {
   return {
+    status: "not_found",
     sku,
     price: 0,
     priceWithTax: 0,
@@ -132,7 +135,7 @@ function missingLine(sku: string): StockLine {
     cutoffPassed: false,
     deliverable: false,
     salesUnit: "",
-    error: "not returned by API",
+    error,
   };
 }
 
@@ -177,7 +180,17 @@ export function toLine(
     closingTime: a.closingTime ?? undefined,
     cutoffPassed,
     logistic: a.logisticModel ?? undefined,
-    deliverable: !a.salesBlock && !!best && !!priced,
+    // A passed cut-off is NOT deliverable for this date, and gets its own status so the planner can say so.
+    deliverable: !a.salesBlock && !!best && !!priced && !cutoffPassed,
+    status: !priced
+      ? "no_price"
+      : a.salesBlock || !best
+        ? "no_delivery"
+        : cutoffPassed
+          ? "cutoff_passed"
+          : available != null && available <= 0
+            ? "short"
+            : "ok",
     salesUnit: best?.salesUnit ?? a.scheduleLines?.[0]?.salesUnit ?? "",
     error: priced ? undefined : "no price",
   };

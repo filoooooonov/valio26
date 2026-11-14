@@ -1,10 +1,11 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { catalogSize, search } from "./catalog";
-import { callLog, checkStock } from "./valio";
-import { events } from "./audit";
+import { catalogSize, getProduct, search } from "./catalog";
+import { callLog, checkStock, missingLine } from "./valio";
+import { allEvents, events } from "./audit";
 import { decide, listOrders, placeOrder, type Decision } from "./orders";
 import { buildBasket, editLine, HttpError, recompute, type BasketRequest, type LineEdit } from "./plan";
+import { handleMcp } from "./mcp";
 import { getMandate } from "./policy";
 import { baskets, orders } from "./store";
 
@@ -28,8 +29,19 @@ app.post("/api/stock", async (c) => {
   if (!Array.isArray(skus) || !skus.length) return c.json({ error: "skus required" }, 400);
   if (skus.length > 50) return c.json({ error: "shortlist only: max 50 SKUs per check" }, 400);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date ?? "")) return c.json({ error: "date must be YYYY-MM-DD" }, 400);
+  // Unknown SKUs never reach Valio: they come back as status "not_found"; all unknown -> 404.
+  const known = skus.filter((s) => getProduct(String(s)));
+  const unknown = skus.filter((s) => !getProduct(String(s)));
   try {
-    return c.json(await checkStock(skus, date, customer));
+    const sc = known.length
+      ? await checkStock(known, date, customer)
+      : { checkedAt: new Date().toISOString(), date, calls: 0, skus: 0, lines: [] };
+    const lines = skus.map(
+      (s) => sc.lines.find((l) => l.sku === s) ?? missingLine(String(s), "unknown SKU: not in the Valio Aimo catalogue"),
+    );
+    const body = { ...sc, skus: skus.length, lines };
+    if (!known.length) return c.json({ error: `unknown SKU${unknown.length > 1 ? "s" : ""}: ${unknown.join(", ")}`, ...body }, 404);
+    return c.json(body);
   } catch (e) {
     return c.json({ error: String((e as Error).message) }, 502);
   }
@@ -94,3 +106,9 @@ app.get("/api/orders/:id/audit", (c) => {
   return o ? c.json(events(o.basketId)) : c.json({ error: "order not found" }, 404);
 });
 app.get("/api/mandate/:customer", (c) => c.json(getMandate(c.req.param("customer"))));
+app.get("/api/mandate", (c) => c.json(getMandate(c.req.query("customer") ?? "123")));
+// Whole audit trail, newest first (each event carries its basket scope). Per order: /api/orders/:id/audit.
+app.get("/api/audit", (c) => c.json(allEvents(Math.min(Number(c.req.query("limit") ?? 200), 1000))));
+
+// MCP (Streamable HTTP, stateless) for outside buyer agents: same handlers + same mandate as the REST API.
+app.all("/mcp", (c) => handleMcp(c.req.raw));

@@ -35,4 +35,11 @@ export const events = (scope: string): AuditEvent[] => [
   ...(byScope.get(scope) ?? []),
 ];
 
+/** Every event across baskets/orders, newest first, each tagged with its scope (basket id). */
+export const allEvents = (limit = 200): (AuditEvent & { scope: string })[] =>
+  [...byScope.entries()]
+    .flatMap(([scope, list]) => list.map((e) => ({ ...e, scope })))
+    .sort((a, b) => (a.at < b.at ? 1 : -1))
+    .slice(0, limit);
+
 export const resetAudit = () => byScope.clear();

@@ -145,27 +145,61 @@ export function search(
   const qt = tokens(q);
   if (!qt.length) return [];
   const diets = (opts.diet ?? []).map((d) => DIETS[d]).filter(Boolean);
-  const out: ProductHit[] = [];
+  const wantsNonFood = NONFOOD_WORDS.test(norm(q));
+  const scored: { p: Product; score: number; exact: boolean }[] = [];
   for (const { p, text, toks } of index) {
     let score = 0;
     let ok = true;
+    let exact = true;
     for (const t of qt) {
       if (toks.has(t)) score += 3;
       else if (
         [...toks].some(
           (x) => x.startsWith(t) || (t.length > 4 && x.includes(t)),
         )
-      )
+      ) {
         score += 1;
-      else {
+        exact = false;
+      } else {
         ok = false;
         break;
       }
     }
     if (!ok || !diets.every((d) => d(p))) continue;
-    if (norm(p.en).startsWith(qt[0])) score += 2; // head noun first ("salmon fillet" over "fish soup with salmon")
+    const nonFood = NONFOOD.test(p.cat);
+    // head noun first ("salmon fillet" over "fish soup with salmon"); not for kitchenware ("MILK JUG")
+    if (!nonFood && tokens(p.en)[0] === qt[0]) score += 2;
+    if (nonFood && !wantsNonFood) score -= 3; // food first: "milk" means dairy, not a milk jug
     score -= Math.min(text.length, 160) / 160; // prefer shorter, more specific names
-    out.push(toHit(p, Math.round(score * 100) / 100));
+    // catering packs: small penalty for retail sizes under 1 l / 1 kg ("5 dl coffee milk" after the 1 l bulk milk)
+    if (p.size && p.size.unit !== "PCS" && p.size.qty < 1) score -= 0.15;
+    scored.push({ p, score, exact });
   }
-  return out.sort((a, b) => b.score - a.score).slice(0, opts.limit ?? 20);
+  // Ingredient words -> the product group a kitchen means by them ("milk" = drinking milk 10400, not coconut
+  // milk or a milk jug). Small hand-checked table; unknown words just use text rank.
+  const groups = qt.map((t) => GROUP_HINTS[t]).filter(Boolean);
+  if (groups.length)
+    for (const x of scored)
+      if (groups.some((g) => x.p.cat.startsWith(g))) x.score += 2.5;
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, opts.limit ?? 20)
+    .map((x) => toHit(x.p, Math.round(x.score * 100) / 100));
 }
+
+const GROUP_HINTS: Record<string, string> = {
+  milk: "10400",
+  maito: "10400",
+  mjolk: "10400",
+  cream: "10401",
+  kerma: "10401",
+  butter: "10500",
+  voi: "10500",
+  salmon: "187",
+  lohi: "187",
+};
+
+// Non-food groups in the catalogue: 20xxx kitchenware/tableware, 6xxxx hygiene + cleaning.
+const NONFOOD = /^(20|6)/;
+const NONFOOD_WORDS =
+  /(jug|dish|scoop|spreader|slicer|knife|bowl|plate|cup|glass|tray|pan|pot|napkin|glove|towel|soap|detergent|kannu|astia)/;

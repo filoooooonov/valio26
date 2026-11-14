@@ -31,6 +31,8 @@ describe("toLine", () => {
       scheduleLines: [{ salesBlock: false, availableAmount: 999999, availableDate: "2026-11-16", salesUnit: "KI" }] }, price("2", 31.31, 1.57), "2026-11-20", NOW);
     expect(l.available).toBeNull();
     expect(l.cutoffPassed).toBe(true);
+    expect(l.deliverable).toBe(false); // a passed cut-off can't be delivered on that date
+    expect(l.status).toBe("cutoff_passed");
     expect(contentPerUnit(l)).toEqual({ qty: 19.943, unit: "L" });
   });
   test("no schedule line by the date = not deliverable", () => {

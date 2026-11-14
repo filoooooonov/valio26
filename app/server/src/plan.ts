@@ -454,6 +454,12 @@ function issueFor(
   qty: number,
   date: string,
 ): Omit<Issue, "options"> | undefined {
+  // Cut-off first: the item exists and has a date, but ordering for that date is closed (its own issue).
+  if (st.cutoffPassed && st.availableDate && st.status !== "no_price")
+    return {
+      kind: "cutoff",
+      text: `Ordering is closed for ${dayLabel(date)}: cut-off ${st.closingTime ? timeLabel(st.closingTime) : ""} passed${st.logistic === "Terminal" ? " (supplier item)" : ""}.`,
+    };
   if (!st.deliverable)
     return {
       kind: "unavailable",

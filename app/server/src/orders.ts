@@ -79,19 +79,19 @@ async function recheck(
         name: l.name,
         kind: "stock",
         was: "deliverable",
-        now: !s.deliverable
-          ? "no delivery date"
-          : s.cutoffPassed
-            ? "cut-off passed"
+        now: s.cutoffPassed
+          ? "cut-off passed"
+          : !s.deliverable
+            ? "no delivery date"
             : `only ${s.available} left`,
       });
       l.issue = {
-        kind: !s.deliverable
-          ? "unavailable"
-          : s.cutoffPassed
-            ? "cutoff"
+        kind: s.cutoffPassed
+          ? "cutoff"
+          : !s.deliverable
+            ? "unavailable"
             : "short",
-        text: `Changed since the basket was built: ${!s.deliverable ? "no delivery date any more" : s.cutoffPassed ? "ordering closed" : `only ${s.available} left`}.`,
+        text: `Changed since the basket was built: ${s.cutoffPassed ? "ordering closed" : !s.deliverable ? "no delivery date any more" : `only ${s.available} left`}.`,
         options: [],
       };
     }
