@@ -1,6 +1,6 @@
 # TASKS.md: claim before starting
 
-- [~] @aleksei-codex S38 Remove the three draft composer suggestion buttons shown by the user (rubric: demo) - files: app/web/src/components/Chat.tsx. Coordinating with S37 file holder.
+- [~] @aleksei-codex S38 Remove the three draft composer suggestion buttons and the Order draft eyebrow requested by the user (rubric: demo) - files: app/web/src/components/Chat.tsx, OrderPanel.tsx. Coordinating with S37 file holder.
 
 - [x] @aleksei-codex S36 Removed the loading spinner from product-search progress; progress labels and completed checks retained. Build and69fast tests pass (rubric: demo) - files: app/web/src/components/Chat.tsx.
 
