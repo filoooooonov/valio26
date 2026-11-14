@@ -573,7 +573,7 @@ function Waiting({ order }: { order: Order }) {
         </div>
         <p className="notice__text">
           {order.pricesHeldUntil
-            ? `Prices and stock are held until ${stamp(order.pricesHeldUntil)}. `
+            ? `Order cut-off ${stamp(order.pricesHeldUntil)}. Prices and stock are re-checked when he approves. `
             : ""}
           His answer shows up here as soon as he decides.
         </p>
@@ -625,7 +625,7 @@ export function SentBack(p: {
       )}
       <p className="card__small">
         Nothing is ordered.
-        {p.held ? ` Your prices are still held until ${stamp(p.held)}.` : ""}
+        {p.held ? ` You can still order before the cut-off, ${stamp(p.held)}.` : ""}
       </p>
       {p.active && (
         <div className="row-8">
