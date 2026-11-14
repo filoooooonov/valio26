@@ -13,12 +13,21 @@ import { productImage } from "./images";
 import { handleMcp } from "./mcp";
 import { getMandate } from "./policy";
 import { baskets, orders } from "./store";
+import { receiptFor, verifyReceipt, wellKnown } from "./trust";
 
 // Agent gateway: order builder API for the webshop + outside agents. Shapes in /CONTRACT.md (v1).
 export const app = new Hono();
 app.use("/api/*", cors());
 
 app.get("/api/health", (c) => c.json({ ok: true, service: "valio-gateway", catalog: catalogSize() }));
+
+app.get("/.well-known/aimo-gateway.json", (c) => c.json(wellKnown()));
+
+app.post("/api/receipts/verify", async (c) => {
+  const body = await c.req.json<{ receipt?: unknown }>().catch(() => null);
+  if (body?.receipt == null) return c.json({ error: "receipt required" }, 400);
+  return c.json(verifyReceipt(body.receipt));
+});
 
 // Local catalogue only: never touches the Valio API.
 // One EAN lookup on valioaimo.fi per SKU, only when the UI shows that product; cached on disk (misses too).
@@ -47,7 +56,7 @@ app.post("/api/stock", async (c) => {
     const lines = skus.map(
       (s) => sc.lines.find((l) => l.sku === s) ?? missingLine(String(s), "unknown SKU: not in the Valio Aimo catalogue"),
     );
-    const body = { ...sc, skus: skus.length, lines };
+    const body = { ...sc, skus: skus.length, lines, receipts: lines.map(l => receiptFor(l, { customer: customer ?? "123", deliveryDate: date, checkedAt: sc.checkedAt })) };
     if (!known.length) return c.json({ error: `unknown SKU${unknown.length > 1 ? "s" : ""}: ${unknown.join(", ")}`, ...body }, 404);
     return c.json(body);
   } catch (e) {
@@ -83,6 +92,11 @@ app.post("/api/basket", async (c) => {
   } catch (e) {
     return fail(c, e);
   }
+});
+app.get("/api/basket/:id/receipts", (c) => {
+  const basket = baskets.get(c.req.param("id"));
+  if (!basket) return c.json({ error: "basket not found" }, 404);
+  return c.json(basket.lines.filter(l => l.qty > 0).map(l => receiptFor(l.stock, { customer: basket.customer, deliveryDate: basket.date, checkedAt: basket.checkedAt })));
 });
 app.get("/api/basket/:id", (c) => {
   const b = baskets.get(c.req.param("id"));
