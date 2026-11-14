@@ -10,7 +10,6 @@ import type { Basket, BasketLine, Order } from "../api";
 import { api, BUYER } from "../api";
 import { Icon, productIcon, type IconName } from "../icons";
 import {
-  addDays,
   dayLabel,
   niceName,
   qtyLabel,
@@ -20,7 +19,6 @@ import {
   sameDay,
   stamp,
   timeLabel,
-  weekdayLong,
 } from "../format";
 import { firstName, orderLabel, PEOPLE, shortName, syncProductReviews, reviewProductKey, type ProductReviewTimeline, type Item } from "../thread";
 import type { Phase } from "../App";
@@ -190,6 +188,9 @@ export function Chat(p: Props) {
           ? <ReplacementNotice key={it.key} lines={open.filter(line => it.products.includes(reviewProductKey(line)))} date={p.basket.date} busy={p.busy} onReview={p.onSeeAll} />
           : it.kind !== "productReview" ? <Turn key={it.key} it={it} p={p} firstAt={firstAt} /> : null)}
         {p.alternativeProposal}
+        {p.basket && (p.phase === "draft" || p.phase === "review") && p.basket.lines.filter((l) => l.offerPermission).map((l) => (
+          <PermissionOffer key={l.id + l.offerPermission!.toSku} offer={l.offerPermission!} maxIncreasePct={p.basket!.rules.maxSubstituteIncreasePct ?? 10} />
+        ))}
         {p.phase === "waiting" && p.order && <Waiting order={p.order} />}
         {p.stale && p.basket && (
           <Stale checkedAt={p.basket.checkedAt} onRefresh={p.onRefreshPrices} />
@@ -202,7 +203,6 @@ export function Chat(p: Props) {
 
       {hasNewMessages && <button className="chat-latest" onClick={() => jumpToLatest()} aria-label="Jump to latest message">Latest messages <Icon name="arrow-right" className="i-14" /></button>}
       {successToast === p.order?.id && p.order?.status === "placed" && <div className="chat-success-toast" role="status" aria-live="polite"><Icon name="circle-check" className="i-22" /><div><b>Order confirmed</b><span>{orderLabel(p.order.id)} is recorded in this demo gateway.</span></div><button className="round round--plain" aria-label="Dismiss order confirmation" onClick={() => setSuccessToast(null)}><Icon name="x" className="i-16" /></button></div>}
-      {!p.planningMenu && <Suggestions p={p} />}
       <div className="chat-composer-dock" ref={composerDock}>
         {hasMenuReview && <>
           <button ref={reviewTrigger} type="button" className="chat-menu-trigger" aria-expanded={menuReviewOpen} aria-controls="menu-review-popup" onClick={() => setMenuReviewOpen(open => !open)}><Icon name="list" className="i-16" />{p.menuReviewTitle === 'A few event details' ? 'Review event details' : 'Review menu'}<Icon name="chevron-down" className="i-14" /></button>
@@ -246,6 +246,9 @@ export function Intro({
           Tell me what you're cooking, for how many and when. I'll build the
           order from your usual products and your prices.
         </p>
+        <p className="muted-12">
+          Demo account: Bistro Kallio, with a synthetic 8-week order history. Orders are simulated.
+        </p>
         <div className="examples">
           <button className="chip chip--example" onClick={onHero}>
             <Icon name="corner-down-right" className="i-14" /> Catering for 50
@@ -253,10 +256,10 @@ export function Intro({
           </button>
           <button
             className="chip chip--example"
-            onClick={() => onSend("Restock like last Friday")}
+            onClick={() => onSend("Prepare my usual weekend order.")}
           >
-            <Icon name="corner-down-right" className="i-14" /> Restock like last
-            Friday
+            <Icon name="corner-down-right" className="i-14" /> My usual weekend
+            order
           </button>
           <button className="chip chip--example" onClick={onAttach}>
             <Icon name="camera" className="i-14" /> Photo of a menu
@@ -321,14 +324,29 @@ function Turn({
           <div className="turn__body">
             <p className="turn__text">{it.text}</p>
             {"did" in it && it.did && (
-              <ul className="did">
-                {it.did.map((d) => (
-                  <li key={d.text}>
-                    <Icon name={d.icon} className="i-14" />
-                    {d.text}
-                  </li>
-                ))}
-              </ul>
+              <div className="did">
+                <ul className="did__list">
+                  {it.did.filter((d) => !d.detail).map((d) => (
+                    <li key={d.text}>
+                      <Icon name={d.icon} className="i-14" />
+                      {d.text}
+                    </li>
+                  ))}
+                </ul>
+                {it.did.some((d) => d.detail) && (
+                  <details className="did__more">
+                    <summary>How Helmi decided</summary>
+                    <ul className="did__list">
+                      {it.did.filter((d) => d.detail).map((d) => (
+                        <li key={d.text}>
+                          <Icon name={d.icon} className="i-14" />
+                          {d.text}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </div>
             )}
             {"added" in it && it.added?.map((a) => {
               const line = p.basket?.lines.find((l) => l.id === a.lineId);
@@ -513,6 +531,7 @@ export function Question({ line, basket, busy, onChoose, onSeeAll }: {
         <ReplacementPhoto sku={o.sku} name={o.name} contains={o.contains} />
         <div className="stock-replacement__body">
           <strong className="stock-replacement__name">{niceName(o.name)}{o.frozen && <span className="stock-replacement__frozen" aria-label="Frozen" title="Frozen"><Icon name="snowflake" className="i-14" /></span>}</strong>
+          {o.preference && o.preference.status !== "unfamiliar" && <span className="stock-replacement__pref">{o.preference.reason}</span>}
           <div className="stock-replacement__facts"><span>{qtyLabel(o.qty, o.pack)}</span><span>{money(o.total)}</span></div>
           {delta != null && <span className={"stock-replacement__difference" + (delta < 0 ? " stock-replacement__difference--less" : "")}>{Math.abs(delta) < 0.005 ? "Same price" : `${money(Math.abs(delta))} ${delta < 0 ? "cheaper" : "more"}`}</span>}
           <span className={"stock-replacement__delivery" + (!available ? " stock-replacement__delivery--late" : "")}><Icon name="truck" className="i-14" />{available ? "Arrives in time" : o.stock.availableDate ? `Available ${dayLabel(o.stock.availableDate)}` : "Not available in time"}</span>
@@ -546,6 +565,7 @@ export function NoSubstitute({ lines, date, busy, onRemove, onFind }: {
 }
 
 function Waiting({ order }: { order: Order }) {
+  const stockCheck = order.mandate?.reasons.some((r) => /can't confirm stock/.test(r));
   const [seen, setSeen] = useState<string | null>(null);
   useEffect(() => {
     const read = () => {
@@ -568,10 +588,13 @@ function Waiting({ order }: { order: Order }) {
       <Icon name="hourglass" className="i-16 notice__icon" />
       <div className="grow">
         <div className="notice__head">
-          <b>Waiting for Mikko</b>
+          <b>{stockCheck ? "Mikko is confirming stock" : "Waiting for Mikko"}</b>
           {seen && <span className="muted-12">reminded {timeLabel(seen)}</span>}
         </div>
         <p className="notice__text">
+          {stockCheck
+            ? "We've notified Mikko. Valio can't confirm stock for this volume automatically, so he checks it with Valio and approves the order. "
+            : ""}
           {order.pricesHeldUntil
             ? `Ordering cutoff: ${stamp(order.pricesHeldUntil)}. Prices and stock are rechecked; nothing is reserved. `
             : ""}
@@ -677,6 +700,46 @@ export function Stale({
   );
 }
 
+// Preferences are not permissions (CONTRACT S48): after repeated approvals Helmi may only ASK. Nothing changes
+// until the buyer explicitly allows it, and the rule is stored as a separate, revocable policy.
+function PermissionOffer({ offer, maxIncreasePct }: { offer: NonNullable<BasketLine["offerPermission"]>; maxIncreasePct: number }) {
+  const [state, setState] = useState<"ask" | "saving" | "granted" | "dismissed" | "error">("ask");
+  if (state === "dismissed") return null;
+  const from = shortName(offer.fromName), to = shortName(offer.toName);
+  return (
+    <div className="notice enter">
+      <span className="disc">
+        <Icon name="repeat" className="i-14" />
+      </span>
+      <div className="grow">
+        {state === "granted" ? (
+          <>
+            <b className="notice__title">Done</b>
+            <p className="notice__text">
+              When {from} is unavailable, I'll use {to}, up to {maxIncreasePct}% more expensive. You can turn this off in Purchasing policy.
+            </p>
+          </>
+        ) : (
+          <>
+            <b className="notice__title">Use {to} automatically?</b>
+            <p className="notice__text">
+              You've approved {to} instead of {from} {offer.accepted} times. I can use it whenever {from} is unavailable, up to {maxIncreasePct}% more expensive. Until you allow it, I'll keep asking.
+            </p>
+            {state === "error" && <p className="notice__text">That didn't save. Nothing changed.</p>}
+            <div className="answers">
+              <button className="btn btn--sm" disabled={state === "saving"} onClick={() => {
+                setState("saving");
+                api.grantPermission({ fromSku: offer.fromSku, toSku: offer.toSku, maxIncreasePct }).then(() => setState("granted"), () => setState("error"));
+              }}>Allow</button>
+              <button className="btn btn--outline btn--sm" disabled={state === "saving"} onClick={() => setState("dismissed")}>Not now</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // The planner is one ~20 s gateway call; these are its real stages in order (CONTRACT.md "Planner pipeline").
 // Only the labels tick on a clock; nothing on screen is data until the gateway answers.
 const STEPS: [string, string, string, number][] = [
@@ -717,7 +780,7 @@ export function Thinking({ since }: { since: number }) {
   const frac = Math.min(1, (s - STEPS[cur][3]) / (next - STEPS[cur][3]));
   return (
     <div className="turn enter" role="status">
-      <ThinkingMark />
+      {/* no avatar: the running step's loader is the Aimo mark itself */}
       <ol className="steps">
         {STEPS.map(([now, done, sub], i) =>
           i > cur ? null : (
@@ -726,7 +789,7 @@ export function Thinking({ since }: { since: number }) {
               className={i < cur ? "step step--done" : "step step--now"}
             >
               <span className="step__dot">
-                {i < cur && <Icon name="check" className="i-14" />}
+                {i < cur ? <Icon name="check" className="i-14" /> : <ThinkingMark small />}
               </span>
               <span className="grow">
                 <b className="step__title">{i < cur ? done : now + "…"}</b>
@@ -773,46 +836,6 @@ export function ErrorCard({
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Suggestions({ p }: { p: Props }) {
-  const b = p.basket;
-  if (!b || p.building) return null;
-  const chips: { label: string; run: () => void }[] = [];
-  const thu = weekdayLong(addDays(b.date, -1));
-  if (p.phase === "review") {
-    const cheaper = cheaperSwap(b);
-    if (cheaper)
-      chips.push({
-        label: `Switch to ${shortName(cheaper.name)}`,
-        run: () => p.onChoose(cheaper.lineId, cheaper.sku),
-      });
-    chips.push({
-      label: `Deliver ${thu}`,
-      run: () => p.onSend(`Deliver on ${thu} instead`),
-    });
-  } else if (p.phase === "placed") {
-    chips.push({ label: "Order this again next week", run: p.onAgain });
-    chips.push({
-      label: `Move delivery to ${thu}`,
-      run: () => p.onSend(`Move delivery to ${thu}`),
-    });
-  }
-  if (!chips.length) return null;
-  return (
-    <div className="chips">
-      {chips.map((c) => (
-        <button
-          key={c.label}
-          className="chip"
-          disabled={p.busy}
-          onClick={c.run}
-        >
-          {c.label}
-        </button>
-      ))}
     </div>
   );
 }

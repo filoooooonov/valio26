@@ -13,7 +13,8 @@
     "demos": "node scripts/demos.mjs",
     "test:app": "cd app/server && bun test && cd ../web && bunx tsc -b",
     "test:fast": "cd app/server && bun test",
-    "build": "cd app/web && bun run build"
+    "build": "cd app/web && bun run build",
+    "demo:reset": "node scripts/demo-reset.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",

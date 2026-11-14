@@ -1,0 +1,71 @@
+/* Exception-first order summary above the cart (CONTRACT S48). Quiet counts; only exceptions get rows. */
+.decision-summary {
+  display: grid;
+  gap: var(--s-12);
+  margin-bottom: var(--s-16);
+}
+.decision-summary__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-8) var(--s-20);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-14);
+  color: var(--text-2);
+}
+.decision-summary__counts li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-6);
+}
+.decision-summary__counts b {
+  color: var(--ink);
+  font-weight: var(--w-bold);
+  font-variant-numeric: tabular-nums;
+}
+.decision-summary__counts [data-tone="usual"] .icon { color: var(--green); }
+.decision-summary__counts [data-tone="adjusted"] .icon { color: var(--teal); }
+.decision-summary__counts [data-tone="attention"] .icon { color: var(--amber); }
+.decision-summary__counts [data-zero] { color: var(--muted); }
+.decision-summary__counts [data-zero] .icon { color: var(--muted); }
+.decision-summary__items {
+  display: grid;
+  gap: var(--s-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.decision-summary__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-12);
+  width: 100%;
+  min-height: var(--hit);
+  padding: var(--s-8) var(--s-12);
+  border: 0;
+  border-radius: var(--r-10);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--fs-13);
+  line-height: var(--lh-body);
+  text-align: left;
+}
+[data-tone="attention"] > .decision-summary__item {
+  background: var(--amber-bg);
+}
+button.decision-summary__item {
+  cursor: pointer;
+  transition: transform var(--dur-press) var(--ease-out);
+}
+button.decision-summary__item:active { transform: scale(var(--press-scale)); }
+button.decision-summary__item:focus-visible {
+  outline: var(--ring-w) solid var(--teal);
+  outline-offset: var(--s-2);
+}
+button.decision-summary__item .icon { flex: none; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) {
+  button.decision-summary__item:active { transform: none; }
+}

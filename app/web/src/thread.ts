@@ -55,7 +55,8 @@ export function syncProductReviews(
   };
 }
 
-export type Did = { icon: IconName; text: string };
+/** detail: technical evidence, folded under "How Helmi decided". */
+export type Did = { icon: IconName; text: string; detail?: boolean };
 export type Item =
   | {
       kind: "user";
@@ -107,7 +108,7 @@ export const firstName = (who: string) =>
 // Swaps the gateway applied itself (same-use rule) or an outside agent made: not the chef's OK.
 export const isAutoSwap = (who?: string) =>
   !!who &&
-  (who.startsWith("agent") || who.startsWith("gateway") || who === "assistant");
+  (who.startsWith("agent") || who.startsWith("gateway") || who.startsWith("policy:") || who === "assistant");
 // User-facing copy: no API-call counts, no repeated "no alternative" sentences, decimal commas.
 export const plain = (s: string) =>
   s.replace(/\s*\(\d+ (Valio )?API calls?\)/g, "").replace(/(\d)\.(\d)/g, "$1,$2");
@@ -174,10 +175,11 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
     );
     const lf = b.dishes.find((d) => d.diet.length && d.name.includes("("));
     const people = b.people;
-    const text = b.intent === "DIRECT_PURCHASE" ? `I prepared your product request without a menu. Pricing and availability were checked for account ${b.customer} and delivery on ${weekdayLong(b.date)}. Orders are simulated.` :
+    const text = b.intent === "REORDER" ? `I prepared your usual order for ${weekdayLong(b.date)} from your past orders, with today's prices and stock.` :
+      b.intent === "DIRECT_PURCHASE" ? `Here's your order for ${weekdayLong(b.date)}, with today's prices and stock.` :
       `I planned ${base.size} ${base.size === 1 ? "dish" : "dishes"} for ${people}` +
       (lf ? `, with a ${lf.diet.join(", ")} version for ${lf.portions}` : "") +
-      `. Prices are your Hotelli Kaleva prices; stock is for ${weekdayLong(b.date)}'s delivery.`;
+      `. Prices are your Bistro Kallio prices; stock is for ${weekdayLong(b.date)}'s delivery.`;
     const skus = Number((stock?.data as { skus?: number })?.skus ?? 0);
     const altN = Number(
       alt?.summary.match(/checked (\d+) alternatives/)?.[1] ?? 0,
@@ -190,10 +192,11 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
       {
         icon: "scan-search",
         text: `Checked ${skus + altN} products only · ${calls} calls to Valio Aimo`,
+        detail: true,
       },
     ];
     const comparison=b.lines.length===1 ? b.lines[0].comparison : undefined;
-    if(comparison)did.push({icon:"scan-search",text:`Compared ${comparison.checkedCount} quoted products for your quantity. See product options for unit prices, total costs and exclusions.`});
+    if(comparison)did.push({icon:"scan-search",text:`Compared ${comparison.checkedCount} quoted products for your quantity`,detail:true});
     const agentSwaps = b.lines.filter(
       (l) => l.replaced && isAutoSwap(l.issue?.decidedBy),
     );
@@ -215,12 +218,29 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
         icon: "circle-check",
         text: b.mandate.state === "needs_your_ok" ? "Some purchasing facts need review; see the decision record" : `Availability checked for ${weekday(b.date)}; rechecked before ordering`,
       });
-    if (pd.planner === "fallback" && b.intent !== "DIRECT_PURCHASE")
+    if (pd.planner === "fallback" && b.intent === "MENU_PLANNING")
       did.push({
         icon: "circle-alert",
         text: "Planner offline, so I used the standard menu",
       });
-    did.push(
+    const stockNote = b.summary?.items.find((it) => it.kind === "stock_signoff");
+    if (stockNote) did.push({ icon: "shield-check", text: stockNote.text });
+    else if (b.mandate.reasons.some((r) => /can't confirm stock/.test(r)))
+      did.push({
+        icon: "shield-check",
+        text: `Valio can't confirm stock for this volume, so ${firstName(b.rules.approver)} confirms it before it's placed`,
+      });
+    // Order-level exceptions from basket.summary (CONTRACT S48) are told here, not stacked over the cart.
+    // Product problems already get their own review card in the chat.
+    const sumItems = b.summary?.items ?? [];
+    for (const it of sumItems) {
+      if (it.kind === "price_increase")
+        did.push({ icon: "circle-alert", text: it.text.replace(/^(.+?): /, (_m, n: string) => `${shortName(n)}: `) });
+      if (it.kind === "substitution") did.push({ icon: "repeat", text: it.text });
+    }
+    const overDaily = sumItems.find((it) => it.kind === "over_limit" && /daily/.test(it.text));
+    if (overDaily) did.push({ icon: "shield-check", text: overDaily.text });
+    else did.push(
       b.totalIfAccepted > b.rules.maxOrderEur
         ? {
             icon: "shield-check",

@@ -1,5 +1,7 @@
 # AGENTS.md (Codex and other non-Claude agents)
 
+> **Retired (aleksei, 14 Nov):** Codex is no longer used on this project. Kept for history only.
+
 **Read `CLAUDE.md` first. Every rule there applies to you.** This file only adds what's different for Codex.
 
 ## You have no hooks, so do these by hand

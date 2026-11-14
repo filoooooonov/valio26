@@ -9,7 +9,7 @@ import {
   type OrderConflict,
 } from "../api";
 import { Icon } from "../icons";
-import { addDays, dayLabel, money, SLOT, stamp, timeLabel, whole } from "../format";
+import { addDays, dayLabel, money, n2, SLOT, stamp, timeLabel, whole } from "../format";
 import { firstName, orderLabel, PEOPLE } from "../thread";
 import { AimoLogo } from "./Mark";
 
@@ -28,6 +28,7 @@ export function MikkoView() {
   async function savePolicy(){if(!policy)return;setSavingPolicy(true);setPolicyMessage("");try{setPolicy(await api.savePolicy(policy));setPolicyMessage("Purchasing policy saved on the server.");}catch(e){setPolicyMessage((e as Error).message);}finally{setSavingPolicy(false);}}
 
 
+  const canEditPolicy = ["admin","local_demo"].includes(policyRole);
   const load = useCallback(async () => {
     try {
       const os = await api.orders("pending_approval");
@@ -59,22 +60,29 @@ export function MikkoView() {
         </span>
       </header>
       <main className="mikko__list">
-        {policy && <details><summary>Purchasing policy</summary><Card title="Customer purchasing policy">
-          {policyRole==="local_demo" && <Notice title="Local demonstration">Authentication is disabled. Orders are simulated. Use configured credentials before sharing the gateway.</Notice>}
-          <p>Autonomous limit per order: {money(policy.maxOrderEur)}</p>
-          <Stepper value={money(policy.maxOrderEur)} lessDisabled={savingPolicy || policy.maxOrderEur<=0 || !["admin","local_demo"].includes(policyRole)} moreDisabled={savingPolicy || !["admin","local_demo"].includes(policyRole)} onLess={()=>setPolicy({...policy,maxOrderEur:Math.max(0,policy.maxOrderEur-50)})} onMore={()=>setPolicy({...policy,maxOrderEur:policy.maxOrderEur+50})}/>
-          <p>Daily limit: {money(policy.maxDailyEur)}</p>
-          <Stepper value={money(policy.maxDailyEur)} lessDisabled={savingPolicy || policy.maxDailyEur<=0 || !["admin","local_demo"].includes(policyRole)} moreDisabled={savingPolicy || !["admin","local_demo"].includes(policyRole)} onLess={()=>setPolicy({...policy,maxDailyEur:Math.max(0,policy.maxDailyEur-100)})} onMore={()=>setPolicy({...policy,maxDailyEur:policy.maxDailyEur+100})}/>
-          <p><Checkbox checked={policy.requireApproval} label="Always require human financial approval" disabled={savingPolicy || !["admin","local_demo"].includes(policyRole)} onChange={value=>setPolicy({...policy,requireApproval:value})}/> Always require human financial approval</p>
-          <p><Checkbox checked={policy.substitutionsPermitted} label="Permit substitutions" disabled={savingPolicy || !["admin","local_demo"].includes(policyRole)} onChange={value=>setPolicy({...policy,substitutionsPermitted:value})}/> Permit substitutions</p>
-          <p><Checkbox checked={policy.autoSwapSameUse} label="Allow verified same-use substitutions" disabled={savingPolicy || !["admin","local_demo"].includes(policyRole)} onChange={value=>setPolicy({...policy,autoSwapSameUse:value})}/> Allow verified same-use substitutions</p>
-          <p>Maximum substitute price increase: {policy.maxSubstituteIncreasePct}%</p>
-          <Stepper value={`${policy.maxSubstituteIncreasePct}%`} lessDisabled={savingPolicy || policy.maxSubstituteIncreasePct<=0 || !["admin","local_demo"].includes(policyRole)} moreDisabled={savingPolicy || policy.maxSubstituteIncreasePct>=100 || !["admin","local_demo"].includes(policyRole)} onLess={()=>setPolicy({...policy,maxSubstituteIncreasePct:Math.max(0,policy.maxSubstituteIncreasePct-5)})} onMore={()=>setPolicy({...policy,maxSubstituteIncreasePct:Math.min(100,policy.maxSubstituteIncreasePct+5)})}/>
-          <p>Forbidden allergens (missing safety evidence stops purchasing):</p>
-          {[["AM","Milk"],["AP","Peanuts"],["AN","Nuts"],["AW","Gluten"]].map(([code,label])=><p key={code}><Checkbox checked={policy.forbiddenAllergens.includes(code)} label={`Forbid ${label}`} disabled={savingPolicy || !["admin","local_demo"].includes(policyRole)} onChange={value=>setPolicy({...policy,forbiddenAllergens:value?[...policy.forbiddenAllergens,code]:policy.forbiddenAllergens.filter(a=>a!==code)})}/> {label}</p>)}
-          {["admin","local_demo"].includes(policyRole) && <Button onClick={()=>void savePolicy()} loading={savingPolicy} disabled={savingPolicy}>Save policy</Button>}
-          {policyMessage && <Notice>{policyMessage}</Notice>}
-        </Card></details>}
+        {policy && <details className="purchasing-policy">
+          <summary>Purchasing policy <Icon name="chevron-down" className="i-16"/></summary>
+          <Card title="Purchasing policy">
+            <div className="policy-editor">
+              {policyRole==="local_demo" && <Notice title="Local demonstration">Orders are simulated. Configure account credentials before sharing this gateway.</Notice>}
+              <div className="policy-editor__fields">
+                <div className="policy-editor__field"><div><h4>Per-order limit</h4><p>Orders above this need approval.</p></div><Stepper value={money(policy.maxOrderEur)} lessDisabled={savingPolicy || policy.maxOrderEur<=0 || !canEditPolicy} moreDisabled={savingPolicy || !canEditPolicy} onLess={()=>setPolicy({...policy,maxOrderEur:Math.max(0,policy.maxOrderEur-50)})} onMore={()=>setPolicy({...policy,maxOrderEur:policy.maxOrderEur+50})}/></div>
+                <div className="policy-editor__field"><div><h4>Daily limit</h4><p>Includes pending orders.</p></div><Stepper value={money(policy.maxDailyEur)} lessDisabled={savingPolicy || policy.maxDailyEur<=0 || !canEditPolicy} moreDisabled={savingPolicy || !canEditPolicy} onLess={()=>setPolicy({...policy,maxDailyEur:Math.max(0,policy.maxDailyEur-100)})} onMore={()=>setPolicy({...policy,maxDailyEur:policy.maxDailyEur+100})}/></div>
+                <div className="policy-editor__field"><div><h4>Substitute price increase</h4><p>Maximum allowed automatically.</p></div><Stepper value={`${policy.maxSubstituteIncreasePct}%`} lessDisabled={savingPolicy || policy.maxSubstituteIncreasePct<=0 || !canEditPolicy} moreDisabled={savingPolicy || policy.maxSubstituteIncreasePct>=100 || !canEditPolicy} onLess={()=>setPolicy({...policy,maxSubstituteIncreasePct:Math.max(0,policy.maxSubstituteIncreasePct-5)})} onMore={()=>setPolicy({...policy,maxSubstituteIncreasePct:Math.min(100,policy.maxSubstituteIncreasePct+5)})}/></div>
+              </div>
+              <div className="policy-editor__checks">
+                <div><Checkbox checked={policy.requireApproval} label="Always require financial approval" disabled={savingPolicy || !canEditPolicy} onChange={value=>setPolicy({...policy,requireApproval:value})}/><span>Always require financial approval</span></div>
+                <div><Checkbox checked={policy.substitutionsPermitted} label="Permit substitutions" disabled={savingPolicy || !canEditPolicy} onChange={value=>setPolicy({...policy,substitutionsPermitted:value})}/><span>Permit substitutions</span></div>
+                <div><Checkbox checked={policy.autoSwapSameUse} label="Allow verified same-use substitutions" disabled={savingPolicy || !canEditPolicy} onChange={value=>setPolicy({...policy,autoSwapSameUse:value})}/><span>Choose verified substitutes automatically</span></div>
+              </div>
+              <div className="policy-editor__allergens"><div><h4>Excluded allergens</h4><p>Missing safety evidence stops the order.</p></div><div className="policy-editor__allergen-grid">
+                {[["AM","Milk"],["AP","Peanuts"],["AN","Nuts"],["AW","Gluten"]].map(([code,label])=><div key={code}><Checkbox checked={policy.forbiddenAllergens.includes(code)} label={`Forbid ${label}`} disabled={savingPolicy || !canEditPolicy} onChange={value=>setPolicy({...policy,forbiddenAllergens:value?[...policy.forbiddenAllergens,code]:policy.forbiddenAllergens.filter(a=>a!==code)})}/><span>{label}</span></div>)}
+              </div></div>
+              {canEditPolicy && <div className="policy-editor__actions"><Button onClick={()=>void savePolicy()} loading={savingPolicy} disabled={savingPolicy}>Save policy</Button></div>}
+              {policyMessage && <Notice>{policyMessage}</Notice>}
+            </div>
+          </Card>
+        </details>}
 
         {offline && (
           <div className="card" role="alert">
@@ -160,18 +168,20 @@ function Approval({
         <span>
           <b>{firstName(order.by)} asks you to approve</b>
           <span className="muted-12">
-            Hotelli Kaleva, Kamppi · {timeLabel(order.createdAt)}
+            Bistro Kallio · {timeLabel(order.createdAt)}
             {reminded ? ` · reminded ${timeLabel(reminded)}` : ""}
           </span>
         </span>
       </div>
       <h1 className="approval__title">
-        {basket?.people
+        {basket?.intent === "DIRECT_PURCHASE" && basket.lines[0]?.comparison
+          ? `${basket.lines[0].comparison.query.charAt(0).toUpperCase()}${basket.lines[0].comparison.query.slice(1)}, ${n2(basket.lines[0].comparison.requested.qty)} ${basket.lines[0].comparison.requested.unit.toLowerCase()}`
+          : basket?.people
           ? `Catering for ${basket.people} · ${dayLabel(addDays(basket.date, 1))}`
           : `Order ${orderLabel(order.id)}`}
       </h1>
       <p className="approval__meta">
-        {order.lines.length} products
+        {order.lines.length} {order.lines.length === 1 ? "product" : "products"}
         {basket ? ` · delivery ${dayLabel(basket.date)}, ${SLOT}` : ""}
       </p>
       <div className="approval__total">
@@ -186,8 +196,17 @@ function Approval({
             : `With today's other orders this is over the ${whole(basket?.rules.maxDailyEur ?? 1500)} daily limit.`}
         </span>
       </div>
+      {order.mandate?.reasons.some((r) => /can't confirm stock/.test(r)) && (
+        <div className="approval__why">
+          <Icon name="package" className="i-16" />
+          <span>
+            Valio can't confirm stock for {order.lines.length === 1 ? "this volume" : "some products"}. Approving
+            confirms you've checked stock with Valio.
+          </span>
+        </div>
+      )}
       <details className="approval__lines">
-        <summary>See the {order.lines.length} products</summary>
+        <summary>{order.lines.length === 1 ? "See the product" : `See the ${order.lines.length} products`}</summary>
         <ul>
           {order.lines.map((l) => (
             <li key={l.sku}>

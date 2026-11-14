@@ -1,0 +1,4 @@
+$ node scripts/dev.mjs
+$ node scripts/dev-app.mjs
+error: script "dev:app" exited with code 255
+error: script "dev" exited with code 255

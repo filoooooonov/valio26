@@ -239,10 +239,10 @@ a.btn:active {
 }
 .chat__title {
   color: var(--teal);
-  font-family: var(--font-display);
-  font-size: var(--fs-22);
-  font-weight: var(--w-bold);
-  letter-spacing: var(--tracking-display);
+  font-family: var(--font-wordmark);
+  font-size: var(--fs-28);
+  font-weight: var(--w-regular);
+  letter-spacing: 0;
 }
 .btn-ghost {
   height: var(--hit);
@@ -328,6 +328,22 @@ a.btn:active {
   background: var(--white);
   font-size: var(--fs-13);
 }
+.did__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+}
+.did__more summary {
+  cursor: pointer;
+  color: var(--teal);
+  font-weight: var(--w-medium);
+  font-size: var(--fs-12);
+}
+.did__more summary:focus-visible { outline: var(--ring-w) solid var(--teal); outline-offset: var(--s-2); }
+.did__more[open] summary { margin-bottom: var(--s-8); }
 .did li {
   display: flex;
   gap: var(--s-8);
@@ -618,8 +634,8 @@ a.btn:active {
   color: var(--teal);
 }
 .step--done .step__dot {
-  background: var(--green-bg);
-  color: var(--green);
+  background: var(--lime);
+  color: var(--teal-deep);
 }
 .step__title {
   display: block;
@@ -991,8 +1007,8 @@ a.btn:active {
 .line[aria-busy] {
   opacity: 0.6;
 }
+.line > .check { grid-area: check; }
 .check {
-  grid-area: check;
   width: var(--hit);
   height: var(--hit);
   display: grid;
@@ -1003,7 +1019,7 @@ a.btn:active {
   height: var(--check);
   display: grid;
   place-items: center;
-  border-radius: var(--r-6);
+  border-radius: 50%; /* all checkboxes are round (aleksei, 14 Nov) */
   background: var(--teal);
   border: var(--ring-w) solid var(--teal);
   color: var(--white);
@@ -1015,8 +1031,8 @@ a.btn:active {
 .line--open .check .check__box {
   border-color: var(--teal);
 }
+.line > .tile { grid-area: tile; }
 .tile {
-  grid-area: tile;
   width: var(--tile);
   height: var(--tile);
   display: grid;
@@ -1153,8 +1169,8 @@ a.btn:active {
 .line__qty--off {
   color: var(--text-2);
 }
+.line > .stepper { grid-area: qty; }
 .stepper {
-  grid-area: qty;
   height: var(--stepper-h);
   display: inline-flex;
   align-items: center;
@@ -2098,4 +2114,66 @@ a.btn:active {
   top: var(--s-3);
   right: 0;
   font-size: var(--fs-12);
+}
+
+/* Purchasing policy: kit controls with the shared 12/16/24 spacing rhythm. */
+.purchasing-policy > summary { display:flex; align-items:center; justify-content:space-between; gap:var(--s-12); min-height:var(--hit); list-style:none; color:var(--teal); font-size:var(--fs-14); font-weight:var(--w-medium); cursor:pointer; }
+.purchasing-policy > summary::-webkit-details-marker { display:none; }
+.purchasing-policy > summary:focus-visible { outline:var(--ring-w) solid var(--teal); outline-offset:var(--s-4); border-radius:var(--r-6); }
+.purchasing-policy[open] > summary { margin-bottom:var(--s-12); }
+.policy-editor { display:grid; gap:var(--s-24); margin-top:var(--s-20); }
+.policy-editor__fields { display:grid; gap:var(--s-20); }
+.policy-editor__field { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:var(--s-16); }
+.policy-editor h4 { margin:0; font-size:var(--fs-14); line-height:var(--lh-body); font-weight:var(--w-medium); }
+.policy-editor p { margin:var(--s-4) 0 0; color:var(--text-2); font-size:var(--fs-13); line-height:var(--lh-body); }
+.policy-editor__checks { display:grid; gap:var(--s-8); padding-top:var(--s-20); border-top:var(--hair-w) solid var(--hair); }
+.policy-editor__checks > div,.policy-editor__allergen-grid > div { display:grid; grid-template-columns:var(--hit) minmax(0,1fr); gap:var(--s-8); align-items:center; font-size:var(--fs-14); line-height:var(--lh-body); }
+.policy-editor__allergens { display:grid; gap:var(--s-12); }
+.policy-editor__allergen-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--s-4) var(--s-16); }
+.policy-editor__actions { display:flex; justify-content:flex-end; padding-top:var(--s-16); border-top:var(--hair-w) solid var(--hair); }
+.line__reasons {
+  display: grid;
+  gap: var(--s-4);
+  margin: var(--s-6) 0;
+  padding-left: var(--s-16);
+  color: var(--ink);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}
+
+/* No layout shift when content grows past the fold (alternatives, details, dialogs): every scroll container
+   always reserves its scrollbar gutter. The chat thread hides its scrollbar, so it never shifts. */
+html,
+.order__lines,
+.sheet,
+.states {
+  scrollbar-gutter: stable;
+}
+
+/* Order action bar (direct purchase, usual order): editable delivery + decision counts in one slim row. */
+.order-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-12) var(--s-20);
+}
+.order-bar .decision-summary { margin: 0; }
+.order-bar__delivery { gap: var(--s-6); }
+/* the running step's loader is the animated Aimo "A"; it turns into a green check when the step finishes */
+.step--now .step__dot {
+  background: none;
+}
+.step--now .step__dot .aimo-thinking {
+  width: var(--s-28);
+  height: var(--s-28);
+}
+.step--done .step__dot .i-14 {
+  animation: step-check-in 260ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+@keyframes step-check-in {
+  from { transform: scale(0.4); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .step--done .step__dot .i-14 { animation: none; }
 }

@@ -95,4 +95,4 @@ S28/S29 verification: build passes;46fast tests pass with186assertions. Pen C5KN
 
 - [x] @aleksei-codex S46 Single-product comparative quotes: real catalogue shortlist, quantity-aware total-cost ranking, 2 alternatives, source/rejection reasons and server-validated selection. Menus remain compact.
 
-- [ ] @aleksei-codex S47 Remove scheduled menus and repeat controls; rebuild purchasing comparisons as registered brand-kit cards/dialog with token spacing and responsive visual review.
+- [x] @aleksei-codex S47 Remove scheduled menus and repeat controls; rebuild purchasing comparisons as registered brand-kit cards/dialog with token spacing and responsive visual review.

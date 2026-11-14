@@ -1,4 +1,4 @@
-import { Button, Card, Notice, Tag, TextLink } from "../ui";
+import { DecisionSummary, Pill, Popover, PurchaseOptions, ReasonList, TextLink } from "../ui";
 import { useEffect, useState, type ReactNode, type CSSProperties } from "react";
 import {
   api,
@@ -17,26 +17,28 @@ import {
   whole,
   n2,
   niceName,
-  perUnit,
   qtyLabel,
   SLOT,
   stamp,
   timeLabel,
   weekday,
 } from "../format";
-import { cleanIssue, firstName, isAutoSwap, orderLabel, PEOPLE, plain, shortName } from "../thread";
+import { firstName, isAutoSwap, orderLabel, PEOPLE, plain, shortName } from "../thread";
 import type { Phase } from "../App";
 import { cheaperSwap } from "./Chat";
 import { Segmented } from "./Header";
 import { AssistantGlyph } from "./Mark";
 import "./order-polish.css";
+
+type Cand = NonNullable<BasketLine["comparison"]>["candidates"][number];
+const unit3 = (n: number) => new Intl.NumberFormat("fi-FI", { minimumFractionDigits: 2, maximumFractionDigits: 3 }).format(n);
 import { RecipeDialog } from "./RecipeDialog";
 
 export type OrderProps = {
   canUndo?: boolean;
   onUndo?: () => void;
-  onRepeat?: () => void;
   deliveryTime?: string;
+  onDelivery?: () => void;
   insight?: ReactNode;
   planningMenu?: boolean;
   phase: Phase;
@@ -81,10 +83,25 @@ export function OrderPanel(p: OrderProps) {
           <AssistantGlyph />
           {eyebrow}
         </div>}
-        <h1 className="order__title">
-          {b ? b.intent === "DIRECT_PURCHASE" ? `Your purchase · ${dayLabel(b.date)}` : `Catering for ${b.people} · ${dayLabel(p.event)}` : "Your order"}
-        </h1>
-        {b && <Controls p={p} b={b} />}
+        {b && b.intent !== "MENU_PLANNING" && b.intent !== undefined ? (
+          // One action bar instead of a title + tile: delivery is editable, counts say what needs you.
+          <div className="order-bar">
+            <Pill icon="truck" className="order-bar__delivery" disabled={!p.onDelivery || p.phase === "waiting" || p.phase === "placed"} onClick={p.onDelivery} aria-label={`Delivery ${dayLabel(b.date)}, ${p.deliveryTime ?? SLOT}. Change delivery`}>
+              {dayLabel(b.date)}, {p.deliveryTime ?? SLOT}
+              <Icon name="chevron-down" className="i-14" />
+            </Pill>
+            {b.summary && (p.phase === "draft" || p.phase === "review") && (
+              <DecisionSummary usual={b.summary.usual} adjusted={b.summary.adjusted} attention={b.summary.attention} items={[]} />
+            )}
+          </div>
+        ) : (
+          <>
+            <h1 className="order__title">
+              {b ? `Catering for ${b.people} · ${dayLabel(p.event)}` : "Your order"}
+            </h1>
+            {b && <Controls p={p} b={b} />}
+          </>
+        )}
         {(p.phase === "draft" || p.phase === "review") && p.insight}
 
       </div>
@@ -161,7 +178,7 @@ function EmptyOrder({
 
 function Controls({ p, b }: { p: OrderProps; b: Basket }) {
   const [recipeOpen, setRecipeOpen] = useState(false);
-  if (b.intent === "DIRECT_PURCHASE") return <div className="controls"><Fact icon="truck" label="Requested delivery" value={`${dayLabel(b.date)}, ${p.deliveryTime ?? SLOT}`} /><Fact icon="shield-check" label="Purchasing authority" value={b.mandate.state === "agent_may_order" ? "Within policy" : "Review required"} /></div>;
+  if (b.intent === "DIRECT_PURCHASE" || b.intent === "REORDER") return <div className="controls"><Fact icon="truck" label="Requested delivery" value={`${dayLabel(b.date)}, ${p.deliveryTime ?? SLOT}`} /></div>;
   const perGuest =
     (b.openIssues ? b.totalIfAccepted : b.total) / Math.max(1, b.people);
   const per = (
@@ -286,21 +303,32 @@ function Lines({ p, b }: { p: OrderProps; b: Basket }) {
       ),
     },
   ].filter((g) => g.lines.length);
+  // A single compared product keeps its normal editable cart row; the comparison folds in under it.
+  const asCards = !!(!frozen && b.intent === "DIRECT_PURCHASE" && b.lines.length === 1 && b.lines[0].qty > 0 && b.lines[0].comparison);
+  const sum = b.summary;
   return (
     <div className={"product-list" + (entering ? " product-list--entering" : "")}>
+      {sum && !frozen && shown.length > 1 && (b.intent === "MENU_PLANNING" || !b.intent) && (
+        <DecisionSummary
+          usual={sum.usual}
+          adjusted={sum.adjusted}
+          attention={sum.attention}
+          items={[]}
+        />
+      )}
       {groups.map((g) => {
         const total = g.lines
           .filter((l) => !lineIsOpen(l))
           .reduce((s, l) => s + l.total, 0);
         return (
           <div key={g.dish?.id ?? "other"} className="dish">
-            <div className="dish__head">
+            {!(b.intent === "DIRECT_PURCHASE" && shown.length===1) && <div className="dish__head">
               <span className="dish__photo dish__photo--icon">
                 <Icon name={dishIcon(g.dish?.name ?? "Other")} className="i-22" />
               </span>
               <div className="grow">
                 <h3 className="dish__name">
-                  {g.dish?.name ?? "Other products"}
+                  {g.dish?.name ?? (b.intent === "REORDER" ? "Your usual products" : "Other products")}
                 </h3>
                 {g.dish && (
                   <div className="dish__sub">
@@ -311,7 +339,7 @@ function Lines({ p, b }: { p: OrderProps; b: Basket }) {
                 )}
               </div>
               <b className="dish__total">{money(total)}</b>
-            </div>
+            </div>}
             {g.lines.map((l, index) => (
               <LineRow
                 key={l.id}
@@ -326,37 +354,51 @@ function Lines({ p, b }: { p: OrderProps; b: Basket }) {
           </div>
         );
       })}
-      {!frozen && b.intent === "DIRECT_PURCHASE" && b.lines.length === 1 && b.lines[0].qty > 0 && b.lines[0].comparison && (()=>{
+      {asCards && (()=>{
         const selected=b.lines[0],comparison=selected.comparison!;
-        const current=comparison.candidates.find(c=>c.line.sku===selected.sku);
-        const alternatives=comparison.candidates.filter(c=>c.line.sku!==selected.sku).slice(0,2);
-        const verified=current?.status === "verified";
-        return <Card title="Compare product options">
-          <p>Compared {comparison.checkedCount} quoted products from {comparison.catalogueMatches} catalogue matches for {n2(comparison.requested.qty)} {comparison.requested.unit.toLowerCase()}. Prices exclude VAT.</p>
-          <Notice tone={verified ? "green" : "amber"} title={selected.sku===comparison.recommendedSku ? verified ? "Recommended for this quantity" : current?.status === "review" ? "Provisional recommendation" : "No validated recommendation" : "Your selected alternative"}>
-            {selected.sku===comparison.recommendedSku ? verified ? "Lowest rounded order total among fully validated candidates." : current?.status === "review" ? "Lowest quoted total; stock needs verification before ordering." : "None of the quoted products passed validation. Review the reasons below; no order can be placed." : "You chose this product; compare its total with the recommendation below."}
-            {current?.unitPrice != null ? ` ${money(current.unitPrice)}/${comparison.requested.unit.toLowerCase()}, ${money(selected.total)} total. Overbuy: ${n2(current.overbuy ?? 0)} ${comparison.requested.unit.toLowerCase()}.` : ""}
-          </Notice>
-          {alternatives.map(candidate=>{
-            const difference=candidate.line.total-selected.total;
-            return <div key={candidate.line.sku}>
-              {candidate.line.sku===comparison.recommendedSku && <Tag tone="teal">Recommended</Tag>}
-              <LineRow l={candidate.line} b={b} p={p} frozen={true} placed={false} comparisonOnly={true}/>
-              <p>{candidate.unitPrice != null ? `${money(candidate.unitPrice)}/${comparison.requested.unit.toLowerCase()} ` : "Price unverified. "}
-                {candidate.unitPrice != null && Math.abs(difference)>=0.005 ? `${money(Math.abs(difference))} ${difference<0 ? "less" : "more"} for this quantity. ` : candidate.unitPrice != null ? "Same total. " : ""}
-                {candidate.overbuy == null ? "Quantity conversion needs review." : `Overbuy: ${n2(candidate.overbuy)} ${comparison.requested.unit.toLowerCase()}.`}</p>
-              <p>{candidate.status === "verified" ? "Price, quantity, restrictions and delivery date verified." : candidate.reasons.map(r=>r.replace(candidate.line.name+": ","")).join(" ")}</p>
-              <Button variant="secondary" size="sm" disabled={!candidate.selectable || !p.onSelectCandidate || p.busy || !!p.busyLine || selected.qty===0} onClick={()=>p.onSelectCandidate?.(selected.id,candidate.line.sku)}>
-                {candidate.status === "excluded" ? "Not orderable" : candidate.status === "review" ? "Select for review" : "Use this product"}
-              </Button>
-            </div>;
+        const unit=comparison.requested.unit.toLowerCase();
+        const day=dayLabel(b.date);
+        const byTotal=(x:Cand,y:Cand)=>x.line.total-y.line.total;
+        // Only products the buyer can order; stable order by total so cards never jump on a pick. Exclusions stay in "How we chose".
+        const shown=[...comparison.candidates.filter(c=>c.selectable || c.line.sku===selected.sku)].sort(byTotal).slice(0,6);
+        const base=Math.min(...shown.filter(c=>c.selectable).map(c=>c.line.total), Infinity);
+        const chip=(c:Cand)=>c.selectable ? day : c.line.stock.cutoffPassed ? "Cut-off passed" : !c.line.stock.deliverable ? `Not on ${day}` : c.line.quantityIssue ? "Pack size" : c.line.stock.available!=null && c.line.stock.available<c.line.qty ? "Not enough stock" : "Not confirmed";
+        const tone=(c:Cand)=>c.selectable ? "available" as const : "blocked" as const;
+        const why=(c:Cand)=>{
+          if(!c.selectable){
+            if(c.line.stock.cutoffPassed) return `Ordering for ${day} has closed.`;
+            if(!c.line.stock.deliverable) return `Can't be delivered on ${day}.`;
+            if(c.line.quantityIssue) return "Pack size doesn't fit your quantity.";
+            if(c.line.stock.available!=null && c.line.stock.available<c.line.qty) return `Only ${n2(c.line.stock.available)} in stock.`;
+            const r=c.reasons.map(r=>r.replace(c.line.name+": ","").replace(/\.$/,""));
+            return (r.some(x=>/customer-specific price/.test(x)) ? "Your account price isn't confirmed" : r.some(x=>/delivery and ordering cutoff/.test(x)) ? `Delivery on ${day} isn't confirmed` : r[0] ?? "Doesn't meet your requirements")+".";
+          }
+          // Orderable cards carry no note: shared facts (stock sign-off) live once in the chat and footer.
+          return "";
+        };
+        const query=comparison.query.charAt(0).toUpperCase()+comparison.query.slice(1);
+        const decided=selected.sku!==comparison.recommendedSku;
+        return <PurchaseOptions
+          title={`${query}, ${n2(comparison.requested.qty)} ${unit}`}
+          summary={decided ? "Your pick." : `Lowest total of ${comparison.checkedCount} quoted.`}
+          selectedId={selected.sku}
+          bestId={comparison.recommendedSku}
+          decidedByYou={decided}
+          busy={p.busy || !!p.busyLine}
+          onChoose={p.onSelectCandidate ? sku=>p.onSelectCandidate?.(selected.id,sku) : undefined}
+          options={shown.map(c=>{
+            const delta=c.line.total-base;
+            return {id:c.line.sku,name:niceName(c.line.name),meta:[c.line.brand,c.line.sku].filter(Boolean).join(" · "),image:c.line.image,
+              quantity:c.line.stock.salesUnit && c.line.stock.salesUnit!=="ST" && c.purchased!=null ? `${n2(c.line.qty)} cases · ${n2(c.purchased)} ${unit}` : qtyLabel(c.line.qty,c.line.pack),unitPrice:c.unitPrice==null ? "Unit price unknown" : `${unit3(c.unitPrice)} €/${unit}`,
+              total:c.unitPrice==null ? "Price unknown" : money(c.line.total),
+              difference:c.unitPrice==null || !c.selectable ? undefined : Math.abs(delta)<.005 ? "Lowest total" : `+${money(delta)}`,saving:Math.abs(delta)<.005,
+              availability:chip(c),tone:tone(c),note:why(c),selectable:c.selectable};
           })}
-          {!alternatives.length && <p>No other matching product could be quoted for comparison.</p>}
-          <details className="line__details"><summary>Why this choice? View all {comparison.checkedCount} compared products</summary>
-            <p>Ranked by verified fulfillment, total cost after pack rounding, overbuy and delivery reliability. Quoted {stamp(comparison.checkedAt)}. {comparison.source === "synthetic_fixture" ? "Synthetic price/stock fixture." : "Sponsor mock pricing and availability."}</p>
-            {comparison.candidates.map(c=><p key={c.line.sku}><strong>{niceName(c.line.name)}</strong>: {c.unitPrice==null ? "no verified price" : money(c.line.total)}. {c.status === "verified" ? "Passed product validation." : c.reasons.join(" ")}</p>)}
-          </details>
-        </Card>;
+          scope={`We quoted ${comparison.checkedCount} of ${comparison.catalogueMatches} matching catalogue products for ${n2(comparison.requested.qty)} ${unit}. Prices exclude VAT. We did not check prices for the whole store.`}
+          quotedAt={stamp(comparison.checkedAt)}
+          source={comparison.source==="synthetic_fixture" ? "Synthetic price and stock fixture; real catalogue products." : "Prices and availability from the Valio Aimo mock API."}
+          evidence={[...comparison.candidates].sort(byTotal).map(c=>({id:c.line.sku,name:niceName(c.line.name),total:c.unitPrice==null ? "Unverified" : money(c.line.total),selected:c.line.sku===selected.sku,reason:c.status==="verified" ? "Meets product and delivery checks." : c.reasons.map(r=>r.replace(c.line.name+": ","")).join(" ")}))}
+        />;
       })()}
       {b.assumed.length > 0 && (
         <p className="assumed">
@@ -367,6 +409,36 @@ function Lines({ p, b }: { p: OrderProps; b: Basket }) {
   );
 }
 
+
+// "Why Helmi chose this": the decision reasons from the basket's own records, plain sentences, no product data dump.
+const sentence = (t: string) => (/[.!?]$/.test(t) ? t : t + ".");
+function choiceReasons(l: BasketLine, b: Basket): string[] {
+  const out: string[] = [];
+  const day = dayLabel(b.date);
+  if (l.replaced) {
+    const who = l.issue?.decidedBy ?? "";
+    out.push(`${shortName(l.replaced.name)}: ${reasonShort(l, b.date)}, so ${who.startsWith("policy:") ? "your substitution rule used this instead" : isAutoSwap(who) ? "I swapped in this product for the same use" : "you chose this instead"}.`);
+  }
+  if (l.preference && l.preference.status !== "unfamiliar") out.push(sentence(l.preference.reason));
+  else if (l.preference?.status === "unfamiliar" && b.intent === "REORDER") out.push("New to your restaurant.");
+  const c = l.comparison;
+  if (c) {
+    const valid = c.candidates.filter((x) => x.selectable);
+    const lowest = Math.min(...valid.map((x) => x.line.total));
+    out.push(l.sku === c.recommendedSku
+      ? `Lowest total of the ${valid.length} products that can arrive ${day}, out of ${c.checkedCount} quoted.`
+      : `You picked this. It's ${money(l.total - lowest)} more than the lowest total.`);
+  } else if (!l.replaced) {
+    const dish = b.dishes.find((d) => d.id === l.dishId);
+    if (dish) out.push(`Needed for ${dish.name}.`);
+  }
+  out.push(`Quantity: ${plain(l.why)}.`);
+  if (l.stock.deliverable && !l.stock.cutoffPassed)
+    out.push(l.stock.available == null
+      ? `Can arrive ${day}. Valio can't confirm stock, so ${firstName(b.rules.approver)} checks it before ordering.`
+      : `In stock for ${day}.`);
+  return out;
+}
 
 const reasonShort = (l: BasketLine, date: string) =>
   l.issue?.kind === "cutoff"
@@ -395,7 +467,7 @@ export function LineRow({
   const open = lineIsOpen(l);
   const off = !open && (l.qty === 0 || l.issue?.decided === "remove");
   const sku = l.sku;
-  const name = niceName(l.name);
+  const name = comparisonOnly ? l.name : niceName(l.name);
   const frozenItem = l.frozen ?? /\b(?:frozen|deep[ -]?frozen|deepfrost|FRO)\b/i.test(l.name);
   const stock = l.stock;
   const total = l.total;
@@ -408,47 +480,31 @@ export function LineRow({
     tag = { text: "Swapped", tone: "blue" };
   else if (l.replaced || (l.issue?.decided && l.issue.decided !== "remove"))
     tag = { text: "Chosen by you", tone: "green" };
+  else if (!off && l.preference?.status === "accepted_alternative")
+    tag = { text: "Accepted before", tone: "green" };
+  else if (!off && l.preference?.status === "rejected")
+    tag = { text: "You declined this before", tone: "grey" };
+  else if (!off && l.preference?.status === "unfamiliar" && b.intent === "REORDER")
+    tag = { text: "New to you", tone: "grey" };
   else if (off)
     tag = {
       text: l.issue?.decided === "remove" ? "Not ordered" : "Left out",
       tone: "grey",
     };
 
-  const why0 = l.replaced
-      ? `Instead of ${shortName(l.replaced.name)} (${reasonShort(l, b.date)}) · ${l.why} · ${sku}`
-      : open
-        ? `${cleanIssue(l.issue!.text)} · ${sku}`
-        : `${l.why} · ${sku}`;
-  const why = plain(why0);
-
   const st = stockLine(l, open ? l.stock : stock, b.date, open);
-  const unit = perUnit(stock);
-  const sub =
-    stock.customerPrice && stock.comparisonPrice ? (
-      <span
-        className="price__yours"
-        title={
-          stock.listPrice ? `List price ${money(stock.listPrice)}` : undefined
-        }
-      >
-        your price · {money(stock.comparisonPrice)}/{unit}
-      </span>
-    ) : (
-      <span className="price__unit">
-        {money(stock.price)} / {pack === "by kg" ? "kg" : "pack"}
-      </span>
-    );
   const atLimit =
     !open && !off && stock.available != null && qty + 1 > stock.available;
 
   return (
     <div
       className={
-        "line" +
-        (open ? " line--open" : "") +
+        "line" + (comparisonOnly ? " line--comparison" : "") +
+        (open && !comparisonOnly ? " line--open" : "") +
         (off ? " line--off" : "") +
         (placed ? " line--placed" : "")
       }
+      id={comparisonOnly ? undefined : "line-" + l.id}
       aria-busy={busy || undefined}
       onClick={open && !frozen && !busy && !p.busy ? event => { if (!(event.target as Element).closest("button, input, a, summary, details, textarea, select")) p.onSwap(l.id); } : undefined}
       style={{ "--product-delay": `${Math.min(revealIndex * 12, 90)}ms` } as CSSProperties}
@@ -482,28 +538,28 @@ export function LineRow({
             </span>
           )}
         </div>
-        {!off && st.tone !== "green" && <div className={"line__stock line__stock--" + st.tone}>
+        {!comparisonOnly && !off && st.tone !== "green" && <div className={"line__stock line__stock--" + st.tone}>
           <Icon name={open ? "circle-alert" : st.icon} className="i-14" />
           {st.text}
         </div>}
         {open && !frozen && <button type="button" className="line__resolve" disabled={busy || p.busy} onClick={() => p.onSwap(l.id)}>{l.issue!.options.length ? 'Choose replacement' : 'Review options'}<Icon name="arrow-right" className="i-16" /></button>}
-        {!open && <details className="line__details">
-          <summary aria-label={`Product details for ${name}`}>Product details</summary>
-          <p className="line__catalogue">{l.name}</p>
-          <p className="line__catalogue">SKU {sku}</p>
-          <div className="line__why">{why}</div>
-          {!off && <div className="line__unit">{sub}</div>}
-        </details>}
+        {!comparisonOnly && l.comparison && <div className="line__unit">{l.comparison.candidates.find(c=>c.line.sku===l.sku)?.unitPrice!=null ? `${money(l.comparison.candidates.find(c=>c.line.sku===l.sku)!.unitPrice!)} / ${l.comparison.requested.unit.toLowerCase()}` : "Price needs verification"}</div>}
+        {!comparisonOnly && !open && (
+          <Popover label="Why Helmi chose this" title="Why Helmi chose this">
+            <ReasonList items={choiceReasons(l, b)} />
+            <span className="line__catalogue">{l.name} · SKU {sku}</span>
+          </Popover>
+        )}
         {atLimit && !frozen && (
           <div className="line__limit">
             That's all Valio has for {weekday(b.date)} ({n2(stock.available!)})
           </div>
         )}
       </div>
-      <div className="price">
+      {!comparisonOnly && <div className="price">
         <b className={off ? "price__off" : ""}>{off ? "—" : money(total)}</b>
-      </div>
-      {frozen || open ? (
+      </div>}
+      {comparisonOnly ? null : frozen || open ? (
         <span className="line__qty">{qtyLabel(qty, pack)}</span>
       ) : off ? (
         <span className="line__qty line__qty--off">{qtyLabel(l.excludedQty ?? 0, pack)}</span>
@@ -623,6 +679,7 @@ function ProductTile({
 function Footer({ p, b }: { p: OrderProps; b: Basket }) {
   const max = b.rules.maxOrderEur;
   const held = b.pricesHeldUntil ? stamp(b.pricesHeldUntil) : null;
+  const decisionText=b.mandate.reasons.slice(0,2).map(reason=>b.intent==="DIRECT_PURCHASE" && b.lines.length===1 ? reason.replace(b.lines[0].name+": ","").replace("stock quantity is unknown; human intervention required.","Stock needs confirmation before ordering.") : reason).join(" ");
   const count = b.lines.filter(
     (l) => l.qty > 0 && l.issue?.decided !== "remove",
   ).length;
@@ -643,11 +700,11 @@ function Footer({ p, b }: { p: OrderProps; b: Basket }) {
     note = 'Subtotal excludes ' + open.length + ' unresolved ' + (open.length === 1 ? 'product.' : 'products.');
   } else if (p.phase === "draft" && b.mandate.state === "needs_your_ok") {
     cta = <button className="cta cta--issues" disabled><span className="cta__label">Purchasing needs review</span></button>;
-    note = b.mandate.reasons.slice(0,2).join(" ");
+    note = decisionText;
     alt = <TextLink onClick={p.onView}>View purchasing decisions</TextLink>;
   } else if (p.phase === "draft") {
     cta = <button className="cta cta--lime" disabled={ordering} onClick={p.onReview}>
-      <span className="cta__label">Review and confirm<span className="desk-only"> {count} products</span></span>
+      <span className="cta__label">Review and confirm<span className="desk-only"> {count} {count === 1 ? "product" : "products"}</span></span>
       <span className="grow" /><span className="cta__total">{money(b.total)}</span>
     </button>;
     note = 'Prices exclude VAT.';
@@ -688,7 +745,7 @@ function Footer({ p, b }: { p: OrderProps; b: Basket }) {
           : `Over your ${whole(b.rules.maxDailyEur)} daily limit with today's orders`
         : `Inside your ${whole(max)} limit`;
     note = `${why}${held ? ` · ordering cutoff ${held}` : ""} · excl. VAT (${money(b.totalWithVat)} with VAT)`;
-    if (st === "needs_your_ok") {note = b.mandate.reasons.slice(0,2).join(" ");alt=<TextLink onClick={p.onView}>View purchasing decisions</TextLink>;}
+    if (st === "needs_your_ok") {note = decisionText;alt=<TextLink onClick={p.onView}>View purchasing decisions</TextLink>;}
     const c = cheaperSwap(b);
     if (st === "needs_approval" && b.total > max && c && c.total <= max)
       alt = (

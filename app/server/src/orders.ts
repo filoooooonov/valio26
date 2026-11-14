@@ -1,11 +1,17 @@
 // Orders: the mandate is checked here on EVERY order and approval, whoever sends it (webshop or MCP agent).
 // Price + stock are re-checked with a fresh Valio call at order time and again at approval; differences are reported.
-import { orderRevision, validatePurchase } from "./validation";
+import { blockingChecks, orderRevision, stockToConfirm, validatePurchase } from "./validation";
 import { audit } from "./audit";
 import { HttpError, isOpen, recompute, type Basket } from "./plan";
 import { eur, evaluate, getMandate, type MandateResult } from "./policy";
 import { baskets, dailySoFar, newId, orders, persistStore, submitting } from "./store";
 import { checkStock } from "./valio";
+import { recordPreference } from "./preferences";
+
+/** S48 purchase memory: a confirmed (simulated) order becomes part of the restaurant's record. Never a price/stock fact. */
+function recordOrderPurchase(o: Order) {
+  for (const l of o.lines) recordPreference({ customer: o.customer, kind: "purchased", sku: l.sku, qty: l.qty, basketId: o.id });
+}
 
 export type Change = {
   sku: string;
@@ -116,6 +122,17 @@ async function recheck(
   return { changes, calls: sc.calls };
 }
 
+/** Buyer-triggered "Refresh prices": re-checks the draft's live lines and stores the result on the basket. */
+export async function refreshBasket(basketId: string, by: string) {
+  const b = baskets.get(basketId);
+  if (!b) throw new HttpError(404, "basket not found");
+  if ([...orders.values()].some((o) => o.basketId === b.id && o.status !== "rejected"))
+    throw new HttpError(409, "basket already sent; prices are re-checked at approval");
+  const r = await recheck(b, by);
+  persistStore();
+  return { basket: b, changes: r.changes };
+}
+
 export type PlaceResult =
   | { ok: true; order: Order }
   | {
@@ -143,7 +160,7 @@ async function placeOrderInternal(
     };
 
   const { changes, calls } = await recheck(b, by);
-  const checks = validatePurchase(b);
+  const checks = blockingChecks(b); // unknown stock is not a blocker: it routes to the approver below
   if (checks.length) {
     audit(b.id, "gateway", "validation", "Not ordered: " + checks.map(c => c.message).join(" "), {checks, snapshot:b.lines.map(l=>({sku:l.sku,stock:l.stock})), simulated:true});
     return {ok:false, status:409, error:"validation_failed", mandate:{state:"needs_your_ok", reasons:checks.map(c=>c.message)}, changes};
@@ -158,6 +175,7 @@ async function placeOrderInternal(
       .map((l) => `${l.issue!.decidedBy} (${l.name})`),
     dailySoFar: dailySoFar(b.customer, b.id),
     substituteIncreases:b.lines.filter(l=>l.qty>0 && l.replaced).map(l=>({name:l.name,percent:l.replaced!.originalTotal ? 100*(l.total/l.replaced!.originalTotal-1) : Infinity})),
+    stockToConfirm: stockToConfirm(b),
   });
   b.mandate = m;
   if (m.state === "needs_your_ok") {
@@ -203,7 +221,7 @@ async function placeOrderInternal(
     changes,
     apiCalls: calls,
   };
-  if (order.status === "placed") order.confirmationReference = `SIM-${order.id}`;
+  if (order.status === "placed") { order.confirmationReference = `SIM-${order.id}`; recordOrderPurchase(order); }
   orders.set(order.id, order);
   audit(
     b.id,
@@ -264,7 +282,7 @@ async function decideInternal(orderId: string, d: Decision): Promise<Order> {
     const { changes, calls } = await recheck(b, d.by);
     o.changes = changes;
     o.apiCalls += calls;
-    const checks = validatePurchase(b);
+    const checks = blockingChecks(b);
     if (b.lines.some(isOpen) || checks.length) {
       audit(
         o.basketId,
@@ -299,7 +317,7 @@ async function decideInternal(orderId: string, d: Decision): Promise<Order> {
     }
   }
   o.status = d.decision === "approve" ? "placed" : "rejected";
-  if (o.status === "placed") o.confirmationReference = `SIM-${o.id}`;
+  if (o.status === "placed") { o.confirmationReference = `SIM-${o.id}`; recordOrderPurchase(o); }
   o.decidedBy = d.by;
   o.decidedAt = new Date().toISOString();
   if (d.note) o.note = d.note;
@@ -310,6 +328,9 @@ async function decideInternal(orderId: string, d: Decision): Promise<Order> {
     `${d.decision === "approve" ? "Approved" : "Rejected"} ${o.id} (${eur(o.total)})${d.note ? `: "${d.note}"` : ""}${o.changes.length ? ` · ${o.changes.length} changes since the quote` : ""}`,
     { orderId: o.id, status: o.status },
   );
+  const confirmed = b && o.status === "placed" ? stockToConfirm(b) : [];
+  if (confirmed.length)
+    audit(o.basketId, d.by, "decision", `Stock confirmed by ${d.by} for ${confirmed.join(", ")} (Valio could not confirm it automatically).`, { orderId: o.id, stockConfirmedBy: d.by, products: confirmed });
   return o;
 }
 

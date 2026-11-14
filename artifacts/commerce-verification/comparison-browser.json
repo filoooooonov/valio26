@@ -1,0 +1,22 @@
+[
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "noOverflow": true,
+    "comparisonVisible": true,
+    "selectionAndUndoVerified": true,
+    "pageErrors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "noOverflow": true,
+    "comparisonVisible": true,
+    "selectionAndUndoVerified": true,
+    "pageErrors": []
+  }
+]

@@ -7,6 +7,13 @@ export type Check = { code: string; message: string; sku?: string; evidence: 'ca
 const aliases: Record<string, string> = { milk:'AM', peanuts:'AP', nuts:'AN', fish:'AF', egg:'AE', eggs:'AE', soy:'AY', sesame:'AS', wheat:'UW', gluten:'AW', celery:'BC', mustard:'BM', crustaceans:'AC', molluscs:'UM', sulphites:'AU', lupin:'NL' };
 export const allergenCode = (value: string) => aliases[value.toLowerCase()] ?? value.toUpperCase();
 
+/** Checks that do not block: they route the order to the human approver, whose approval is the confirmation. */
+export const SIGN_OFF_CODES = new Set(['stock_unknown']);
+/** Checks that must be fixed before anything can be sent. */
+export const blockingChecks = (b: Basket) => validatePurchase(b).filter(c => !SIGN_OFF_CODES.has(c.code));
+/** Product names whose stock Valio cannot confirm (sign-off guardrail). */
+export const stockToConfirm = (b: Basket) => [...new Set(validatePurchase(b).filter(c => c.code === 'stock_unknown').map(c => b.lines.find(l => l.sku === c.sku)?.name ?? c.sku ?? ''))].filter(Boolean);
+
 /** Final order gate, independent of Claude, UI controls and approval authority. */
 export function validatePurchase(b: Basket): Check[] {
   const checks: Check[] = [];
@@ -26,7 +33,7 @@ export function validatePurchase(b: Basket): Check[] {
     if (Math.abs(l.qty / step - Math.round(l.qty / step)) > 1e-6) add('package_invalid',`${l.name}: quantity must follow sales lot ${step}.`,'catalogue',l.sku);
     if (!Number.isFinite(s.price) || s.price <= 0 || !Number.isFinite(s.priceWithTax) || s.priceWithTax <= 0 || !s.customerPrice) add('price_unverified',`${l.name}: customer-specific price is not verified.`,'mock_api',l.sku);
     if (!s.deliverable || s.cutoffPassed || !s.availableDate || s.availableDate > b.date || !s.closingTime || !Number.isFinite(Date.parse(s.closingTime))) add('delivery_unverified',`${l.name}: delivery and ordering cutoff are not verified.`,'mock_api',l.sku);
-    if (s.available == null || !Number.isFinite(s.available)) add('stock_unknown',`${l.name}: stock quantity is unknown; human intervention required.`,'mock_api',l.sku);
+    if (s.available == null || !Number.isFinite(s.available)) add('stock_unknown',`${l.name}: Valio can't confirm stock for this quantity, so a person confirms it before the order is placed.`,'mock_api',l.sku);
     else if (s.available < l.qty) add('stock_short',`${l.name}: requested ${l.qty} sales units, only ${s.available} available.`,'mock_api',l.sku);
     if (m.allowedCategories.length && !m.allowedCategories.includes(p.cat)) add('category_forbidden',`${l.name}: category ${p.cat} is outside policy.`,'policy',l.sku);
     for (const a of forbidden) {

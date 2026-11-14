@@ -1,6 +1,7 @@
 // In-memory state for the demo (baskets + orders). Restarting the server clears it.
 import { readLedger, writeLedger } from "./ledger";
 import type { Basket } from "./plan";
+import { resetPreferences } from "./preferences";
 import type { Order } from "./orders";
 
 export const baskets = new Map<string, Basket>(readLedger("baskets", []));
@@ -27,11 +28,16 @@ export function dailySoFar(
   return Math.round(sum * 100) / 100;
 }
 
+/** Clears baskets and orders, plus the live purchase-memory events they produced (S48); synthetic history stays. */
 export function resetStore() {
   baskets.clear();
   orders.clear();
+  resetPreferences();
 }
 
-export function persistStore() { writeLedger("baskets", [...baskets]); writeLedger("orders", [...orders]); }
+export function persistStore() {
+  writeLedger("baskets", [...baskets]);
+  writeLedger("orders", [...orders]);
+}
 
 export const submitting = new Set<string>();

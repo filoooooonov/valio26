@@ -9,7 +9,9 @@
  */
 import {
   useEffect,
+  useId,
   useRef,
+  useState,
   type ButtonHTMLAttributes,
   type ReactNode,
 } from "react";
@@ -459,6 +461,60 @@ export function ProductTile({
 /* ---------- overlay ---------- */
 
 /**
+ * Popover: a small anchored pop-up for short secondary info (e.g. "Why Helmi chose this").
+ * Opens below its trigger, scales in from the trigger corner, closes on Escape or an outside click.
+ */
+export function Popover({
+  label,
+  title,
+  children,
+}: {
+  label: ReactNode;
+  title?: ReactNode;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLSpanElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const id = useId();
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: PointerEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); trigger.current?.focus(); } };
+    document.addEventListener("pointerdown", away);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("pointerdown", away); document.removeEventListener("keydown", esc); };
+  }, [open]);
+  return (
+    <span className="popover" ref={root}>
+      <button ref={trigger} type="button" className="popover__trigger" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>
+        {label}
+      </button>
+      {open && (
+        <span id={id} role="dialog" aria-label={typeof title === "string" ? title : undefined} className="popover__panel">
+          {title && <b className="popover__title">{title}</b>}
+          {children}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** ReasonList: plain-language reasons with grey round check bullets (used inside Popover). */
+export function ReasonList({ items }: { items: string[] }) {
+  return (
+    <ul className="reason-list">
+      {items.map((r) => (
+        <li key={r}>
+          <span className="reason-list__dot" aria-hidden="true"><Icon name="check" className="i-13" /></span>
+          <span>{r}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
  * Dialog: the one modal. Native <dialog> (focus trap, Escape) with the shared enter/exit motion.
  * Render it only while open; `onClose` runs after the exit animation.
  */
@@ -522,3 +578,6 @@ export {
   AssistantGlyph,
   ThinkingMark,
 } from "../components/Mark";
+
+export { PurchaseOptions, type PurchaseOption, type PurchaseEvidence } from "./PurchaseOptions";
+export { DecisionSummary, type DecisionSummaryItem } from "./DecisionSummary";

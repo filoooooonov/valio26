@@ -96,3 +96,4 @@
 .added-row__name { font-size: var(--fs-14); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .added-row__meta { font-size: var(--fs-13); color: var(--muted); }
 .added-row__price { font-size: var(--fs-14); font-weight: 600; font-variant-numeric: tabular-nums; }
+.stock-replacement__pref{display:block;margin-top:var(--s-2);font-size:var(--fs-12);line-height:var(--lh-chat);color:var(--green)}

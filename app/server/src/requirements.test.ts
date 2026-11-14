@@ -30,6 +30,8 @@ test('relative delivery weekdays use the local calendar and cross month and year
   expect(requestDeliveryDate('next Tuesday', '', new Date(2026, 10, 17, 9))).toBe('2026-11-24');
   expect(requestDeliveryDate('next Tuesday', '', new Date(2026, 11, 29, 9))).toBe('2027-01-05');
   expect(requestDeliveryDate('next Sunday', '', new Date(2026, 2, 28, 12))).toBe('2026-03-29');
-  expect(requestDeliveryDate('Tomorrow', '', saturday)).toBe('2026-11-15');
+  // Demo rule: delivery >= 24 h ahead. Sat 23:30 + 24 h is past Sunday's last 12:00 slot, so Monday.
+  expect(requestDeliveryDate('Tomorrow', '', saturday)).toBe('2026-11-16');
+  expect(requestDeliveryDate('Catering for 50 on Saturday', '', saturday)).toBe('2026-11-21');
   expect(requestDeliveryDate('Tuesday, Nov 24, 2026', '', saturday)).toBe('2026-11-24');
 });

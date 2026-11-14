@@ -44,4 +44,4 @@ export const allEvents = (limit = 200): (AuditEvent & { scope: string })[] =>
     .sort((a, b) => (a.at < b.at ? 1 : -1))
     .slice(0, limit);
 
-export const resetAudit = () => byScope.clear();
+export const resetAudit = () => { byScope.clear(); writeLedger("audit", []); };

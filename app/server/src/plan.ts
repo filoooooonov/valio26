@@ -1,12 +1,23 @@
-import { comparisonShortlist, rankComparedProducts, comparisonReason, COMPARISON_LIMIT, type ProductComparison } from "./comparison";
+import {
+  comparisonShortlist,
+  rankComparedProducts,
+  comparisonReason,
+  COMPARISON_LIMIT,
+  type ProductComparison,
+} from "./comparison";
 import { explainPurchase } from "./explain";
 // Planner: request -> dishes -> needs -> catalogue candidates (server, local) -> LLM picks a SKU per need
 // -> ONE price/stock call for the chosen SKUs -> quantities in sales units -> issues with ranked alternatives
 // (ONE extra call). The LLM never sees prices/stock and never applies rules; the mandate runs in policy.ts.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { directDraft, parsePurchaseItems, purchasingIntent, type PurchaseItem } from "./intent";
-import { validatePurchase } from "./validation";
+import {
+  directDraft,
+  parsePurchaseItems,
+  purchasingIntent,
+  type PurchaseItem,
+} from "./intent";
+import { blockingChecks, stockToConfirm, validatePurchase } from "./validation";
 import { audit } from "./audit";
 import { getProduct, search, type Product } from "./catalog";
 import { getLlm, type Candidate, type Draft, type PickInput } from "./llm";
@@ -18,6 +29,17 @@ import {
   type MandateResult,
 } from "./policy";
 import { baskets, dailySoFar, newId, orders, submitting } from "./store";
+import {
+  acceptedCount,
+  preferenceOf,
+  PREFERENCE_TIER,
+  rankByPreference,
+  recordPreference,
+  type Preference,
+} from "./preferences";
+import { activePermission } from "./policy";
+import { reorderDraft } from "./reorder";
+import { basketSummary, type BasketSummary } from "./summary";
 import { checkStock, contentPerUnit, type StockLine } from "./valio";
 
 export type Dish = {
@@ -40,6 +62,7 @@ export type Option = {
   total: number;
   stock: StockLine;
   contains: string[];
+  preference?: Preference; // S48: purchase memory for this option as a replacement for the line's product
 };
 export type Issue = {
   kind: "short" | "unavailable" | "cutoff";
@@ -66,15 +89,23 @@ export type BasketLine = {
   contains: string[]; // allergen names
   requiredDiet?: string[];
   quantityIssue?: string;
-  requestedAmount?: { qty:number; unit:"KG"|"L"|"PCS" };
+  requestedAmount?: { qty: number; unit: "KG" | "L" | "PCS" };
   overbuy?: number;
   claims: string[];
   reliability?: number;
   co2?: number;
   image?: string;
   issue?: Issue;
-  replaced?: { sku: string; name: string; originalTotal?:number };
+  replaced?: { sku: string; name: string; originalTotal?: number };
   usedIn?: string[];
+  preference?: Preference; // S48: purchase memory for the selected SKU
+  offerPermission?: {
+    fromSku: string;
+    fromName: string;
+    toSku: string;
+    toName: string;
+    accepted: number;
+  };
 };
 export type Basket = {
   id: string;
@@ -84,12 +115,12 @@ export type Basket = {
   date: string;
   planner: "llm" | "fallback";
   plannerNote?: string;
-  intent?: "MENU_PLANNING" | "DIRECT_PURCHASE";
+  intent?: "MENU_PLANNING" | "DIRECT_PURCHASE" | "REORDER";
   forbiddenAllergens?: string[];
   requiredDiet?: string[];
   requestBudgetEur?: number;
   factSource?: string;
-  delivery?: {placeId:string;address:string;time:string};
+  delivery?: { placeId: string; address: string; time: string };
   validationGaps?: string[];
   dishes: Dish[];
   lines: BasketLine[];
@@ -105,6 +136,7 @@ export type Basket = {
   rules: Mandate;
   mandate: MandateResult;
   createdAt: string;
+  summary?: BasketSummary; // S48: exception-first cart counts, computed in recompute
 };
 
 type Need = Draft["needs"][number] & { pinned?: string[] };
@@ -212,22 +244,34 @@ function perPortionText(n: Need): string | null {
 export function packOf(
   st: StockLine,
   p?: Product,
-): Amt & { byWeight: boolean; lot?:number } {
+): Amt & { byWeight: boolean; lot?: number } {
   if (st.salesUnit === "KG" || p?.unit === "KG")
     // base unit KG = catch weight, priced per kg
-    return { qty: 1, unit: "KG", byWeight: true, lot:Math.max(0.5,p?.lot ?? 0.5) };
-  if(p?.content) return {...p.content,byWeight:false,lot:Math.max(1,p.lot ?? 1)};
+    return {
+      qty: 1,
+      unit: "KG",
+      byWeight: true,
+      lot: Math.max(0.5, p?.lot ?? 0.5),
+    };
+  if (p?.content)
+    return { ...p.content, byWeight: false, lot: Math.max(1, p.lot ?? 1) };
   const c = contentPerUnit(st);
   if (c && (c.unit === "KG" || c.unit === "L"))
-    return { qty: c.qty, unit: c.unit, byWeight: false, lot:Math.max(1,p?.lot ?? 1) };
-  if (p?.size) return { ...p.size, byWeight: false, lot:Math.max(1,p?.lot ?? 1) };
+    return {
+      qty: c.qty,
+      unit: c.unit,
+      byWeight: false,
+      lot: Math.max(1, p?.lot ?? 1),
+    };
+  if (p?.size)
+    return { ...p.size, byWeight: false, lot: Math.max(1, p?.lot ?? 1) };
   return { qty: 1, unit: "PCS", byWeight: false };
 }
 
 /** Sales units to order for `need`, plus the "why" maths. */
 export function salesQty(
   need: Amt,
-  pack: Amt & { byWeight: boolean; lot?:number },
+  pack: Amt & { byWeight: boolean; lot?: number },
 ): { qty: number; text: string; note?: string } {
   let q = need.qty;
   let note: string | undefined;
@@ -244,11 +288,11 @@ export function salesQty(
     }
   }
   if (pack.byWeight) {
-    const lot=pack.lot ?? 0.5;
+    const lot = pack.lot ?? 0.5;
     const qty = Math.max(lot, Math.ceil(q / lot - 1e-9) * lot);
     return { qty, text: `${fmtAmt({ qty, unit: "KG" })} (sold by kg)`, note };
   }
-  const lot=pack.lot ?? 1;
+  const lot = pack.lot ?? 1;
   const qty = Math.max(lot, Math.ceil(q / pack.qty / lot - 1e-9) * lot);
   return { qty, text: `${qty} × ${fmtAmt(pack)}`, note };
 }
@@ -566,10 +610,25 @@ function makeLine(
     pack: pack.byWeight ? "by kg" : fmtAmt(pack),
     why,
     stock: st,
-    requiredDiet: [...new Set(g.needs.flatMap(n=>[...n.diet,...(dishes.find(d=>d.id===n.dishId)?.diet ?? [])]))],
-    quantityIssue: sq.note ?? (!contentPerUnit(st) && !p?.content && !pack.byWeight && sum.unit !== "PCS" ? "Pack contents are not verified by pricing/comparison data." : undefined),
-    requestedAmount:sum,
-    overbuy:sum.unit===pack.unit ? r2(sq.qty*pack.qty-sum.qty) : undefined,
+    requiredDiet: [
+      ...new Set(
+        g.needs.flatMap((n) => [
+          ...n.diet,
+          ...(dishes.find((d) => d.id === n.dishId)?.diet ?? []),
+        ]),
+      ),
+    ],
+    quantityIssue:
+      sq.note ??
+      (!contentPerUnit(st) &&
+      !p?.content &&
+      !pack.byWeight &&
+      sum.unit !== "PCS"
+        ? "Pack contents are not verified by pricing/comparison data."
+        : undefined),
+    requestedAmount: sum,
+    overbuy:
+      sum.unit === pack.unit ? r2(sq.qty * pack.qty - sum.qty) : undefined,
     total: r2(sq.qty * st.price),
     contains: allergenNames(p?.contains ?? []),
     claims: p?.claims ?? [],
@@ -625,7 +684,7 @@ function optionFor(
     name: l.name,
     reason: bits.join(" · "),
     delta: r2(l.total - base.total),
-    quantityIssue:l.quantityIssue,
+    quantityIssue: l.quantityIssue,
     qty: l.qty,
     pack: l.pack,
     why: l.why,
@@ -636,18 +695,33 @@ function optionFor(
   };
 }
 
-/** Allergen safety → deliverable → on-time reliability → price → CO2. Only orderable options survive. */
-export function rankOptions(opts: Option[], baseContains: string[]): Option[] {
+/** Allergen safety → deliverable → established preference (S48) → on-time reliability → price → CO2.
+ *  Only orderable options survive; prohibited products are never proposed. */
+export function rankOptions(
+  opts: Option[],
+  baseContains: string[],
+  memory?: { customer: string; forSku: string },
+): Option[] {
+  const tier = new Map<string, number>();
+  if (memory)
+    for (const o of opts) {
+      o.preference = preferenceOf(memory.customer, o.sku, memory.forSku);
+      tier.set(o.sku, PREFERENCE_TIER[o.preference.status]);
+    }
+  const pref = (o: Option) => tier.get(o.sku) ?? 0;
   const risk = (o: Option) =>
     o.contains.filter((c) => !baseContains.includes(c)).length;
   const rel = (o: Option) =>
     Math.round((getProduct(o.sku)?.rel ?? 0) * 20) / 20;
   const co2 = (o: Option) => getProduct(o.sku)?.co2 ?? 99;
   return opts
-    .filter((o) => orderable(o.stock, o.qty))
+    .filter(
+      (o) => orderable(o.stock, o.qty) && pref(o) < PREFERENCE_TIER.prohibited,
+    )
     .sort(
       (a, b) =>
         risk(a) - risk(b) ||
+        pref(a) - pref(b) ||
         rel(b) - rel(a) ||
         a.total - b.total ||
         co2(a) - co2(b),
@@ -658,8 +732,12 @@ export function rankOptions(opts: Option[], baseContains: string[]): Option[] {
 // ---------- totals + mandate ----------
 export const isOpen = (l: BasketLine) => !!l.issue && !l.issue.decided;
 export function recompute(b: Basket): Basket {
-  for(const line of b.lines)if(line.comparison)refreshComparison(b,line);
-  for(const l of b.lines) {const p=packOf(l.stock,getProduct(l.sku)); if(l.requestedAmount?.unit===p.unit) l.overbuy=r2(l.qty*p.qty-l.requestedAmount.qty);}
+  for (const line of b.lines) if (line.comparison) refreshComparison(b, line);
+  for (const l of b.lines) {
+    const p = packOf(l.stock, getProduct(l.sku));
+    if (l.requestedAmount?.unit === p.unit)
+      l.overbuy = r2(l.qty * p.qty - l.requestedAmount.qty);
+  }
   const live = b.lines.filter((l) => l.qty > 0 && !isOpen(l));
   b.total = r2(live.reduce((s, l) => s + l.total, 0));
   b.totalWithVat = r2(
@@ -683,11 +761,45 @@ export function recompute(b: Basket): Basket {
       .filter((l) => l.issue?.decided && l.issue.decidedBy?.startsWith("agent"))
       .map((l) => `${l.issue!.decidedBy} (${l.name})`),
     dailySoFar: dailySoFar(b.customer, b.id),
-    substituteIncreases:b.lines.filter(l=>l.qty>0 && l.replaced).map(l=>({name:l.name,percent:l.replaced!.originalTotal ? 100*(l.total/l.replaced!.originalTotal-1) : Infinity})),
+    substituteIncreases: b.lines
+      .filter((l) => l.qty > 0 && l.replaced)
+      .map((l) => ({
+        name: l.name,
+        percent: l.replaced!.originalTotal
+          ? 100 * (l.total / l.replaced!.originalTotal - 1)
+          : Infinity,
+      })),
     deliveryLabel: dayLabel(b.date),
+    stockToConfirm: stockToConfirm(b),
   });
-  const checks = validatePurchase(b);
-  if (checks.length) b.mandate = { state: "needs_your_ok", reasons: checks.map(c => c.message) };
+  const checks = blockingChecks(b);
+  if (checks.length)
+    b.mandate = {
+      state: "needs_your_ok",
+      reasons: checks.map((c) => c.message),
+    };
+  // S48 purchase memory: labels only (never facts); permission offers are derived from the record each time.
+  for (const l of b.lines) {
+    l.preference = preferenceOf(b.customer, l.sku, l.replaced?.sku);
+    if (l.issue && !l.issue.decided)
+      for (const o of l.issue.options)
+        o.preference = preferenceOf(b.customer, o.sku, l.sku);
+    const from = l.replaced?.sku;
+    const n =
+      from && l.issue?.decided === l.sku
+        ? acceptedCount(b.customer, from, l.sku)
+        : 0;
+    if (from && n >= 3 && !activePermission(b.customer, from, l.sku))
+      l.offerPermission = {
+        fromSku: from,
+        fromName: l.replaced!.name,
+        toSku: l.sku,
+        toName: l.name,
+        accepted: n,
+      };
+    else delete l.offerPermission;
+  }
+  b.summary = basketSummary(b);
   return b;
 }
 
@@ -698,7 +810,7 @@ export type BasketRequest = {
   date: string;
   customer?: string;
   items?: PurchaseItem[];
-  delivery?: {placeId:string;address:string;time:string};
+  delivery?: { placeId: string; address: string; time: string };
   forbiddenAllergens?: string[];
 };
 
@@ -741,9 +853,27 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
 
   // 1. dishes + needs
   const intent = purchasingIntent(req.request, req.items);
-  const items = req.items ?? (intent === "DIRECT_PURCHASE" ? parsePurchaseItems(req.request) : []);
-  if (intent === "DIRECT_PURCHASE" && !items.length) throw new HttpError(400, "Please specify product quantities and units (for example 20 l milk), or provide structured items.");
-  const llm = intent === "DIRECT_PURCHASE" ? null : getLlm();
+  const items =
+    req.items ??
+    (intent === "DIRECT_PURCHASE" ? parsePurchaseItems(req.request) : []);
+  if (intent === "DIRECT_PURCHASE" && !items.length)
+    throw new HttpError(
+      400,
+      "Please specify product quantities and units (for example 20 l milk), or provide structured items.",
+    );
+  const reorder =
+    intent === "REORDER" ? reorderDraft(customer, req.request) : null;
+  if (intent === "REORDER" && !reorder)
+    throw new HttpError(
+      400,
+      "There is no purchase history for this account yet, so there is no usual order to repeat. Ask for the products you need instead.",
+    );
+  if (reorder && !reorder.draft.needs.length)
+    throw new HttpError(
+      400,
+      "No usual products match that request. Ask for the products you need instead.",
+    );
+  const llm = intent === "DIRECT_PURCHASE" || reorder ? null : getLlm();
   let planner: Basket["planner"] = "fallback";
   let plannerNote: string | undefined = llm
     ? undefined
@@ -757,7 +887,12 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
       plannerNote = `Claude planner failed (${(e as Error).message.slice(0, 120)}), used the demo planner instead.`;
       draft = fallbackDraft(req.request, req.people);
     }
-  } else draft = intent === "DIRECT_PURCHASE" ? directDraft(items) : fallbackDraft(req.request, req.people);
+  } else
+    draft = reorder
+      ? reorder.draft
+      : intent === "DIRECT_PURCHASE"
+        ? directDraft(items)
+        : fallbackDraft(req.request, req.people);
   // Validate before catalogue lookup or any price/availability call, including custom Llm implementations.
   if (planner === "llm" && llm) {
     let missing = draftCompletenessIssues(draft);
@@ -812,7 +947,7 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
   );
 
   // 2. candidates from the local catalogue (diet filter per dish)
-  const notes: string[] = [];
+  const notes: string[] = [...(reorder?.notes ?? [])];
   const cands = new Map<string, Product[]>();
   for (const n of draft.needs) {
     const diet = [
@@ -821,9 +956,12 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
         ...n.diet,
       ]),
     ];
-    if(intent==="DIRECT_PURCHASE" && draft.needs.length===1){
-      const shortlist=comparisonShortlist(n.item,diet);
-      cands.set(n.id,shortlist.ids.map(getProduct).filter((p):p is Product=>!!p));
+    if (intent === "DIRECT_PURCHASE" && draft.needs.length === 1) {
+      const shortlist = comparisonShortlist(n.item, diet);
+      cands.set(
+        n.id,
+        shortlist.ids.map(getProduct).filter((p): p is Product => !!p),
+      );
     } else cands.set(n.id, candidatesFor(n, diet));
   }
   const nCand = [...cands.values()].reduce((s, c) => s + c.length, 0);
@@ -833,8 +971,10 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
     "search",
     `Local catalogue: ${nCand} candidates for ${draft.needs.length} ingredients (0 Valio API calls)`,
     {
-      perNeed: Object.fromEntries([...cands].map(([k, v]) => [k, v.map(p=>p.id)])),
-      source:"sponsor_catalogue",
+      perNeed: Object.fromEntries(
+        [...cands].map(([k, v]) => [k, v.map((p) => p.id)]),
+      ),
+      source: "sponsor_catalogue",
     },
   );
 
@@ -875,6 +1015,10 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
       );
     }
   }
+  // S48 ranking step 4: established preference re-orders the (already safe, diet-filtered) shortlist; stable,
+  // so Claude's/the catalogue's order still breaks ties. Availability is applied after the stock call (issues).
+  for (const [needId, r] of ranked)
+    ranked.set(needId, rankByPreference(customer, r));
   const groups = new Map<string, Group>();
   for (const n of draft.needs) {
     const r = ranked.get(n.id) ?? [];
@@ -895,8 +1039,18 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
   });
 
   // 4. ONE price/stock call for all chosen SKUs
-  const comparing=intent === "DIRECT_PURCHASE" && draft.needs.length===1 && groups.size===1;
-  const sc = await checkStock(comparing ? [...cands.values()].flatMap(ps=>ps.map(p=>p.id)) : [...groups.keys()], req.date, customer, {fresh:true});
+  const comparing =
+    intent === "DIRECT_PURCHASE" &&
+    draft.needs.length === 1 &&
+    groups.size === 1;
+  const sc = await checkStock(
+    comparing
+      ? [...cands.values()].flatMap((ps) => ps.map((p) => p.id))
+      : [...groups.keys()],
+    req.date,
+    customer,
+    { fresh: true },
+  );
   const stock = new Map(sc.lines.map((l) => [l.sku, l]));
   let apiCalls = sc.calls;
   audit(
@@ -908,8 +1062,11 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
       calls: sc.calls,
       skus: sc.skus,
       checkedAt: sc.checkedAt,
-      source:sc.source,
-      snapshot:sc.lines.map(s=>({stock:s,catalogue:getProduct(s.sku)})),
+      source: sc.source,
+      snapshot: sc.lines.map((s) => ({
+        stock: s,
+        catalogue: getProduct(s.sku),
+      })),
     },
   );
   const lines = [...groups.values()].map((g, i) => {
@@ -945,14 +1102,20 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
   if (withIssue.length && !comparing) {
     const altSkus = [...new Set([...alt.values()].flat())];
     if (altSkus.length) {
-      const sc2 = await checkStock(altSkus, req.date, customer, {fresh:true});
+      const sc2 = await checkStock(altSkus, req.date, customer, {
+        fresh: true,
+      });
       apiCalls += sc2.calls;
       const st2 = new Map(sc2.lines.map((x) => [x.sku, x]));
       for (const { l, g } of withIssue) {
         const opts = (alt.get(l.id) ?? []).map((s) =>
           optionFor(s, st2.get(s)!, l._need, l, people, dishes, g.needs),
         );
-        l.issue!.options = rankOptions(opts, getProduct(l.sku)?.contains ?? []);
+        l.issue!.options = rankOptions(
+          opts,
+          getProduct(l.sku)?.contains ?? [],
+          { customer, forSku: l.sku },
+        );
       }
       audit(
         id,
@@ -978,14 +1141,44 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
     people,
     date: req.date,
     planner,
-    plannerNote: intent === "DIRECT_PURCHASE" ? "Structured direct purchase; no menu generation." : plannerNote,
+    plannerNote:
+      intent === "DIRECT_PURCHASE"
+        ? "Structured direct purchase; no menu generation."
+        : reorder
+          ? reorder.plannerNote
+          : plannerNote,
     intent,
-    factSource:sc.source,
-    delivery:req.delivery ? {placeId:req.delivery.placeId,address:req.delivery.address,time:req.delivery.time} : undefined,
-    forbiddenAllergens: [...new Set([...(req.forbiddenAllergens ?? []), ...[...req.request.matchAll(/(?:no|without|exclude|free from)\s+(peanuts?|nuts?|milk|fish|eggs?|soy|sesame)|(?:peanuts?|nuts?|milk|fish|eggs?|soy|sesame)(?= allergy| allerg)/gi)].map(m => (m[1] ?? m[0]).toLowerCase().replace(/^(peanut|nut|egg)s?$/, "$1s"))])],
-    requestBudgetEur: Number(req.request.match(/budget\s*(?:of\s*)?(?:\u20ac|EUR)?\s*(\d+(?:\.\d+)?)/i)?.[1]) || undefined,
-    requiredDiet: intent === "DIRECT_PURCHASE" ? [...new Set(draft.needs.flatMap(n => n.diet))] : [],
-    validationGaps: notes.filter(n => /No catalogue match/i.test(n)),
+    factSource: sc.source,
+    delivery: req.delivery
+      ? {
+          placeId: req.delivery.placeId,
+          address: req.delivery.address,
+          time: req.delivery.time,
+        }
+      : undefined,
+    forbiddenAllergens: [
+      ...new Set([
+        ...(req.forbiddenAllergens ?? []),
+        ...[
+          ...req.request.matchAll(
+            /(?:no|without|exclude|free from)\s+(peanuts?|nuts?|milk|fish|eggs?|soy|sesame)|(?:peanuts?|nuts?|milk|fish|eggs?|soy|sesame)(?= allergy| allerg)/gi,
+          ),
+        ].map((m) =>
+          (m[1] ?? m[0]).toLowerCase().replace(/^(peanut|nut|egg)s?$/, "$1s"),
+        ),
+      ]),
+    ],
+    requestBudgetEur:
+      Number(
+        req.request.match(
+          /budget\s*(?:of\s*)?(?:\u20ac|EUR)?\s*(\d+(?:\.\d+)?)/i,
+        )?.[1],
+      ) || undefined,
+    requiredDiet:
+      intent === "DIRECT_PURCHASE"
+        ? [...new Set(draft.needs.flatMap((n) => n.diet))]
+        : [],
+    validationGaps: notes.filter((n) => /No catalogue match/i.test(n)),
     dishes,
     lines: lines.map(({ l }) => {
       const { _need, _note, ...rest } = l;
@@ -1004,29 +1197,76 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
     mandate: { state: "needs_your_ok", reasons: [] },
     createdAt: new Date().toISOString(),
   };
-  if(comparing){
-    const need=draft.needs[0];
-    const requested=needAmt(need);
-    const candidateLines=(cands.get(need.id) ?? []).map(p=>{
-      const {_need,_note,...line}=makeLine({sku:p.id,needs:[need],ranked:[]},stock.get(p.id)!,people,dishes);
-      line.id="l1";
-      const issue=issueFor(line.stock,line.qty,req.date);if(issue)line.issue={...issue,options:[]};
+  if (comparing) {
+    const need = draft.needs[0];
+    const requested = needAmt(need);
+    const candidateLines = (cands.get(need.id) ?? []).map((p) => {
+      const { _need, _note, ...line } = makeLine(
+        { sku: p.id, needs: [need], ranked: [] },
+        stock.get(p.id)!,
+        people,
+        dishes,
+      );
+      line.id = "l1";
+      const issue = issueFor(line.stock, line.qty, req.date);
+      if (issue) line.issue = { ...issue, options: [] };
       return line;
     });
-    const candidates=rankComparedProducts(basket,candidateLines,requested);
-    const recommended=candidates[0];
-    if(recommended){
-      const selected=structuredClone(recommended.line);
-      const comparison:ProductComparison={query:need.item,requested,catalogueMatches:comparisonShortlist(need.item,need.diet).catalogueMatches,checkedCount:candidates.length,limit:COMPARISON_LIMIT,checkedAt:sc.checkedAt,source:sc.source ?? "unknown",recommendedSku:selected.sku,ranking:"Verified fulfillment, rounded order total, overbuy, delivery reliability, SKU",candidates};
-      selected.comparison=comparison;basket.lines=[selected];
-      ctx.set(selected.id,{needs:[need],pool:candidates.filter(c=>c.line.sku!==selected.sku).map(c=>c.line.sku)});
-      audit(id,"gateway","comparison",comparisonReason(comparison,selected.sku),structuredClone(comparison));
+    const candidates = rankComparedProducts(basket, candidateLines, requested);
+    const recommended = candidates[0];
+    if (recommended) {
+      const selected = structuredClone(recommended.line);
+      const comparison: ProductComparison = {
+        query: need.item,
+        requested,
+        catalogueMatches: comparisonShortlist(need.item, need.diet)
+          .catalogueMatches,
+        checkedCount: candidates.length,
+        limit: COMPARISON_LIMIT,
+        checkedAt: sc.checkedAt,
+        source: sc.source ?? "unknown",
+        recommendedSku: selected.sku,
+        ranking:
+          "Verified fulfillment, purchase history, rounded order total, overbuy, delivery reliability, SKU",
+        candidates,
+      };
+      selected.comparison = comparison;
+      basket.lines = [selected];
+      ctx.set(selected.id, {
+        needs: [need],
+        pool: candidates
+          .filter((c) => c.line.sku !== selected.sku)
+          .map((c) => c.line.sku),
+      });
+      audit(
+        id,
+        "gateway",
+        "comparison",
+        comparisonReason(comparison, selected.sku),
+        structuredClone(comparison),
+      );
     }
   }
   recompute(basket);
   baskets.set(id, basket);
-  if(!comparing)autoSwapSameUse(basket);
-  for(const decision of explainPurchase(basket).products) audit(id,"gateway","choice",[decision.selection,decision.quantity,decision.price,decision.facts,decision.tradeoffs,...decision.constraints].filter(Boolean).join(" "),decision);
+  if (!comparing) autoSwapSameUse(basket);
+  for (const decision of explainPurchase(basket).products)
+    audit(
+      id,
+      "gateway",
+      "choice",
+      [
+        decision.selection,
+        decision.quantity,
+        decision.price,
+        decision.facts,
+        decision.tradeoffs,
+        ...decision.constraints,
+      ]
+        .filter(Boolean)
+        .join(" "),
+      decision,
+    );
   audit(
     id,
     "gateway",
@@ -1042,21 +1282,88 @@ export const SAME_USE_BY = "gateway (same-use rule)";
 const FISH_MEAT = /^(18|41(70|71|72|73))/; // fresh fish/meat, frozen fish/meat (same groups as MEAT_FISH)
 /** Same product group, no additional declared allergens, verified quantities and current facts,
  * no fish/meat, within the customer's configured percentage increase. Final safety checks still apply. */
-export function isSameUse(orig: BasketLine, o: Option, maxIncreasePct = 20): boolean {
+export function isSameUse(
+  orig: BasketLine,
+  o: Option,
+  maxIncreasePct = 20,
+): boolean {
   const a = getProduct(orig.sku),
     b = getProduct(o.sku);
-  if (!a || !b || o.quantityIssue || o.stock.available == null || o.stock.available < o.qty || !o.stock.customerPrice || !o.stock.deliverable || o.stock.cutoffPassed) return false;
+  if (
+    !a ||
+    !b ||
+    o.quantityIssue ||
+    o.stock.available == null ||
+    o.stock.available < o.qty ||
+    !o.stock.customerPrice ||
+    !o.stock.deliverable ||
+    o.stock.cutoffPassed
+  )
+    return false;
   if (FISH_MEAT.test(a.cat) || FISH_MEAT.test(b.cat)) return false;
   if (a.cat.slice(0, 3) !== b.cat.slice(0, 3)) return false;
   if (o.contains.some((c) => !orig.contains.includes(c))) return false;
-  if (b.mayContain.some(c=>!a.contains.includes(c) && !a.mayContain.includes(c))) return false;
-  return o.delta <= maxIncreasePct / 100 * Math.max(orig.total, 0);
+  if (
+    b.mayContain.some(
+      (c) => !a.contains.includes(c) && !a.mayContain.includes(c),
+    )
+  )
+    return false;
+  return o.delta <= (maxIncreasePct / 100) * Math.max(orig.total, 0);
+}
+/** An explicit standing permission (S48) for this exact pair, within its own price ceiling, with no new declared
+ *  allergen risk and a verified customer price. Final validation and the mandate still apply afterwards. */
+export function permittedSwap(customer: string, orig: BasketLine, o: Option) {
+  const perm = activePermission(customer, orig.sku, o.sku);
+  if (!perm) return undefined;
+  const a = getProduct(orig.sku),
+    p = getProduct(o.sku);
+  if (
+    !a ||
+    !p ||
+    o.quantityIssue ||
+    !o.stock.customerPrice ||
+    !orderable(o.stock, o.qty)
+  )
+    return undefined;
+  if (o.contains.some((c) => !orig.contains.includes(c))) return undefined;
+  if (
+    p.mayContain.some(
+      (c) => !a.contains.includes(c) && !a.mayContain.includes(c),
+    )
+  )
+    return undefined;
+  if (
+    orig.total > 0
+      ? o.total > orig.total * (1 + perm.maxIncreasePct / 100) + 1e-9
+      : o.total > 0
+  )
+    return undefined;
+  return perm;
 }
 export function autoSwapSameUse(b: Basket): void {
-  if (!b.rules.autoSwapSameUse || !b.rules.substitutionsPermitted) return;
+  if (!b.rules.substitutionsPermitted) return;
   for (const l of b.lines) {
-    const o = l.issue && !l.issue.decided ? l.issue.options[0] : undefined;
-    if (o && isSameUse(l, o, b.rules.maxSubstituteIncreasePct))
+    if (!l.issue || l.issue.decided) continue;
+    // 1. explicit permission for the pair (first permitted option in preference/rank order)
+    const permitted = l.issue.options
+      .map((o) => ({ o, perm: permittedSwap(b.customer, l, o) }))
+      .find((x) => x.perm);
+    if (permitted) {
+      editLine(b.id, l.id, {
+        chooseOption: permitted.o.sku,
+        by: `policy:${permitted.perm!.id}`,
+      });
+      continue;
+    }
+    // 2. account-wide same-use rule (off for Bistro Kallio)
+    const o = l.issue.options[0];
+    if (
+      b.rules.autoSwapSameUse &&
+      o &&
+      o.preference?.status !== "rejected" &&
+      isSameUse(l, o, b.rules.maxSubstituteIncreasePct)
+    )
       editLine(b.id, l.id, { chooseOption: o.sku, by: SAME_USE_BY });
   }
 }
@@ -1081,7 +1388,11 @@ export class HttpError extends Error {
 /** A basket is frozen once it has a placed or pending order: the approver must approve exactly what they saw.
  *  Edits are allowed again only after the order is rejected (sent back). */
 export function assertEditable(b: Basket): void {
-  if (submitting.has(b.id)) throw new HttpError(409,"order submission in progress; retry after validation completes");
+  if (submitting.has(b.id))
+    throw new HttpError(
+      409,
+      "order submission in progress; retry after validation completes",
+    );
   const o = [...orders.values()].find(
     (x) => x.basketId === b.id && x.status !== "rejected",
   );
@@ -1105,19 +1416,36 @@ export function editLine(
   const l = b.lines.find((x) => x.id === lineId);
   if (!l) throw new HttpError(404, "line not found");
   const by = e.by || "buyer";
-  if(e.selectCandidate){
-    if(e.qty!=null || e.chooseOption!=null || e.included!=null)throw new HttpError(400,"selectCandidate must be used alone");
-    if(!l.comparison)throw new HttpError(400,"No compared products for this line");
-    refreshComparison(b,l);
-    const c=l.comparison.candidates.find(c=>c.line.sku===e.selectCandidate);
-    if(!c?.selectable)throw new HttpError(400,"Candidate is not a suitable server-quoted option");
-    const comparison=l.comparison;const previous=l.name;
-    Object.assign(l,structuredClone(c.line),{id:l.id,comparison});
-    delete l.replaced;delete l.excludedQty;
-    if(!c.line.issue)delete l.issue;
-    comparison.chosenBy=by;
-    audit(b.id,by,"comparison_choice",`Selected ${l.name} instead of ${previous}. ${comparisonReason(comparison,l.sku)}`,{lineId:l.id,sku:l.sku,comparison:structuredClone(comparison)});
-    recompute(b);return b;
+  if (e.selectCandidate) {
+    if (e.qty != null || e.chooseOption != null || e.included != null)
+      throw new HttpError(400, "selectCandidate must be used alone");
+    if (!l.comparison)
+      throw new HttpError(400, "No compared products for this line");
+    refreshComparison(b, l);
+    const c = l.comparison.candidates.find(
+      (c) => c.line.sku === e.selectCandidate,
+    );
+    if (!c?.selectable)
+      throw new HttpError(
+        400,
+        "Candidate is not a suitable server-quoted option",
+      );
+    const comparison = l.comparison;
+    const previous = l.name;
+    Object.assign(l, structuredClone(c.line), { id: l.id, comparison });
+    delete l.replaced;
+    delete l.excludedQty;
+    if (!c.line.issue) delete l.issue;
+    comparison.chosenBy = by;
+    audit(
+      b.id,
+      by,
+      "comparison_choice",
+      `Selected ${l.name} instead of ${previous}. ${comparisonReason(comparison, l.sku)}`,
+      { lineId: l.id, sku: l.sku, comparison: structuredClone(comparison) },
+    );
+    recompute(b);
+    return b;
   }
   if (e.included != null) {
     if (
@@ -1142,7 +1470,11 @@ export function editLine(
     if (!(e.qty >= 0)) throw new HttpError(400, "qty must be >= 0");
     if (e.included !== false) delete l.excludedQty;
     const was = l.qty;
-    if(l.comparison && e.included==null && e.qty>0){const pack=packOf(l.stock,getProduct(l.sku));l.comparison.requested={qty:e.qty*pack.qty,unit:pack.unit};l.requestedAmount={...l.comparison.requested};}
+    if (l.comparison && e.included == null && e.qty > 0) {
+      const pack = packOf(l.stock, getProduct(l.sku));
+      l.comparison.requested = { qty: e.qty * pack.qty, unit: pack.unit };
+      l.requestedAmount = { ...l.comparison.requested };
+    }
     l.qty = e.qty;
     l.total = r2(l.qty * l.stock.price);
     if (
@@ -1180,10 +1512,38 @@ export function editLine(
       const o = l.issue.options.find((x) => x.sku === c);
       if (!o)
         throw new HttpError(400, `option ${c} is not offered for this line`);
-      l.replaced = l.replaced ?? { sku: l.sku, name: l.name, originalTotal:l.total }; // re-deciding keeps the original product
+      // S48 learning: a person's (or buyer agent's) choice is purchase memory; automatic policy/gateway swaps are not.
+      // Learning never touches the mandate or permissions.
+      if (!/^(policy:|gateway)/.test(by)) {
+        const from = l.replaced?.sku ?? l.sku;
+        const at = new Date().toISOString();
+        recordPreference({
+          at,
+          customer: b.customer,
+          kind: "substitution_accepted",
+          sku: o.sku,
+          forSku: from,
+          basketId: b.id,
+        });
+        const first = l.issue.options[0];
+        if (first && first.sku !== o.sku && !l.issue.decided)
+          recordPreference({
+            at,
+            customer: b.customer,
+            kind: "substitution_rejected",
+            sku: first.sku,
+            forSku: from,
+            basketId: b.id,
+          });
+      }
+      l.replaced = l.replaced ?? {
+        sku: l.sku,
+        name: l.name,
+        originalTotal: l.total,
+      }; // re-deciding keeps the original product
       const p = getProduct(o.sku);
       Object.assign(l, {
-        quantityIssue:o.quantityIssue,
+        quantityIssue: o.quantityIssue,
         sku: o.sku,
         name: o.name,
         brand: p?.brand ?? "",
@@ -1343,7 +1703,10 @@ export async function rescaleGuests(
       );
       l.issue = {
         ...iss,
-        options: rankOptions(opts, getProduct(l.sku)?.contains ?? []),
+        options: rankOptions(opts, getProduct(l.sku)?.contains ?? [], {
+          customer: b.customer,
+          forSku: l.sku,
+        }),
       };
       if (!l.issue.options.length) needAlt.push({ l, needs });
     } else {
@@ -1377,7 +1740,11 @@ export async function rescaleGuests(
         const opts = (alt.get(l.id) ?? []).map((s) =>
           optionFor(s, st2.get(s)!, need, l, people, b.dishes, needs),
         );
-        l.issue!.options = rankOptions(opts, getProduct(l.sku)?.contains ?? []);
+        l.issue!.options = rankOptions(
+          opts,
+          getProduct(l.sku)?.contains ?? [],
+          { customer: b.customer, forSku: l.sku },
+        );
       }
     }
     for (const { l } of needAlt)
@@ -1450,6 +1817,7 @@ export async function checkReplacements(basketId: string, lineId: string) {
             optionFor(s, stock.get(s)!, need, l, b.people, b.dishes, lc.needs),
           ),
         getProduct(l.sku)?.contains ?? [],
+        { customer: b.customer, forSku: l.sku },
       ),
     };
   } else delete l.issue;
@@ -1709,7 +2077,11 @@ export function caseSize(p?: Product): number {
 }
 const niceProduct = (sku: string) => {
   const p = getProduct(sku);
-  const s = (p?.en || p?.fi || sku).replace(/\s+/g, " ").trim().split(/\.\s/)[0].replace(/\.$/, "");
+  const s = (p?.en || p?.fi || sku)
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(/\.\s/)[0]
+    .replace(/\.$/, "");
   return s.length > 70 ? s.slice(0, 67).replace(/\s+\S*$/, "") + "…" : s;
 };
 const UNAVAILABLE: Record<string, string> = {
@@ -1910,7 +2282,10 @@ export async function addProduct(
         );
       line.issue = {
         ...iss,
-        options: rankOptions(opts, getProduct(sku)?.contains ?? []),
+        options: rankOptions(opts, getProduct(sku)?.contains ?? [], {
+          customer: b.customer,
+          forSku: sku,
+        }),
       };
       if (!line.issue.options.length)
         line.issue.text += " No deliverable alternative found.";
@@ -1945,16 +2320,36 @@ export async function addProduct(
   };
 }
 
-function refreshComparison(b:Basket,line:BasketLine){
-  const comparison=line.comparison;if(!comparison)return;
-  const need:Need={...directDraft([{query:comparison.query,quantity:comparison.requested.qty,unit:comparison.requested.unit.toLowerCase() as "l"|"kg"|"pcs"}]).needs[0],diet:(line.requiredDiet ?? []) as Need["diet"]};
-  const snapshots=comparison.candidates.map(c=>{
-    const stock=c.line.sku===line.sku ? line.stock : c.line.stock;
-    const {_need,_note,...candidate}=makeLine({sku:c.line.sku,needs:[need],ranked:[]},stock,1,[]);
-    candidate.id=line.id;
-    const issue=issueFor(stock,candidate.qty,b.date);if(issue)candidate.issue={...issue,options:[]};
+function refreshComparison(b: Basket, line: BasketLine) {
+  const comparison = line.comparison;
+  if (!comparison) return;
+  const need: Need = {
+    ...directDraft([
+      {
+        query: comparison.query,
+        quantity: comparison.requested.qty,
+        unit: comparison.requested.unit.toLowerCase() as "l" | "kg" | "pcs",
+      },
+    ]).needs[0],
+    diet: (line.requiredDiet ?? []) as Need["diet"],
+  };
+  const snapshots = comparison.candidates.map((c) => {
+    const stock = c.line.sku === line.sku ? line.stock : c.line.stock;
+    const { _need, _note, ...candidate } = makeLine(
+      { sku: c.line.sku, needs: [need], ranked: [] },
+      stock,
+      1,
+      [],
+    );
+    candidate.id = line.id;
+    const issue = issueFor(stock, candidate.qty, b.date);
+    if (issue) candidate.issue = { ...issue, options: [] };
     return candidate;
   });
-  comparison.candidates=rankComparedProducts(b,snapshots,comparison.requested);
-  comparison.recommendedSku=comparison.candidates[0]?.line.sku ?? line.sku;
+  comparison.candidates = rankComparedProducts(
+    b,
+    snapshots,
+    comparison.requested,
+  );
+  comparison.recommendedSku = comparison.candidates[0]?.line.sku ?? line.sku;
 }

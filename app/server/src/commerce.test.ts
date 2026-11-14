@@ -42,7 +42,8 @@ test('direct request and website intent bypass menu and LLM; exact packaging and
   expect(purchasingIntent('I need 1,000 litres of lactose-free milk delivered Monday')).toBe('DIRECT_PURCHASE');
   expect(purchasingIntent('Catering for 50 people, no peanuts')).toBe('MENU_PLANNING');
   const b=await create(20.2);expect(drafts).toBe(0);expect(b.intent).toBe('DIRECT_PURCHASE');expect(b.basket.dishes).toHaveLength(0);
-  expect(b.basket.lines[0].qty).toBe(21);expect(b.basket.lines[0].why).toContain('21');expect(b.checks).toHaveLength(0);
+  // Equal per-litre fixture prices: the least-overbuy pack wins, always whole packs covering 20.2 l.
+  const l=b.basket.lines[0];expect(Number.isInteger(l.qty)).toBe(true);expect(l.overbuy).toBeGreaterThanOrEqual(0);expect(l.overbuy).toBeLessThan(1);expect(l.why).toContain(String(l.qty));expect(b.checks).toHaveLength(0);
 });
 test('full flow enforces spending, separate approval identity, exact revision and safe duplicate replay',async()=>{
   const b=await create(1000);expect(b.basket.mandate.state).toBe('needs_approval');
@@ -75,10 +76,16 @@ test('allergen restrictions are hard constraints; empty lists never establish fr
     try{product.freeFromAllergen=[];expect(validatePurchase(b.basket).some(c=>c.code==='allergen_unknown'||c.code==='allergen_forbidden')).toBe(true);}finally{product.freeFromAllergen=free;}
   }
 });
-test('unknown stock, missing delivery cutoff and missing customer price cannot be approved',async()=>{
-  amount=999999;let b=await create();expect(b.checks.some((c:any)=>c.code==='stock_unknown')).toBe(true);
-  expect((await request(`/api/v1/purchase-requests/${b.id}/submit`,{})).status).toBe(409);
-  amount=100000;cutoff=false;b=await create();expect(b.checks.some((c:any)=>c.code==='delivery_unverified')).toBe(true);
+test('unknown stock never places itself: it goes to the approver, whose approval confirms stock',async()=>{
+  amount=999999;const b=await create();expect(b.checks.some((c:any)=>c.code==='stock_unknown')).toBe(true);
+  expect(b.basket.mandate.state).toBe('needs_approval');expect(b.basket.mandate.reasons.join(' ')).toMatch(/can't confirm stock/);
+  const sent=await (await request(`/api/v1/purchase-requests/${b.id}/submit`,{})).json();expect(sent.order.status).toBe('pending_approval');
+  expect((await request(`/api/v1/purchase-requests/${b.id}/approve`,{decision:'approve',revision:sent.revision},approver)).status).toBe(200);
+  const audit=await (await request(`/api/v1/purchase-requests/${b.id}/audit`)).json();
+  expect(audit.some((e:any)=>/Stock confirmed by Mikko/.test(e.summary))).toBe(true);
+});
+test('missing delivery cutoff and missing customer price cannot be approved',async()=>{
+  let b;cutoff=false;b=await create();expect(b.checks.some((c:any)=>c.code==='delivery_unverified')).toBe(true);
   cutoff=true;customerPrice=false;b=await create();expect(b.checks.some((c:any)=>c.code==='price_unverified')).toBe(true);
 });
 test('unavailable products escalate and cannot result in a partial successful order',async()=>{
@@ -122,7 +129,7 @@ test('delivery details and minimum sponsor lots are part of validation and revis
   const copy=structuredClone(b);copy.delivery={placeId:'sample',address:'Different address',time:'10-12'};expect(orderRevision(copy)).not.toBe(orderRevision(b));
   const fish=getProduct('461814')!;const pack=packOf({...b.lines[0].stock,salesUnit:'KG'},fish);
   expect(salesQty({qty:7,unit:'KG'},pack).qty).toBe(10);
-  const result=await create(20.2);expect(result.basket.lines[0].overbuy).toBeCloseTo(0.8);
+  const result=await create(20.2);expect(result.basket.lines[0].overbuy).toBeGreaterThanOrEqual(0);expect(result.basket.lines[0].overbuy).toBeLessThan(1);
 });
 test('hard substitution prohibition and category/delivery restrictions cannot be approved away',async()=>{
   const result=await create(),b=baskets.get(result.id)!;

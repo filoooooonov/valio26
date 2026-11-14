@@ -24,7 +24,37 @@ export function detectRequirements(request: string): DetectedRequirements {
   return { people: n && n <= 10000 ? n : null, dietary: dietary.length ? dietary : none ? [] : null };
 }
 
+// Demo rule (aleksei, 14 Nov): delivery is always at least 24 hours ahead. Slots start 6, 8, 10, 12 (latest 12).
+export const SLOT_STARTS = [6, 8, 10, 12];
+const isoLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+/** Earliest bookable delivery: date + first slot hour that starts >= now + 24 h. */
+export function earliestDelivery(now: Date = new Date()): { date: string; hour: number } {
+  const t = new Date(now.getTime() + 24 * 3600 * 1000);
+  const h = t.getHours() + t.getMinutes() / 60;
+  const first = SLOT_STARTS.find((s) => s >= h);
+  if (first != null) return { date: isoLocal(t), hour: first };
+  t.setDate(t.getDate() + 1);
+  return { date: isoLocal(t), hour: SLOT_STARTS[0] };
+}
+/** Is this slot (e.g. "6–8") on this date at least 24 h ahead? */
+export function slotBookable(date: string, slot: string, now: Date = new Date()): boolean {
+  const e = earliestDelivery(now);
+  if (date !== e.date) return date > e.date;
+  return Number(slot.split(/[\u2013-]/)[0]) >= e.hour;
+}
 export function requestDeliveryDate(request: string, fallback: string, now: Date = new Date()): string {
+  const r = parseDeliveryDate(request, fallback, now);
+  const earliest = earliestDelivery(now).date;
+  if (r >= earliest) return r;
+  // A weekday that falls too soon ("on Saturday" said on Saturday) means the next one; anything else moves to the earliest day.
+  if (/\b(?:sun|mon|tue|wed|thu|fri|sat)/i.test(request) && !/\d{4}-\d{2}-\d{2}/.test(request)) {
+    const d = new Date(r + 'T12:00:00');
+    while (isoLocal(d) < earliest) d.setDate(d.getDate() + 7);
+    return isoLocal(d);
+  }
+  return earliest;
+}
+function parseDeliveryDate(request: string, fallback: string, now: Date): string {
   const iso = request.match(/\b(\d{4}-\d{2}-\d{2})\b/)?.[1];
   if (iso && !Number.isNaN(Date.parse(iso + 'T12:00:00')) && new Date(iso + 'T12:00:00Z').toISOString().startsWith(iso)) return iso;
   const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];

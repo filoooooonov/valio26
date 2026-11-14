@@ -41,6 +41,7 @@
   /* type: pen font variables */
   --font-display: "Geist", helvetica, arial, sans-serif;
   --font-body: "Geist", helvetica, arial, sans-serif;
+  --font-wordmark: "Leckerli One", var(--font-display); /* assistant name only (Helmi), echoes the Aimo logo */
   --fs-11: 0.6875rem;
   --fs-12: 0.75rem;
   --fs-13: 0.8125rem;

@@ -79,13 +79,15 @@ export function useReplacementClose(dialog: RefObject<HTMLDialogElement | null>,
   return { closing, close };
 }
 
-function ReplacementPhoto({ sku, image, name }: { sku: string; image?: string; name: string }) {
+// Small cart-style thumbnail for replacement rows.
+function RowThumb({ sku, image }: { sku: string; image?: string }) {
   const catalogueImage = useProductImage(sku);
   const [failed, setFailed] = useState(false);
   const source = catalogueImage ?? image;
   useEffect(() => setFailed(false), [sku, source]);
-  return <span className="replacement-option__image">{source && !failed ? <img src={source} alt={name} onError={() => setFailed(true)} /> : <span className="replacement-option__no-image"><Icon name="package" className="i-22" /><span>No photo available</span></span>}</span>;
+  return <span className="purchase-row__thumb">{source && !failed ? <img src={source} alt="" onError={() => setFailed(true)} /> : <Icon name="package" className="i-18" />}</span>;
 }
+
 
 // All choices come from the gateway's checked alternatives. Opening the dialog never accepts a swap.
 export function SwapSheet({ line, date, locked, onClose, onChoose, onCheck, onUnavailable, onSuggestMenuChange }: {
@@ -128,29 +130,24 @@ export function SwapSheet({ line, date, locked, onClose, onChoose, onCheck, onUn
     {checking && <p role="status">Checking this product and its shortlisted replacements for your delivery...</p>}
     {!checking && !checkError && line.issue && !available.length && <div className="replacement-dialog__empty"><p>No suitable product replacement was found for this delivery.</p>{onSuggestMenuChange && <p>Would you like to try a different recipe using available ingredients?</p>}<div className="replacement-dialog__recovery">{onSuggestMenuChange && <button className="btn replacement-dialog__use" type="button" disabled={locked || closing || checking} onClick={() => close(onSuggestMenuChange)}>Suggest a different recipe</button>}<button className="btn btn--outline" onClick={() => close(onUnavailable)}>No thanks</button></div></div>}
     {opts.length > 0 && <fieldset className="replacement-options" disabled={locked || closing || checking}><legend className="sr-only">Choose a replacement</legend>
-      <div className="replacement-options__grid">
+      <div className="purchase-rows">
+      <div className="purchase-row purchase-row--disabled purchase-row--original" aria-label="Original item for comparison">
+        <span className="purchase-row__status"><Icon name="circle-x" className="i-16" /></span>
+        <RowThumb sku={original.sku} image={original.image} />
+        <span className="purchase-row__body"><strong>{niceName(original.name)}</strong><span>{qtyLabel(original.qty, original.pack)} · <span className="purchase-row__note" data-tone="blocked">{reason}</span></span></span>
+        <span className="purchase-row__price"><b>{money(original.total)}</b><span className="purchase-option__delta">Your usual</span></span>
+      </div>
       {opts.map(o => {
         const ok = usable(o);
-        const note = o.stock.cutoffPassed ? 'Order cut-off passed.' : !o.stock.deliverable ? 'Unavailable for this delivery.' : o.stock.available != null && o.qty > o.stock.available ? 'Not enough stock for your quantity.' : o.qty <= 0 ? 'No orderable quantity.' : [o.frozen ? 'Frozen product' : '', o.reason.split(/\s*\u00b7\s*/).find(part => /^adds /i.test(part)) ?? ''].filter(Boolean).join('. ');
-        const delivery = ok ? dayLabel(date) : o.stock.availableDate ? dayLabel(o.stock.availableDate) : 'Unavailable';
-        return <label key={o.sku} className={'replacement-option' + (pick === o.sku ? ' replacement-option--selected' : '') + (!ok ? ' replacement-option--disabled' : '')}>
-          <span className="replacement-option__top">
-            <input type="radio" name="replacement-choice" value={o.sku} aria-label={niceName(o.name)} checked={pick === o.sku} disabled={locked || closing || !ok} onChange={() => setPick(o.sku)} />
-            <span className={'replacement-option__availability' + (!ok ? ' replacement-option__availability--unavailable' : '')}><Icon name={ok ? 'circle-check' : 'circle-x'} className="i-14" />{delivery}</span>
-          </span>
-          <ReplacementPhoto sku={o.sku} name={niceName(o.name)} />
-          <span className="replacement-option__copy"><strong>{niceName(o.name)}</strong></span>
-          <span className="replacement-option__facts"><span>{qtyLabel(o.qty, o.pack)}</span><span className="replacement-option__price"><b>{money(o.total)}</b><span>{Math.abs(o.total - original.total) < .005 ? 'Same price' : money(Math.abs(o.total - original.total)) + (o.total < original.total ? ' less' : ' more')}</span></span></span>
-          <span className={'replacement-option__note' + (!ok ? ' replacement-option__problem' : '')}>{note}</span>
+        const note = o.stock.cutoffPassed ? 'Order cut-off passed' : !o.stock.deliverable ? 'Unavailable for this delivery' : o.stock.available != null && o.qty > o.stock.available ? 'Not enough stock' : o.qty <= 0 ? 'No orderable quantity' : o.preference?.status === 'accepted_alternative' && o.preference.accepted ? `You've accepted this ${o.preference.accepted} ${o.preference.accepted === 1 ? 'time' : 'times'} before` : o.preference?.status === 'rejected' ? 'You declined this before' : o.preference?.status === 'usual' ? `In ${o.preference.orders} of your last ${o.preference.of} orders` : o.frozen ? 'Frozen product' : '';
+        const diff = Math.round((o.total - original.total) * 100) / 100;
+        return <label key={o.sku} className={'purchase-row' + (pick === o.sku ? ' purchase-row--selected' : '') + (!ok ? ' purchase-row--disabled' : '')}>
+          <input type="radio" name="replacement-choice" value={o.sku} aria-label={niceName(o.name)} checked={pick === o.sku} disabled={locked || closing || !ok} onChange={() => setPick(o.sku)} />
+          <RowThumb sku={o.sku} />
+          <span className="purchase-row__body"><strong>{niceName(o.name)}</strong><span>{qtyLabel(o.qty, o.pack)}{note && <span className="purchase-row__note" data-tone={!ok ? 'blocked' : o.preference?.status === 'accepted_alternative' || o.preference?.status === 'usual' ? 'usual' : undefined}>{' · '}{note}</span>}</span></span>
+          <span className="purchase-row__price"><b>{money(o.total)}</b><span className="purchase-option__delta" data-saving={diff < 0 || undefined}>{Math.abs(diff) < .005 ? 'Same price' : (diff < 0 ? '−' : '+') + money(Math.abs(diff))}</span></span>
         </label>;
       })}
-      <div className="replacement-option replacement-option--original" aria-label="Original item for comparison">
-        <span className="replacement-option__top"><span className="replacement-option__original-label">Original item</span><Icon name="circle-alert" className="i-16" /></span>
-        <ReplacementPhoto sku={original.sku} image={original.image} name={niceName(original.name)} />
-        <span className="replacement-option__copy"><strong>{niceName(original.name)}</strong></span>
-        <span className="replacement-option__facts"><span>{qtyLabel(original.qty, original.pack)}</span><span className="replacement-option__price"><b>{money(original.total)}</b><span>Original total</span></span></span>
-        <span className="replacement-option__note" title={reason}>Unavailable</span>
-      </div>
       </div>
     </fieldset>}
     {selected && <div className="replacement-comparison__summary" aria-live="polite">

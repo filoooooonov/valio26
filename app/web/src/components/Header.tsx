@@ -14,6 +14,7 @@ export function Header({
   locked,
   delivery,
   onDelivery,
+  onHistory,
 }: {
   cartTotal: number;
   date: string;
@@ -23,6 +24,7 @@ export function Header({
   locked: boolean;
   delivery?: DeliveryChoice | null;
   onDelivery?: () => void;
+  onHistory?: () => void;
 }) {
   return (
     <header className="hdr">
@@ -31,6 +33,7 @@ export function Header({
       </a>
       <span className="hdr__div" aria-hidden="true" />
       <span className="hdr__shop">Delivery wholesale</span>
+      {onHistory && <button type="button" className="hdr__history" onClick={onHistory}><Icon name="clock" className="i-16" />Order history</button>}
       <span className="hdr__spacer" />
       <Segmented pickup={pickup} onPickup={onPickup} disabled={locked} />
       <button type="button" className={"hdr__slot" + (onDelivery ? " hdr__slot--interactive" : "")} aria-label="Choose delivery details" disabled={locked || !onDelivery} onClick={onDelivery}>
@@ -41,7 +44,7 @@ export function Header({
             <Icon name="chevron-down" className="i-14" />
           </div>
           <div className="hdr__slot-sub">
-            {delivery ? delivery.placeName : delivery === null ? "Place, date and time" : "Hotelli Kaleva, Kamppi"}{orderBy && delivery !== null ? ` · order by ${stamp(orderBy)}` : ""}
+            {delivery ? delivery.placeName : delivery === null ? "Place, date and time" : "Bistro Kallio, Helsinki"}{orderBy && delivery !== null ? ` · order by ${stamp(orderBy)}` : ""}
           </div>
         </div>
       </button>

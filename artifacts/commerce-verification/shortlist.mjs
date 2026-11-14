@@ -1,0 +1,1 @@
+import {loadCatalog,getProduct} from '../../app/server/src/catalog.ts';import {comparisonShortlist} from '../../app/server/src/comparison.ts';loadCatalog();const s=comparisonShortlist('lactose-free milk',['lactose-free']);console.log(s.catalogueMatches,s.ids.map(id=>({id,name:getProduct(id).en,size:getProduct(id).content})));

@@ -1,0 +1,26 @@
+[
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "noScheduledMenus": true,
+    "alignedPrices": true,
+    "noOverflow": true,
+    "evidenceDialogAndFocus": true,
+    "selectionAndUndo": true,
+    "pageErrors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "noScheduledMenus": true,
+    "alignedPrices": true,
+    "noOverflow": true,
+    "evidenceDialogAndFocus": true,
+    "selectionAndUndo": true,
+    "pageErrors": []
+  }
+]

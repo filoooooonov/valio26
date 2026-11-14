@@ -1,0 +1,291 @@
+[server] $ bun --env-file=../../.env --watch src/index.ts
+[web] $ vite
+
+[web]   VITE v6.4.6  ready in 911 ms
+
+[web]   ➜  Local:   http://localhost:5173/
+[web]   ➜  Network: use --host to expose
+[server] catalog: 17546 products in 722 ms
+[server] gateway on http://localhost:8787
+[server] catalog: 17546 products in 625 ms
+[server] gateway on http://localhost:8787
+[web] 8:29:52 PM [vite] (client) hmr update /src/App.tsx, /src/components/Mikko.tsx, /src/components/ScheduledMenus.tsx, /src/components/OrderPanel.tsx, /src/components/Chat.tsx
+[web] 8:29:52 PM [vite] (client) hmr update /src/components/OrderPanel.tsx
+[web] 8:29:52 PM [vite] (client) hmr update /src/App.tsx
+[web] 8:29:52 PM [vite] (client) hmr update /src/App.tsx, /src/components/Mikko.tsx, /src/components/Sheets.tsx, /src/components/OrderPanel.tsx, /src/components/Chat.tsx
+[server] catalog: 17546 products in 759 ms
+[server] gateway on http://localhost:8787
+[web] 8:29:56 PM [vite] (client) hmr invalidate /src/components/ScheduledMenus.tsx Could not Fast Refresh ("newSchedule" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:56 PM [vite] (client) hmr update /src/App.tsx
+[web] 8:29:56 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:56 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:29:56 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:56 PM [vite] (client) hmr update /src/App.tsx, /src/components/States.tsx, /src/components/OrderPanel.tsx
+[web] 8:29:57 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:57 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:29:57 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:57 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:29:57 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:57 PM [vite] (client) hmr update /src/App.tsx, /src/components/States.tsx, /src/components/OrderPanel.tsx
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/ScheduledMenus.tsx Could not Fast Refresh ("newSchedule" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) hmr update /src/App.tsx
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) hmr update /src/App.tsx, /src/components/States.tsx, /src/components/OrderPanel.tsx
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/ScheduledMenus.tsx Could not Fast Refresh ("newSchedule" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) hmr update /src/App.tsx
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) hmr update /src/App.tsx, /src/components/States.tsx, /src/components/OrderPanel.tsx
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:29:58 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:58 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:29:59 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:29:59 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:30:00 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:00 PM [vite] (client) hmr update /src/App.tsx, /src/components/States.tsx, /src/components/OrderPanel.tsx
+[web] 8:30:01 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:01 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:01 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:01 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:30:01 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:01 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:01 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:01 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:01 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:01 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:30:01 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:01 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:01 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:01 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:30:01 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:01 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:01 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:01 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:30:01 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:01 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:01 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:01 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:01 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:01 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:01 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:01 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:30:01 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:01 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:30:01 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:01 PM [vite] (client) hmr update /src/App.tsx, /src/components/States.tsx, /src/components/OrderPanel.tsx
+[web] 8:30:02 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:02 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:02 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:02 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:30:02 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:02 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:02 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:02 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:02 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:02 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:30:02 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:02 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:02 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:02 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:30:02 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:02 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:02 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:02 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:30:02 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:02 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:02 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:02 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:02 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:02 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:02 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:02 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:30:02 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:02 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:30:02 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:30:02 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:31:45 PM [vite] (client) hmr update /src/components/OrderPanel.tsx
+[web] 8:31:46 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:31:46 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:31:46 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:31:46 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:31:49 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:31:49 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[server] catalog: 17546 products in 564 ms
+[server] gateway on http://localhost:8787
+[web] 8:34:29 PM [vite] (client) hmr update /src/components/OrderPanel.tsx
+[web] 8:34:31 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:34:31 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:34:31 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:34:31 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:34:32 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:34:32 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:36:03 PM [vite] (client) hmr update /src/App.tsx
+[web] 8:36:03 PM [vite] (client) hmr update /src/components/OrderPanel.tsx
+[server] catalog: 17546 products in 658 ms
+[server] gateway on http://localhost:8787
+[server] catalog: 17546 products in 625 ms
+[server] gateway on http://localhost:8787
+[web] 8:42:16 PM [vite] (client) hmr update /src/App.tsx, /src/components/Mikko.tsx, /src/components/ScheduledMenus.tsx, /src/components/OrderPanel.tsx, /src/components/Chat.tsx
+[web] 8:42:16 PM [vite] (client) hmr update /src/components/OrderPanel.tsx
+[server] catalog: 17546 products in 581 ms
+[server] gateway on http://localhost:8787
+[web] 8:42:18 PM [vite] (client) hmr invalidate /src/components/ScheduledMenus.tsx Could not Fast Refresh ("newSchedule" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:18 PM [vite] (client) hmr update /src/App.tsx
+[web] 8:42:18 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:18 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:42:18 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:18 PM [vite] (client) hmr update /src/App.tsx, /src/components/States.tsx, /src/components/OrderPanel.tsx
+[web] 8:42:20 PM [vite] (client) hmr invalidate /src/components/ScheduledMenus.tsx Could not Fast Refresh ("newSchedule" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:20 PM [vite] (client) hmr update /src/App.tsx
+[web] 8:42:20 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:20 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:42:20 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:20 PM [vite] (client) hmr update /src/App.tsx, /src/components/States.tsx, /src/components/OrderPanel.tsx
+[web] 8:42:21 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:21 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:42:21 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:21 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:42:21 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:21 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:42:21 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:21 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:42:21 PM [vite] (client) hmr invalidate /src/components/ScheduledMenus.tsx Could not Fast Refresh ("newSchedule" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:21 PM [vite] (client) hmr update /src/App.tsx
+[web] 8:42:21 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:21 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:42:21 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:21 PM [vite] (client) hmr update /src/App.tsx, /src/components/States.tsx, /src/components/OrderPanel.tsx
+[web] 8:42:21 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:21 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:42:21 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:21 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:42:21 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:21 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:42:21 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:21 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:42:21 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:21 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:42:21 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:21 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:42:21 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:21 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:42:21 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:21 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:42:22 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:22 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:42:22 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:22 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:42:22 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:22 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:42:22 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:22 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:42:22 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:22 PM [vite] (client) page reload src/components/Chat.tsx (circular import invalidate)
+[web] 8:42:23 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:23 PM [vite] (client) page reload src/components/OrderPanel.tsx (circular import invalidate)
+[web] 8:42:54 PM [vite] (client) hmr update /src/components/OrderPanel.tsx
+[web] 8:42:55 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:55 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:42:55 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:55 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:42:59 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:42:59 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:53:55 PM [vite] (client) hmr update /src/App.tsx
+[web] 8:53:55 PM [vite] (client) hmr update /src/components/OrderPanel.tsx
+[web] 8:53:56 PM [vite] (client) hmr update /src/App.tsx
+[web] 8:53:56 PM [vite] (client) hmr update /src/components/schedule-date-time.css
+[web] 8:53:56 PM [vite] (client) hmr update /src/components/scheduled-menus.css
+[web] 8:53:56 PM [vite] (client) hmr update /src/components/ScheduleDateTime.tsx
+[web] 8:53:56 PM [vite] (client) hmr update /src/components/ScheduledMenus.tsx
+[web] 8:56:47 PM [vite] (client) hmr update /src/ui/index.tsx
+[web] 8:56:47 PM [vite] (client) hmr update /src/components/OrderPanel.tsx
+[web] 8:56:47 PM [vite] (client) hmr invalidate /src/ui/index.tsx Could not Fast Refresh (new export)
+[web] 8:56:47 PM [vite] (client) hmr update /src/ui/BrandGuide.tsx, /src/components/Mikko.tsx, /src/components/Sheets.tsx, /src/components/OrderPanel.tsx, /src/components/Chat.tsx, /src/App.tsx, /src/ui/PurchaseOptions.tsx
+[web] 8:56:47 PM [vite] (client) hmr invalidate /src/ui/index.tsx Could not Fast Refresh (new export)
+[web] 8:56:47 PM [vite] (client) hmr update /src/ui/BrandGuide.tsx, /src/components/Mikko.tsx, /src/components/Sheets.tsx, /src/components/OrderPanel.tsx, /src/components/Chat.tsx, /src/App.tsx, /src/ui/PurchaseOptions.tsx
+[web] 8:56:47 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:56:47 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:56:48 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:56:48 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:56:48 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:56:48 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:56:48 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:56:48 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:57:18 PM [vite] (client) hmr update /src/App.tsx, /src/components/Mikko.tsx, /src/components/OrderPanel.tsx, /src/components/Chat.tsx
+[web] 8:57:18 PM [vite] (client) hmr update /src/ui/BrandGuide.tsx
+[web] 8:57:19 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:57:19 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:57:19 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:57:19 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:57:19 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:57:19 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:57:19 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:57:19 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:57:19 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:57:19 PM [vite] (client) hmr update /src/App.tsx, /src/components/States.tsx, /src/components/OrderPanel.tsx
+[web] 8:57:19 PM [vite] (client) hmr invalidate /src/components/Chat.tsx Could not Fast Refresh ("cheaperSwap" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:57:19 PM [vite] (client) hmr update /src/App.tsx, /src/components/States.tsx, /src/components/OrderPanel.tsx
+[web] 8:58:00 PM [vite] (client) hmr update /src/ui/PurchaseOptions.tsx
+[web] 8:59:30 PM [vite] (client) hmr update /src/ui/PurchaseOptions.tsx
+[web] 8:59:30 PM [vite] (client) hmr update /src/components/OrderPanel.tsx
+[web] 8:59:30 PM [vite] (client) hmr update /src/ui/purchase-options.css
+[web] 8:59:30 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:59:30 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 8:59:31 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 8:59:31 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 9:00:25 PM [vite] (client) hmr update /src/components/Mikko.tsx
+[web] 9:00:25 PM [vite] (client) hmr update /src/app.css
+[web] 9:02:03 PM [vite] (client) hmr update /src/app.css
+[web] 9:02:03 PM [vite] (client) hmr update /src/ui/purchase-options.css
+[web] 9:02:03 PM [vite] (client) hmr update /src/components/OrderPanel.tsx
+[web] 9:02:03 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 9:02:03 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 9:02:03 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 9:02:03 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 9:02:04 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 9:02:04 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 9:02:04 PM [vite] (client) hmr invalidate /src/components/OrderPanel.tsx Could not Fast Refresh ("useProductImage" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[web] 9:02:04 PM [vite] (client) hmr update /src/App.tsx, /src/ui/BrandGuide.tsx, /src/components/States.tsx, /src/components/Sheets.tsx, /src/components/Chat.tsx, /src/components/ReplacementNotice.tsx
+[web] 9:03:59 PM [vite] (client) hmr update /src/ui/purchase-options.css
+[web] 9:03:59 PM [vite] (client) hmr update /src/ui/PurchaseOptions.tsx
+[web] 9:03:59 PM [vite] (client) hmr update /src/ui/BrandGuide.tsx
+[web] 9:03:59 PM [vite] (client) hmr update /src/ui/PurchaseOptions.tsx
+[web] 9:04:00 PM [vite] (client) hmr update /src/ui/purchase-options.css
+[web] 9:06:03 PM [vite] (client) hmr update /src/components/replacement-dialog.css
+[web] 9:06:03 PM [vite] (client) hmr update /src/App.tsx
+[server] error: script "dev" exited with code 255
+[server] exited 255

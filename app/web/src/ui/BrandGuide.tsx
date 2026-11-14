@@ -23,6 +23,8 @@ import {
   Notice,
   Pill,
   ProductTile,
+  PurchaseOptions,
+  DecisionSummary,
   Segmented,
   StatusDisc,
   Stepper,
@@ -284,7 +286,7 @@ const TYPE: { role: string; token: string; el: ReactNode }[] = [
     token: "fs-15 · lh-chat",
     el: (
       <span style={{ fontSize: "var(--fs-15)", lineHeight: "var(--lh-chat)" }}>
-        I planned 5 dishes for 50. Prices are your Hotelli Kaleva prices.
+        I planned 5 dishes for 50. Prices are your Bistro Kallio prices.
       </span>
     ),
   },
@@ -496,6 +498,8 @@ const NAV = [
   ["display", "Display"],
   ["overlay", "Dialog"],
   ["patterns", "Product row"],
+  ["purchase-options", "Product comparison"],
+  ["decision-summary", "Order summary"],
   ["copy", "Words"],
 ];
 
@@ -504,6 +508,8 @@ export function BrandGuide() {
   const [qty, setQty] = useState(2);
   const [checked, setChecked] = useState(true);
   const [dialog, setDialog] = useState(false);
+  const [purchaseBusy,setPurchaseBusy]=useState(false);
+  const [purchaseSelection,setPurchaseSelection]=useState("");
 
   return (
     <div className="brand">
@@ -1185,6 +1191,32 @@ export function BrandGuide() {
             Full chat and order flow states:{" "}
             <a href="?view=states">?view=states</a>.
           </p>
+        </Section>
+
+        <Section id="purchase-options" title="Product comparison" lead="Single-product purchases at volume. The replacement-card pattern inline under the cart line: radio, availability chip, photo, name, pack maths, unit price to the cent, order total and difference, one-line reason. For a single product the cards are the cart (no cart row). Up to three orderable products; unavailable ones only appear in the How we chose dialog (greyed style kept for a cart product that became unavailable).">
+          <div className="brand__panel">
+            <TextLink onClick={()=>setPurchaseBusy(!purchaseBusy)}>{purchaseBusy ? "Preview ready state" : "Preview loading state"}</TextLink>
+            <PurchaseOptions title="Lactose-free milk, 1 000 l" summary={purchaseSelection && purchaseSelection!=="eila" ? "You picked this product. The cart keeps one product; compare the totals below." : "We quoted 12 products for delivery on Mon, Nov 16 and put the lowest total in your cart."} selectedId={purchaseSelection || "eila"} decidedByYou={!!purchaseSelection && purchaseSelection!=="eila"} busy={purchaseBusy} onChoose={setPurchaseSelection}
+              options={[
+                {id:"eila",name:"Valio Eila 3 % milk drink 1 l lactose free",meta:"Valio · 463335",image:"https://www.valio.fi/cdn-cgi/image/format=auto/https://cdn-wp.valio.fi/valio-wp-network/sites/2/2026/06/valio-eila-3-maitojuoma-laktoositon-29-1-500x500.png",quantity:"1 000 × 1 l",unitPrice:"1,400 € / l",total:"1 400,00 €",availability:"Stock to confirm",tone:"review",note:"Lowest total. Stock is confirmed before ordering.",selectable:true},
+                {id:"whole",name:"Valio whole milk 1 l lactose free UHT",meta:"Valio · 464073",quantity:"1 000 × 1 l",unitPrice:"1,640 € / l",total:"1 640,00 €",difference:"+240,00 €",availability:"Mon, Nov 16",tone:"available",note:"240,00 € more for the same 1 000 l.",selectable:true},
+                {id:"skimmed",name:"Valio skimmed milk 1 l lactose free UHT",meta:"Valio · 464119",quantity:"1 000 × 1 l",unitPrice:"1,332 € / l",total:"1 332,00 €",difference:"−68,00 €",saving:true,availability:"Cut-off passed",tone:"blocked",note:"Delivery on Mon, Nov 16 isn't confirmed.",selectable:false},
+              ]}
+              scope="Illustrative brand-kit example: 12 quotes from 26 catalogue matches. Prices exclude VAT. This does not place an order." quotedAt="Nov 14, 20:00" source="Brand-kit sample data."
+              evidence={[{id:"eila",name:"Valio Eila lactose free milk",total:"1 400,00 €",reason:"Lowest quoted total; stock needs confirmation.",selected:true},{id:"whole",name:"Valio whole milk",total:"1 640,00 €",reason:"240,00 € more for the same requested quantity."},{id:"skimmed",name:"Valio skimmed milk",total:"1 332,00 €",reason:"Excluded: order cutoff has passed."}]}
+            />
+            <details><summary>Empty state</summary><PurchaseOptions title="Oat drink, 20 l" summary="No other products meet the request." selectedId="" options={[]} evidence={[]} scope="No other quotes are available." quotedAt="Nov 14, 20:00" source="Brand-kit sample data."/></details>
+          </div>
+        </Section>
+
+        <Section id="decision-summary" title="Order summary" lead="Exception-first header above the cart. Counts come from the basket's own records; only decisions that need a look get a row. Routine lines stay in the normal cart and ask for nothing.">
+          <div className="brand__panel">
+            <DecisionSummary usual={11} adjusted={2} attention={1} items={[
+              {id:"a",tone:"attention",text:"Cooking cream 15 % can't arrive Mon. Proposed: Cooking cream 15 % 1 l (accepted 3 times before).",onSelect:()=>{}},
+              {id:"b",tone:"adjusted",text:"Butter: rounded up to 4 × 2,5 kg packs."},
+            ]} />
+            <DecisionSummary usual={12} adjusted={0} attention={0} items={[]} />
+          </div>
         </Section>
 
         <Section

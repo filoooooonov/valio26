@@ -102,8 +102,8 @@ afterEach(() => {
 test("quotes bounded real catalogue shortlist in one batch; selects lowest validated requested total", async () => {
   const b = await buildBasket(input());
   const c = b.lines[0].comparison!;
-  expect(c.catalogueMatches).toBeGreaterThan(c.checkedCount);
-  expect(c.checkedCount).toBeLessThanOrEqual(12);
+  expect(c.catalogueMatches).toBeGreaterThanOrEqual(c.checkedCount);
+  expect(c.checkedCount).toBeLessThanOrEqual(30);
   expect(checked).toHaveLength(1);
   expect(checked[0]).toHaveLength(c.checkedCount);
   expect(b.lines[0].sku).toBe(ids[1]);
@@ -128,7 +128,7 @@ test("unknown stock never beats verified fulfillment just because its quote is c
     (c) => c.line.sku === ids[0],
   )!;
   expect(unknown.status).toBe("review");
-  expect(unknown.reasons.join(" ")).toContain("unknown");
+  expect(unknown.reasons.join(" ")).toContain("can't confirm stock");
 });
 test("package overbuy changes which product is cheapest for small versus large requests", async () => {
   const bulk = getProduct(ids[0])!;

@@ -1,26 +1,9 @@
 # Junction 2026 — team repo
 
-IMPORTANT: NIGHT BUILD:
-
-Continue our existing Night Agent development session with all previous context preserved.
-
-  You remain the primary orchestrator. Keep architecture, planning, project context, task prioritization, integration, and final decisions in Claude.
-
-  From now on, whenever you would normally launch a Claude Code subagent for implementation, debugging, code exploration, testing, or code review, prefer invoking Codex CLI through the Bash tool using codex exec.
-
-  Give Codex a clearly scoped task, relevant project context, constraints, and acceptance criteria.
-
-  Use codex exec non-interactively. For tasks that modify code, use the appropriate workspace-write permissions. Do not bypass sandbox protections or approval safeguards.
-
-  Review Codex's changes, run relevant tests, and integrate the results yourself.
-
-  Do not use Codex for high-level orchestration or architectural decisions. Do not start a new Claude conversation.
-
-  Avoid concurrent edits to the same files. Use separate Git worktrees when parallel work is necessary.
-
-  Continue with the existing Night Agent development plan.
-
-
+IMPORTANT: Claude only (aleksei, 14 Nov). Codex is retired from this project: do not use `codex exec`,
+the `/codex` skill or Codex agents. Implementation, debugging, exploration, testing and review are done by
+Claude directly or by Claude Code subagents. Claims held by `aleksei-codex*` agents are stale and may be released.
+Avoid concurrent edits to the same files; use separate Git worktrees when parallel work is necessary.
 
 Solo build (aleksei + agents), 48h hackathon. Read this fully; it's short on purpose.
 

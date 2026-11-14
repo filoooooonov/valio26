@@ -2,7 +2,7 @@ import type { Basket } from './api';
 
 // Synthetic restaurant reports for this demo. No Minun Aimo account is connected.
 export const sampleRestaurant = {
-  name: 'Restaurant Kaleva',
+  name: 'Bistro Kallio',
   source: 'Sample Minun Aimo data',
   packagePriceExVat: 12.5,
   historicalFoodCostPerGuest: 4.6,
@@ -12,7 +12,7 @@ export const sampleRestaurant = {
 export const SAMPLE_CONTEXT_MARKER = 'MINUN AIMO SAMPLE CONTEXT';
 export const targetFoodCostPerGuest = () => sampleRestaurant.packagePriceExVat * sampleRestaurant.targetFoodCostRatio;
 export function samplePlanningContext() {
-  return `\n\n${SAMPLE_CONTEXT_MARKER}: Synthetic Restaurant Kaleva reports, not a live account connection. The approved event package sells for EUR ${sampleRestaurant.packagePriceExVat.toFixed(2)} per guest excluding VAT. Target ingredient cost is ${Math.round(sampleRestaurant.targetFoodCostRatio * 100)}%, or EUR ${targetFoodCostPerGuest().toFixed(2)} per guest. Historical ingredient cost is EUR ${sampleRestaurant.historicalFoodCostPerGuest.toFixed(2)} per guest. Preserve the buyer's approved menu and dietary requirements. Consider economical pack sizes and usable yield, without changing the menu or inventing product prices. Actual prices and availability must come from the gateway. The target is a planning preference, not a guarantee. Do not add products solely because they appear in this sample context.`;
+  return `\n\n${SAMPLE_CONTEXT_MARKER}: Synthetic Bistro Kallio reports, not a live account connection. The approved event package sells for EUR ${sampleRestaurant.packagePriceExVat.toFixed(2)} per guest excluding VAT. Target ingredient cost is ${Math.round(sampleRestaurant.targetFoodCostRatio * 100)}%, or EUR ${targetFoodCostPerGuest().toFixed(2)} per guest. Historical ingredient cost is EUR ${sampleRestaurant.historicalFoodCostPerGuest.toFixed(2)} per guest. Preserve the buyer's approved menu and dietary requirements. Consider economical pack sizes and usable yield, without changing the menu or inventing product prices. Actual prices and availability must come from the gateway. The target is a planning preference, not a guarantee. Do not add products solely because they appear in this sample context.`;
 }
 export function basketEconomics(basket: Basket) {
   const total = basket.openIssues ? basket.totalIfAccepted : basket.total;

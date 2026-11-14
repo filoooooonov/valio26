@@ -24,7 +24,22 @@ export type Dish = {
   basis: string;
   diet: string[];
 };
+/** CONTRACT S48: what this restaurant usually buys. Preference only; never a permission. */
+export type Preference = {
+  status: "usual" | "accepted_alternative" | "unfamiliar" | "rejected" | "prohibited";
+  reason: string;
+  orders: number;
+  of: number;
+  accepted?: number;
+  rejected?: number;
+};
+export type SubstitutionPermission = { id: string; customer: string; fromSku: string; toSku: string; maxIncreasePct: number; grantedBy: string; grantedAt: string; expiresAt?: string; revokedAt?: string };
+export type Profile = { customer: string; name: string; synthetic: true; weeklyOrders: number; typicalOrderEur: number; permissions: SubstitutionPermission[] };
+export type SummaryItem = { lineId?: string; kind: "unavailable" | "substitution" | "price_increase" | "late" | "pack_rounding" | "over_limit" | "stock_signoff" | "needs_choice"; text: string };
+export type HistoryOrder = { id: string; date: string; total: number; source: "synthetic_history" | "demo_order"; lines: { sku: string; name: string; qty: number; total: number; substitutedFor?: string }[] };
+export type DecisionSummary = { usual: number; adjusted: number; attention: number; items: SummaryItem[] };
 export type Option = {
+  preference?: Preference;
   frozen?: boolean;
   sku: string;
   name: string;
@@ -45,6 +60,9 @@ export type Issue = {
   decidedBy?: string;
 };
 export type BasketLine = {
+  preference?: Preference;
+  offerPermission?: { fromSku: string; fromName: string; toSku: string; toName: string; accepted: number };
+  quantityIssue?: string;
   comparison?: {query:string;requested:{qty:number;unit:string};catalogueMatches:number;checkedCount:number;limit:number;checkedAt:string;source:string;recommendedSku:string;ranking:string;candidates:{line:BasketLine;unitPrice:number|null;purchased:number|null;overbuy:number|null;status:"verified"|"review"|"excluded";selectable:boolean;reasons:string[]}[]};
   excludedQty?: number;
   frozen?: boolean;
@@ -74,13 +92,16 @@ export type Mandate = {
   maxDailyEur: number;
   swapsNeedOk: true;
   approver: string;
+  maxSubstituteIncreasePct?: number;
+  substitutionPermissions?: SubstitutionPermission[];
 };
 export type MandateResult = {
   state: "agent_may_order" | "needs_your_ok" | "needs_approval";
   reasons: string[];
 };
 export type Basket = {
-  intent?: "MENU_PLANNING"|"DIRECT_PURCHASE";
+  intent?: "MENU_PLANNING"|"DIRECT_PURCHASE"|"REORDER";
+  summary?: DecisionSummary;
   factSource?: string;
   id: string;
   customer: string;
@@ -220,6 +241,12 @@ export type MenuReply = { items: MenuItem[]; reply: string; planner: "llm" | "fa
 
 export type PurchasingPolicy = Mandate & {substitutionsPermitted:boolean;autoSwapSameUse:boolean;forbiddenAllergens:string[];allowedCategories:string[];requireApproval:boolean;maxSubstituteIncreasePct:number;allowedDeliveryWeekdays:number[]};
 export const api = {
+  // Re-checks price/stock and stores it on the basket (survives reloads).
+  refresh:(id:string)=>call<{basket:Basket;changes:Change[]}>(`/basket/${id}/refresh`,{by:BUYER}).then(checkedData),
+  history:()=>call<{customer:string;synthetic:true;orders:HistoryOrder[]}>("/history").then(checkedData),
+  profile:()=>call<Profile>("/profile").then(checkedData),
+  // Explicit opt-in only (CONTRACT S48): the buyer grants a single from→to substitution with a price cap.
+  grantPermission:(p:{fromSku:string;toSku:string;maxIncreasePct:number})=>call<SubstitutionPermission>("/permissions",{...p,by:BUYER}).then(checkedData),
   commerceContext:()=>call<{role:string;policy:PurchasingPolicy}>("/commerce-context").then(checkedData),
   savePolicy:(policy:PurchasingPolicy)=>{const {customer,approver,swapsNeedOk,...settings}=policy;void customer;void approver;void swapsNeedOk;return call<PurchasingPolicy>("/mandate",settings).then(checkedData);},
   undo: (id: string) => call<{ basket: Basket; canUndo: boolean }>(`/basket/${id}/undo`, { by: BUYER }).then(checkedData),

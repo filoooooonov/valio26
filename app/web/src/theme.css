@@ -83,3 +83,11 @@ button:disabled {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+/* Leckerli One: the "Helmi" wordmark, closest open font to the Aimo logo lettering. License: public/fonts/LeckerliOne-OFL.txt. */
+@font-face {
+  font-family: 'Leckerli One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/LeckerliOne-Regular.ttf) format('truetype');
+}

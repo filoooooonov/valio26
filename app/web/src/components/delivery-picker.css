@@ -20,3 +20,68 @@
 @media(max-width:780px) { .delivery-picker__map iframe { height: 180px; } .delivery-picker__schedule { gap: var(--s-8); } .hdr .hdr__slot--interactive { display: flex; gap: var(--s-4); max-width: 145px; } .hdr__slot--interactive > .icon { display: none; } .hdr__slot--interactive .hdr__slot-day { font-size: var(--fs-12); } .hdr__slot--interactive .hdr__slot-sub { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-11); } }
 
 @media(max-width:780px) { .hdr:has(.hdr__slot--interactive) { gap: var(--s-8); } .hdr .hdr__slot--interactive { max-width: 130px; } .hdr:has(.hdr__slot--interactive) .cart-pill { padding-inline: var(--s-12); } }
+
+/* S-kaupat-style picker in Valio Aimo brand: address card, a week of round days, slot rows, one action. */
+.delivery-picker { width: min(32rem, calc(100vw - 2 * var(--s-16))); }
+.delivery-picker .replacement-dialog__head { align-items: center; }
+.delivery-picker h2 { font-size: var(--fs-22); color: var(--teal); }
+.delivery-address {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-14);
+  padding: var(--s-14) var(--s-16);
+  border: var(--hair-w) solid var(--hair);
+  border-radius: var(--r-12);
+  color: var(--teal);
+}
+.delivery-address > span { display: grid; gap: var(--s-2); min-width: 0; }
+.delivery-address strong { color: var(--ink); font-size: var(--fs-15); }
+.delivery-address > span > span { color: var(--text-2); font-size: var(--fs-13); overflow-wrap: anywhere; }
+.delivery-week__label { margin: var(--s-24) 0 var(--s-12); text-align: center; font-weight: var(--w-bold); font-size: var(--fs-15); color: var(--ink); }
+.delivery-week { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: end; gap: var(--s-4); }
+.delivery-week__nav { display: grid; place-items: center; width: var(--hit); height: var(--hit); border: 0; background: none; color: var(--teal); cursor: pointer; border-radius: 50%; }
+.delivery-week__nav:disabled { color: var(--hair); cursor: default; }
+.delivery-week__nav:focus-visible { outline: var(--ring-w) solid var(--teal); }
+.delivery-week__days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--s-6); }
+.delivery-day { display: grid; justify-items: center; gap: var(--s-8); padding: 0; border: 0; background: none; font: inherit; cursor: pointer; color: var(--teal); }
+.delivery-day__wd { font-size: var(--fs-12); font-weight: var(--w-medium); text-transform: uppercase; letter-spacing: var(--tracking-eyebrow); color: var(--text-2); }
+.delivery-day__n {
+  display: grid;
+  place-items: center;
+  width: min(100%, calc(var(--s-40) + var(--s-6)));
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--light-blue);
+  font-size: var(--fs-17);
+  font-weight: var(--w-bold);
+  transition: background-color var(--dur-hover) ease, transform var(--dur-press) var(--ease-out);
+}
+.delivery-day:active .delivery-day__n { transform: scale(var(--press-scale)); }
+.delivery-day--on .delivery-day__n { background: var(--teal); color: var(--white); }
+.delivery-day--on .delivery-day__wd { color: var(--teal); }
+.delivery-day:disabled { cursor: default; }
+.delivery-day:disabled .delivery-day__n { background: var(--white); border: var(--hair-w) solid var(--hair); color: var(--muted); font-weight: var(--w-regular); }
+.delivery-day:focus-visible .delivery-day__n { outline: var(--ring-w) solid var(--teal); outline-offset: var(--s-2); }
+.delivery-slots { display: grid; gap: var(--s-8); margin-top: var(--s-24); }
+.delivery-slot {
+  min-height: var(--hit);
+  padding: var(--s-12) var(--s-16);
+  border: 0;
+  border-radius: var(--r-10);
+  background: var(--light-blue);
+  color: var(--teal);
+  font: inherit;
+  font-size: var(--fs-15);
+  font-weight: var(--w-bold);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur-hover) ease, transform var(--dur-press) var(--ease-out);
+}
+.delivery-slot:active { transform: scale(var(--press-scale)); }
+.delivery-slot--on { background: var(--teal); color: var(--white); }
+.delivery-slot:disabled { cursor: default; opacity: .5; }
+.delivery-slot:focus-visible { outline: var(--ring-w) solid var(--teal); outline-offset: var(--s-2); }
+.delivery-picker__actions { margin-top: var(--s-24); }
+.delivery-picker__confirm { width: 100%; min-height: var(--cta-h); }
+@media (prefers-reduced-motion: reduce) { .delivery-day__n, .delivery-slot { transition: none; } .delivery-day:active .delivery-day__n, .delivery-slot:active { transform: none; } }

@@ -1,0 +1,24 @@
+[
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "directBypassesMenu": true,
+    "directHidesGuestControls": true,
+    "existingScheduledPagePreserved": true,
+    "noOverflow": true,
+    "pageErrors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "directBypassesMenu": true,
+    "directHidesGuestControls": true,
+    "existingScheduledPagePreserved": true,
+    "noOverflow": true,
+    "pageErrors": []
+  }
+]

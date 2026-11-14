@@ -1,6 +1,7 @@
 import { catalogSize, getProduct, search } from "./catalog";
 import type { Basket, BasketLine } from "./plan";
 import { validatePurchase } from "./validation";
+import { PREFERENCE_TIER, preferenceOf } from "./preferences";
 
 export type ComparedProduct = {
   line: BasketLine;
@@ -24,7 +25,9 @@ export type ProductComparison = {
   ranking: string;
   candidates: ComparedProduct[];
 };
-export const COMPARISON_LIMIT = 12;
+// Every relevant name match up to this bound is quoted in ONE batched price + availability call. The catalogue has no prices,
+// so a smaller relevance-picked list silently dropped cheaper products (464306 at ~1,01 €/l ranked 23rd on text).
+export const COMPARISON_LIMIT = 30;
 
 /** Local retrieval only. Mix high relevance with larger packs; never bulk-query all catalogue prices. */
 export function comparisonShortlist(query: string, diet: string[]) {
@@ -80,6 +83,10 @@ export function rankComparedProducts(
           ? "review"
           : "excluded";
       const purchased = copy.quantityIssue ? null : requested.qty + (copy.overbuy ?? 0);
+      // S48: purchase memory is a ranking tier after safety/fulfilment and before price; prohibited is never selectable.
+      copy.preference = preferenceOf(b.customer, copy.sku);
+      const prohibited = copy.preference.status === "prohibited";
+      if (prohibited) checks.push({ code: "prohibited", message: `${copy.name}: you asked us never to order this product.`, evidence: "user", sku: copy.sku });
       return {
         line: copy,
         unitPrice:
@@ -91,8 +98,8 @@ export function rankComparedProducts(
             : null,
         purchased,
         overbuy: copy.quantityIssue ? null : copy.overbuy ?? 0,
-        status,
-        selectable: status !== "excluded",
+        status: prohibited ? ("excluded" as const) : status,
+        selectable: status !== "excluded" && !prohibited,
         reasons: checks.map((c) => c.message),
       };
     })
@@ -100,6 +107,7 @@ export function rankComparedProducts(
       (a, b) =>
         ({ verified: 0, review: 1, excluded: 2 })[a.status] -
           { verified: 0, review: 1, excluded: 2 }[b.status] ||
+        PREFERENCE_TIER[a.line.preference?.status ?? "unfamiliar"] - PREFERENCE_TIER[b.line.preference?.status ?? "unfamiliar"] ||
         a.line.total - b.line.total ||
         (a.overbuy ?? Infinity) - (b.overbuy ?? Infinity) ||
         (b.line.reliability ?? 0) - (a.line.reliability ?? 0) ||
@@ -121,6 +129,11 @@ export function comparisonReason(
   const best = comparison.candidates.find(
     (c) => c.line.sku === comparison.recommendedSku,
   );
+  const cheapest = comparison.candidates
+    .filter((x) => x.status === c.status)
+    .sort((x, y) => x.line.total - y.line.total)[0];
+  if (sku === comparison.recommendedSku && cheapest && cheapest.line.sku !== sku && c.line.preference && ["usual", "accepted_alternative"].includes(c.line.preference.status))
+    return `Preferred from your purchase history (${c.line.preference.reason}) among the ${c.status === "verified" ? "fully validated" : "stock-unverified"} candidates; the cheapest one, ${cheapest.line.name}, would cost EUR ${cheapest.line.total.toFixed(2)} versus EUR ${c.line.total.toFixed(2)}. ${comparison.checkedCount} quoted products; pack rounding and requested quantity are included.${provisional}`;
   if (sku !== comparison.recommendedSku && best)
     return `Chosen alternative: EUR ${c.line.total.toFixed(2)} for the requested quantity, versus EUR ${best.line.total.toFixed(2)} for the recommendation.${provisional}`;
   return `${c.status === "verified" ? "Lowest total cost among the fully validated candidates" : "Lowest quoted total among candidates needing only stock verification"} in ${comparison.checkedCount} quoted products (${comparison.catalogueMatches} local catalogue matches; prices were not checked for the whole store). Pack rounding and requested quantity are included.${provisional}`;
