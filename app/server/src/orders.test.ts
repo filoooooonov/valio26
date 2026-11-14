@@ -4,7 +4,7 @@ import { app } from "./app";
 import { events, resetAudit } from "./audit";
 import { loadCatalog } from "./catalog";
 import { setLlm, type Llm } from "./llm";
-import { evaluate, getMandate } from "./policy";
+import { evaluate, getMandate, setMandate } from "./policy";
 import { fallbackDraft, salesQty } from "./plan";
 import { resetStore } from "./store";
 import { setFetcher } from "./valio";
@@ -209,7 +209,21 @@ describe("orders", () => {
     ).json();
   };
 
+  test("same-use swap is made by the gateway under the mandate rule and logged", async () => {
+    mocks["464073"] = { deliverable: false };
+    mocks["464201"] = { price: 1, cmp: 1, unit: "L" };
+    mocks["463380"] = { deliverable: false };
+    mocks["464119"] = { deliverable: false };
+    const b = await (
+      await post("/api/basket", { request: "100 L lactose-free milk", date: "2026-11-20", customer: "c0" })
+    ).json();
+    expect(b.lines[0].issue.decided).toBe("464201");
+    expect(b.lines[0].issue.decidedBy).toBe("gateway (same-use rule)");
+    expect(b.mandate.state).not.toBe("needs_your_ok");
+  });
+
   test("swap requires the buyer's OK before ordering", async () => {
+    setMandate("c1", { autoSwapSameUse: false });
     mocks["464073"] = { deliverable: false };
     mocks["464201"] = { price: 1, cmp: 1, unit: "L" };
     mocks["463380"] = { deliverable: false };
