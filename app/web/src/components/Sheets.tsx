@@ -138,8 +138,9 @@ export function SwapSheet({ line, date, locked, onClose, onChoose, onCheck, onUn
             <span className={'replacement-option__availability' + (!ok ? ' replacement-option__availability--unavailable' : '')}><Icon name={ok ? 'circle-check' : 'circle-x'} className="i-14" />{delivery}</span>
           </span>
           <ReplacementPhoto sku={o.sku} name={niceName(o.name)} />
-          <span className="replacement-option__copy"><strong>{niceName(o.name)}</strong></span>
+          <span className="replacement-option__copy">{o.tier && <span className={`tier tier--${o.tier}`}>{o.tier === "best" ? "Best" : o.tier === "better" ? "Better" : "Good"}</span>}<strong>{niceName(o.name)}</strong></span>
           <span className="replacement-option__facts"><span>{qtyLabel(o.qty, o.pack)}</span><span className="replacement-option__price"><b>{money(o.total)}</b><span>{Math.abs(o.total - original.total) < .005 ? 'Same price' : money(Math.abs(o.total - original.total)) + (o.total < original.total ? ' less' : ' more')}</span></span></span>
+          {o.tierWhy && <span className="replacement-option__why">{o.tierWhy}</span>}
           <span className={'replacement-option__note' + (!ok ? ' replacement-option__problem' : '')}>{note}</span>
         </label>;
       })}

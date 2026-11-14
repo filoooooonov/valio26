@@ -506,16 +506,18 @@ export function Question({ line, basket, busy, onChoose, onSeeAll }: {
     <span className="stock-problem__date"><Icon name="truck" className="i-14" />For delivery {dayLabel(basket.date)}</span>
     <IssueDetail line={line} />
     {issue.options.length > 0 && <p className="stock-replacement__intro">Replace it with</p>}
-    {issue.options.slice(0, 2).map(o => {
+    {issue.options.slice(0, 3).map(o => {
       const available = o.stock.deliverable && !o.stock.cutoffPassed;
       const delta = Number.isFinite(line.total) && Number.isFinite(o.total) ? Math.round((o.total - line.total) * 100) / 100 : null;
       return <div className="stock-replacement" key={o.sku}>
         <ReplacementPhoto sku={o.sku} name={o.name} contains={o.contains} />
         <div className="stock-replacement__body">
+          {o.tier && <span className={`tier tier--${o.tier}`}>{o.tier === "best" ? "Best" : o.tier === "better" ? "Better" : "Good"}</span>}
           <strong className="stock-replacement__name">{niceName(o.name)}{o.frozen && <span className="stock-replacement__frozen" aria-label="Frozen" title="Frozen"><Icon name="snowflake" className="i-14" /></span>}</strong>
           <div className="stock-replacement__facts"><span>{qtyLabel(o.qty, o.pack)}</span><span>{money(o.total)}</span></div>
           {delta != null && <span className={"stock-replacement__difference" + (delta < 0 ? " stock-replacement__difference--less" : "")}>{Math.abs(delta) < 0.005 ? "Same price" : `${money(Math.abs(delta))} ${delta < 0 ? "cheaper" : "more"}`}</span>}
           <span className={"stock-replacement__delivery" + (!available ? " stock-replacement__delivery--late" : "")}><Icon name="truck" className="i-14" />{available ? "Arrives in time" : o.stock.availableDate ? `Available ${dayLabel(o.stock.availableDate)}` : "Not available in time"}</span>
+          {o.tierWhy && <span className="stock-replacement__why">{o.tierWhy}</span>}
           <button className="ans ans--primary stock-replacement__choose" disabled={busy || !available} onClick={() => onChoose(line.id, o.sku)} aria-label={`Use ${niceName(o.name)} instead of ${niceName(line.name)}`}>Use replacement</button>
         </div>
       </div>;
@@ -523,7 +525,7 @@ export function Question({ line, basket, busy, onChoose, onSeeAll }: {
     {issue.options.length > 0 && <p className="stock-problem__vat">Prices excl. VAT</p>}
     <div className="answers stock-problem__actions">
       {short && <button className="stock-problem__text-action" disabled={busy} onClick={() => onChoose(line.id, "keep")}>Take the {n2(line.stock.available!)} available</button>}
-      {issue.options.length > 2 && <button className="stock-problem__text-action" disabled={busy} onClick={() => onSeeAll(line.id)}>See all {issue.options.length} replacements</button>}
+      {issue.options.length > 3 && <button className="stock-problem__text-action" disabled={busy} onClick={() => onSeeAll(line.id)}>See all {issue.options.length} replacements</button>}
       <button className="stock-problem__text-action" disabled={busy} onClick={() => onChoose(line.id, "remove")}>Don't order it</button>
     </div>
   </section>;

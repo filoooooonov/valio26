@@ -36,6 +36,10 @@ export type Option = {
   total: number;
   stock: StockLine;
   contains: string[];
+  tier?: "best" | "better" | "good"; // rank position after rankOptions: 0 best, 1 better, 2 good
+  tierWhy?: string; // one plain sentence: why this rank, compared with the best option
+  onTime?: number | null; // supplier on-time delivery rate 0..1 from Valio's delivery-reliability data, null if unknown
+  co2?: number | null; // kg CO2e per kg for the product group, null if unknown
 };
 export type Issue = {
   kind: "short" | "unavailable" | "cutoff";
