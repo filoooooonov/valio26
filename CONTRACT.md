@@ -102,6 +102,9 @@ type AuditEvent = { at: string; actor: string; kind: string; summary: string; da
 Daily limit = placed + pending orders today for the customer, so splitting one order into several small ones is caught.
 State is in memory: restarting the server clears baskets and orders.
 
+## Cart line undo (S39)
+POST /api/basket/:id/undo {by?: string} returns {basket: Basket, canUndo: boolean}. The server keeps up to 30 successful web line edits (quantity, removal, replacement) per in-memory basket, using server-owned snapshots. Undo restores the previous line and recomputes totals and mandate, with an audit event; no product lookup is needed. Missing baskets return 404. Empty history, intervening basket changes, and pending/placed orders return 409. Menu/recipe changes, guest rescaling and chat actions are outside this line-edit history. Unchecked cart items remain visible with quantity zero and can be included again; the explicit remove action hides them.
+
 ## Env vars
 Every var is listed in `.env.example`. Add new ones there in the same PR.
 
