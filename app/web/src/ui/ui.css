@@ -1,0 +1,8 @@
+/* Styles that belong to kit components and did not exist in app.css yet. Tokens only. */
+.ui-dialog__foot {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--s-8);
+  margin-top: var(--s-24);
+}

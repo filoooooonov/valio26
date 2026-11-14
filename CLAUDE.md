@@ -69,6 +69,13 @@ Event-wide peer review (`docs/participant-guidebook.md`):
 - Final submission Sun 10:00, set to FINAL. Pitch video ≤ 2:00. Repo is MIT-licensed at submission.
 - Peer review Sun 10:30–14:00: both of us must be present.
 
+## UI rule: brand kit only (aleksei, 14 Nov)
+- All UI in `app/web` is built **only** from the kit in `app/web/src/ui` (catalogue: `/?view=brand`, rules:
+  `app/web/src/ui/README.md`) and values from `tokens.css`.
+- Before creating a component that isn't in the kit, **tell aleksei: "I am creating a new component: <name>, because
+  <reason>"**. Then add it to the kit, the brand page and the README registry. No local restyles, no raw colours.
+- `app/server/src/web-brand.test.ts` (fast suite) enforces this: raw colours or unregistered component files fail it.
+
 ## Rules
 - The demo path comes first. If it's not in `DEMO.md`, it's lower priority.
 - Never claim something works without running it. Show the command + output.

@@ -12,6 +12,12 @@ Claude Code agents get hooks that block claimed files and show their inbox autom
    `post_status(idle, ...)`, and run `node scripts/test.mjs --fast`.
 4. Your agent id is `aleksei-codex` (or `aleksei-codex-<worktree>`). Teammates may message you there.
 
+## UI: brand kit only
+Use only components from `app/web/src/ui` (see `/?view=brand` and `app/web/src/ui/README.md`) and `tokens.css` values.
+If you need a component that is not in the kit, tell aleksei "I am creating a new component: <name>, because <reason>"
+before writing it, then register it (kit + brand page + README). The fast suite fails on raw colours or unregistered
+component files.
+
 ## Setup
 The MCP server is configured in `.codex/config.toml`. If your Codex version doesn't load project
 config, add this to `~/.codex/config.toml`, using the absolute path to this repo:
