@@ -110,21 +110,48 @@ export type PickInput = {
 export const ChatSchema = z.object({
   actions: z.array(
     z.object({
-      kind: z.enum(["set_guests", "set_qty", "choose_option", "remove_line", "replan"]),
-      people: z.number().int().nullable().describe("set_guests: new number of guests"),
-      lineId: z.string().nullable().describe("set_qty / choose_option / remove_line: the line id, e.g. l3"),
-      qty: z.number().nullable().describe("set_qty: new quantity in sales units"),
+      kind: z.enum([
+        "set_guests",
+        "set_qty",
+        "choose_option",
+        "remove_line",
+        "replan",
+      ]),
+      people: z
+        .number()
+        .int()
+        .nullable()
+        .describe("set_guests: new number of guests"),
+      lineId: z
+        .string()
+        .nullable()
+        .describe(
+          "set_qty / choose_option / remove_line: the line id, e.g. l3",
+        ),
+      qty: z
+        .number()
+        .nullable()
+        .describe("set_qty: new quantity in sales units"),
       option: z
         .string()
         .nullable()
-        .describe('choose_option: an option sku from the open issue of that line, or "keep" or "remove"'),
-      change: z.string().nullable().describe("replan: the menu change in plain English, e.g. 'add a vegan main'"),
+        .describe(
+          'choose_option: an option sku from the open issue of that line, or "keep" or "remove"',
+        ),
+      change: z
+        .string()
+        .nullable()
+        .describe(
+          "replan: the menu change in plain English, e.g. 'add a vegan main'",
+        ),
     }),
   ),
   question: z
     .string()
     .nullable()
-    .describe("a short question back if the text is ambiguous; then actions must be empty"),
+    .describe(
+      "a short question back if the text is ambiguous; then actions must be empty",
+    ),
 });
 export type ChatPlan = z.infer<typeof ChatSchema>;
 
@@ -138,6 +165,57 @@ Map the text to gateway actions ONLY, using the basket summary:
 Never invent line ids or skus. Use null for fields an action does not use. If the text is unclear or asks for
 something you cannot map, return no actions and a short question.`;
 
+// Menu step (CONTRACT S35): request -> course list, and natural-language edits of that list. Language work only.
+export const COURSES = [
+  "starter",
+  "main",
+  "dessert",
+  "drinks",
+  "side",
+  "snack",
+  "other",
+] as const;
+export const MenuSchema = z.object({
+  items: z.array(
+    z.object({
+      title: z
+        .string()
+        .describe(
+          "dish or drink name in English, e.g. Crayfish with dill and toast",
+        ),
+      description: z
+        .string()
+        .describe(
+          "one short line: key components and serving, diet notes if any",
+        ),
+      course: z.enum(COURSES),
+    }),
+  ),
+  reply: z
+    .string()
+    .describe(
+      "one short friendly sentence for the chat saying what you proposed or changed",
+    ),
+});
+export type MenuOut = z.infer<typeof MenuSchema>;
+export type MenuItem = MenuOut["items"][number];
+export type MenuInput = {
+  request: string;
+  current?: MenuItem[];
+  instruction?: string;
+};
+
+const MENU_SYSTEM = `You are the menu assistant inside the Valio Aimo wholesale webshop for professional kitchens in Finland.
+A buyer describes an event; you propose the menu they will then buy ingredients for. Prices and stock are checked later, never by you.
+- Follow the request's own structure exactly. If they list courses (e.g. "starter, main, dessert and champagne"), return exactly one item per requested course, in that order, unless they ask for more. Read misspellings sensibly ("desert" = dessert).
+- Honour the theme and tone. A crayfish party (rapujuhlat) is a Nordic late-summer tradition: crayfish with dill, toast and aioli or a Vasterbotten pie fit it; "fancy" means elevated, restaurant-quality dishes, not snacks.
+- Respect every dietary requirement in every item, and say so in the description when it matters.
+- Dishes must be cookable by a professional kitchen from wholesale ingredients. Drinks are products (e.g. Champagne, sparkling water).
+- No brand or catalogue product names, no prices, no quantities.
+- If no structure is given, propose a sensible 3-4 item menu for the occasion.
+- When given a CURRENT MENU and an INSTRUCTION: return the WHOLE menu after applying the instruction. Copy untouched items exactly (same title and description). Change, add or remove only what was asked.
+- Titles short (max ~6 words). Descriptions one line.`;
+
 export interface Llm {
   draft(
     request: string,
@@ -146,6 +224,7 @@ export interface Llm {
   ): Promise<Draft>;
   pick(request: string, needs: PickInput[]): Promise<Picks>;
   chat?(text: string, basketSummary: string): Promise<ChatPlan>;
+  menu?(input: MenuInput): Promise<MenuOut>;
 }
 
 const DRAFT_SYSTEM = `You plan wholesale food orders for professional kitchens in Finland (Valio Aimo webshop).
@@ -233,13 +312,36 @@ export class ClaudeLlm implements Llm {
       fallbacks: "default",
       output_config: { effort: "low", format: betaZodOutputFormat(ChatSchema) },
       system: CHAT_SYSTEM,
-      messages: [{ role: "user", content: `Basket:
+      messages: [
+        {
+          role: "user",
+          content: `Basket:
 ${basketSummary}
 
-Chef: ${text}` }],
+Chef: ${text}`,
+        },
+      ],
     });
     if (r.stop_reason === "refusal" || !r.parsed_output)
       throw new Error(`chat LLM gave no answer (${r.stop_reason})`);
+    return r.parsed_output;
+  }
+
+  async menu(input: MenuInput): Promise<MenuOut> {
+    const content = input.current?.length
+      ? `Event request: ${input.request}\n\nCURRENT MENU:\n${input.current.map((i) => `- [${i.course}] ${i.title}: ${i.description}`).join("\n")}\n\nINSTRUCTION: ${input.instruction ?? ""}`
+      : `Event request: ${input.request}`;
+    const r = await this.client.beta.messages.parse({
+      model: MODEL,
+      max_tokens: 4000,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      output_config: { effort: "low", format: betaZodOutputFormat(MenuSchema) },
+      system: MENU_SYSTEM,
+      messages: [{ role: "user", content }],
+    });
+    if (r.stop_reason === "refusal" || !r.parsed_output)
+      throw new Error(`menu LLM gave no answer (${r.stop_reason})`);
     return r.parsed_output;
   }
 }

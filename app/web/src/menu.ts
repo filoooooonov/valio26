@@ -1,9 +1,19 @@
 import { samplePlanningContext } from './minunAimo';
 import { requirementsText, type EventRequirements } from './requirements';
 import type { DeliveryChoice } from './components/DeliveryPicker';
-export type MenuCategory = { id: string; title: string; description: string; selected: boolean };
-export type MenuDraft = { request: string; categories: MenuCategory[]; useMinunAimo?: boolean; requirements?: EventRequirements; delivery?: DeliveryChoice };
-const category = (title: string, description: string, index: number): MenuCategory => ({ id: 'menu-' + index, title, description, selected: true });
+import type { MenuItem } from './api';
+export type MenuCategory = { id: string; title: string; description: string; selected: boolean; course?: MenuItem['course'] };
+export type MenuDraft = { request: string; categories: MenuCategory[]; useMinunAimo?: boolean; requirements?: EventRequirements; delivery?: DeliveryChoice; planning?: boolean };
+let seq = 0;
+const category = (title: string, description: string, _index: number, course?: MenuItem['course']): MenuCategory => ({ id: 'menu-' + (++seq), title, description, selected: true, course });
+/** Server menu (CONTRACT S35) -> editable categories. */
+export function fromServerItems(items: MenuItem[]): MenuCategory[] {
+ return items.map((item, i) => category(item.title, item.description, i, item.course));
+}
+/** Selected categories only: unselected ones are treated as removed when the assistant edits the menu. */
+export function toServerItems(menu: MenuDraft): MenuItem[] {
+ return menu.categories.filter(c => c.selected && c.title.trim()).map(c => ({ title: c.title, description: c.description, course: c.course ?? 'other' }));
+}
 export function suggestMenu(request: string): MenuDraft {
  const known = [
   [/salmon soup/i, 'Creamy salmon soup', 'A warm salmon soup with potatoes and a lactose-free cream option.'],
@@ -15,10 +25,12 @@ export function suggestMenu(request: string): MenuDraft {
   const list = (request.split(':')[1] ?? request).split(/[.;]/)[0].split(/,|\s+and\s+/i).map(s => s.trim()).filter(Boolean);
   items = list.map((title, i) => category(title, 'Select products and quantities for this part of your request.', i));
  }
+ // Offline only: the gateway's /api/menu proposes the real menu. Never invent a fixed snack menu here.
  if (!items.length) items = [
-  category('Filled croissants', 'Mini croissants with savoury fillings; include a vegan filling if needed.', 0),
-  category('Chips and candies', 'A sharing selection of crisps and sweets for the event.', 1),
-  category('Soft drinks', 'Water, juice and soft drinks in portions suitable for the guest count.', 2),
+  category('Starter', 'A light first course for the guests.', 0, 'starter'),
+  category('Main course', 'A warm main dish with a side.', 1, 'main'),
+  category('Dessert', 'A plated or shared dessert.', 2, 'dessert'),
+  category('Drinks', 'Drinks in portions suitable for the guest count.', 3, 'drinks'),
  ];
  return { request, categories: items };
 }

@@ -205,7 +205,11 @@ export const isNotFound = (e: unknown) =>
 export type RecipeProposal = {id:string; from:string; to:string; before:BasketLine[]; after:BasketLine[]; totalBefore:number; totalAfter:number};
 const checkedData = <T,>(r:{status:number;data:T}) => { if (r.status >= 400) throw new ApiError(r.status,(r.data as {error?:string}).error ?? 'Request failed',r.data); return r.data; };
 
+export type MenuItem = { title: string; description: string; course: "starter" | "main" | "dessert" | "drinks" | "side" | "snack" | "other" };
+export type MenuReply = { items: MenuItem[]; reply: string; planner: "llm" | "fallback" };
+
 export const api = {
+  menu: (body: { request: string; current?: MenuItem[]; instruction?: string }, signal?: AbortSignal) => call<MenuReply>("/menu", body, signal).then(checkedData),
   checkReplacements: (id:string,lineId:string) => call<Basket>(`/basket/${id}/lines/${lineId}/replacements/check`,{}).then(checkedData),
   recipeChange: (id:string,lineId:string) => call<RecipeProposal>(`/basket/${id}/lines/${lineId}/recipe-change`,{}).then(checkedData),
   applyRecipeChange: (id:string,proposalId:string) => call<Basket>(`/basket/${id}/recipe-change/${proposalId}/apply`,{}).then(checkedData),

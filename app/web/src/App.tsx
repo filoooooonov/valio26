@@ -12,7 +12,7 @@ import {
   type Order,
   type OrderConflict,
 } from "./api";
-import { suggestMenu, editMenuFromChat, menuSummary, displayMenuRequest, plannerRequest, fallbackMatchesMenu, type MenuDraft } from "./menu";
+import { suggestMenu, editMenuFromChat, fromServerItems, toServerItems, menuSummary, displayMenuRequest, plannerRequest, fallbackMatchesMenu, type MenuDraft } from "./menu";
 import { MenuProposal } from "./components/MenuProposal";
 import { EventRequirements } from './components/EventRequirements';
 import { DeliveryPicker, type DeliveryChoice } from './components/DeliveryPicker';
@@ -76,6 +76,8 @@ function Shop() {
   const [deliveryOpen, setDeliveryOpen] = useState(false);
   const [approvedSummary, setApprovedSummary] = useState<string | null>(null);
   const menuSubmitting = useRef(false);
+  const menuCall = useRef<AbortController | null>(null);
+  const [menuEditing, setMenuEditing] = useState(false);
   const [basket, setBasket] = useState<Basket | null>(null);
   const [alternativeDraft, setAlternativeDraft] = useState<RecipeProposal | null>(null);
   const [alternativeReviewOpen, setAlternativeReviewOpen] = useState(false);
@@ -196,11 +198,38 @@ function Shop() {
     const chosenDelivery = delivery ? { ...delivery, date: requestDeliveryDate(request, delivery.date) } : null;
     if (chosenDelivery) setDelivery(chosenDelivery);
     const requirements = known.people !== null && known.dietary !== null && delivery ? { people: known.people, dietary: known.dietary, notes: '' } : undefined;
-    setMenu({ ...suggestMenu(request), requirements, delivery: chosenDelivery ?? undefined }); setBasket(null); setOrder(null); setEvents([]); setLocal([]); setApprovedSummary(null); setError(null); setReviewing(false); setTab("assistant"); setDraft("");
+    // Instant offline draft (labelled planning) so event details can be confirmed while the gateway plans the real menu.
+    setMenu({ ...suggestMenu(request), requirements, delivery: chosenDelivery ?? undefined, planning: true }); setBasket(null); setOrder(null); setEvents([]); setLocal([]); setApprovedSummary(null); setError(null); setReviewing(false); setTab("assistant"); setDraft("");
     say({ kind: "user", who: BUYER, text: request });
+    menuCall.current?.abort();
+    const ac = new AbortController();
+    menuCall.current = ac;
+    api.menu({ request }, ac.signal).then(r => {
+      if (ac.signal.aborted) return;
+      setMenu(current => current && current.request === request ? { ...current, categories: fromServerItems(r.items), planning: false } : current);
+      say({ kind: "assistant", text: r.reply });
+    }).catch(e => {
+      if (ac.signal.aborted || (e as Error).name === "AbortError") return;
+      setMenu(current => current && current.request === request ? { ...current, planning: false } : current);
+    }).finally(() => { if (menuCall.current === ac) menuCall.current = null; });
+  }
+  async function editMenu(instruction: string) {
+    if (!menu || menuEditing || menu.planning) return;
+    const base = menu;
+    say({ kind: "user", who: BUYER, text: instruction });
+    setMenuEditing(true);
+    try {
+      const r = await api.menu({ request: base.request, current: toServerItems(base), instruction });
+      setMenu(current => current && current.request === base.request ? { ...current, categories: fromServerItems(r.items) } : current);
+      say({ kind: "assistant", text: r.reply });
+    } catch {
+      const changed = editMenuFromChat(base, instruction);
+      if (changed) { setMenu(changed); say({ kind: "assistant", text: "Updated the menu. Review your selections, then find products when you are ready." }); }
+      else say({ kind: "assistant", text: "I couldn't reach the menu assistant. Edit the dishes in Review menu, or try add / remove." });
+    } finally { setMenuEditing(false); }
   }
   async function approveMenu() {
-    if (!menu?.requirements || !menu.delivery || menuSubmitting.current || !menu.categories.some(c => c.selected) || menu.categories.some(c => c.selected && !c.title.trim())) return;
+    if (!menu?.requirements || !menu.delivery || menu.planning || menuEditing || menuSubmitting.current || !menu.categories.some(c => c.selected) || menu.categories.some(c => c.selected && !c.title.trim())) return;
     menuSubmitting.current = true;
     setApprovedSummary(menuSummary(menu));
     try { await build(plannerRequest(menu), menu.requirements.people, menu); } finally { menuSubmitting.current = false; }
@@ -326,11 +355,8 @@ function Shop() {
     setDraft("");
     if (building || menuSubmitting.current) return;
     if (!basket && menu) {
-      const changed = editMenuFromChat(menu, t);
-      say({ kind: "user", who: BUYER, text: t });
-      if (changed) { setMenu(changed); say({ kind: "assistant", text: "Updated the menu. Review your selections, then find products when you are ready." }); }
-      else say({ kind: "assistant", text: "Open Review menu to edit, or say add fruit / remove soft drinks. Then choose Find products for this menu." });
-      return;
+      if (menu.planning || menuEditing) { setDraft(t); return; }
+      return void editMenu(t);
     }
     if (!basket) return propose(t);
     if (order?.status === "pending_approval") {
@@ -564,7 +590,7 @@ function Shop() {
           menuProposal={menu && !building ? !menu.requirements ? <EventRequirements key={menu.request} initial={detectRequirements(menu.request)} delivery={delivery} defaultDate={requestDeliveryDate(menu.request, DELIVERY)} onConfirm={(requirements, choice) => {
             setDelivery(choice);
             setMenu(current => current ? { ...current, requirements, delivery: choice } : current);
-          }} /> : <MenuProposal compact menu={menu} busy={busy || !!building} onChange={setMenu} onApprove={approveMenu} /> : null}
+          }} /> : <MenuProposal compact menu={menu} busy={busy || !!building || menuEditing || !!menu.planning} onChange={setMenu} onApprove={approveMenu} onInstruction={text => void editMenu(text)} /> : null}
           menuReviewTitle={menu && !menu.requirements ? 'A few event details' : 'Review your menu'}
           planningMenu={!!menu}
           basket={basket}

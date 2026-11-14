@@ -6,6 +6,7 @@ import { allEvents, events } from "./audit";
 import { decide, listOrders, placeOrder, type Decision } from "./orders";
 import { buildBasket, editLine, HttpError, recompute, rescaleGuests, type BasketRequest, type LineEdit } from "./plan";
 import { chat } from "./chat";
+import { parseMenuInput, suggestMenu } from "./menu";
 import { checkReplacements, proposeRecipeChange, applyRecipeChange } from './plan';
 import { productImage } from "./images";
 import { handleMcp } from "./mcp";
@@ -62,6 +63,15 @@ const fail = (c: any, e: unknown) => {
   console.error(e);
   return c.json({ error: String((e as Error).message ?? e) }, 502);
 };
+
+// Menu step (CONTRACT S35): language only, no catalogue/price/stock calls.
+app.post("/api/menu", async (c) => {
+  try {
+    return c.json(await suggestMenu(parseMenuInput(await c.req.json().catch(() => null))));
+  } catch (e) {
+    return fail(c, e);
+  }
+});
 
 app.post("/api/basket", async (c) => {
   const body = await c.req.json<BasketRequest>().catch(() => null);

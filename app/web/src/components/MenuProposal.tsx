@@ -42,7 +42,7 @@ function MenuRow({ item, busy, onChange }: { item: MenuCategory; busy: boolean; 
   </div>;
 }
 
-export function MenuProposal({ menu, busy, onChange, onApprove, compact = false }: { menu: MenuDraft; busy: boolean; onChange: (menu: MenuDraft) => void; onApprove: () => void; compact?: boolean }) {
+export function MenuProposal({ menu, busy, onChange, onApprove, onInstruction, compact = false }: { menu: MenuDraft; busy: boolean; onChange: (menu: MenuDraft) => void; onApprove: () => void; onInstruction?: (text: string) => void; compact?: boolean }) {
   const section = useRef<HTMLElement>(null);
   const [addition, setAddition] = useState('');
   const selected = menu.categories.filter(item => item.selected).length;
@@ -53,8 +53,8 @@ export function MenuProposal({ menu, busy, onChange, onApprove, compact = false 
     <fieldset disabled={busy}><legend className="sr-only">Dishes and items to include</legend>
       {menu.categories.map(item => <MenuRow key={item.id} item={item} busy={busy} onChange={next => onChange({ ...menu, categories: menu.categories.map(current => current.id === next.id ? next : current) })} />)}
     </fieldset>
-    <form className="menu-add menu-add--refined" onSubmit={event => { event.preventDefault(); if (!addition.trim() || busy) return; onChange(addCategory(menu, addition)); setAddition(''); }}>
-      <label className="sr-only" htmlFor="menu-add">Add a dish or item</label><Icon name="plus" className="i-16" /><input id="menu-add" placeholder="Add a dish or item, e.g. fruit or juice" value={addition} disabled={busy} onChange={event => setAddition(event.target.value)} /><button type="submit" disabled={busy || !addition.trim()}>Add</button>
+    <form className="menu-add menu-add--refined" onSubmit={event => { event.preventDefault(); if (!addition.trim() || busy) return; if (onInstruction) onInstruction(addition.trim()); else onChange(addCategory(menu, addition)); setAddition(''); }}>
+      <label className="sr-only" htmlFor="menu-add">Add or change a dish</label><Icon name="plus" className="i-16" /><input id="menu-add" placeholder={menu.planning ? "Planning your menu…" : "Add or change, e.g. make the main vegetarian"} value={addition} disabled={busy} onChange={event => setAddition(event.target.value)} /><button type="submit" disabled={busy || !addition.trim()}>Add</button>
     </form>
     <MinunAimoContext enabled={!!menu.useMinunAimo} onChange={useMinunAimo => onChange({ ...menu, useMinunAimo })} />
     </div>
