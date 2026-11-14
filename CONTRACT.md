@@ -119,3 +119,26 @@ POST /api/menu {request: string, current?: MenuItem[], instruction?: string} ret
 
 ## Additive chat action: add_product (S37)
 POST /api/basket/:id/chat may run a new action kind `add_product` for plain products the buyer asks for by name ("add 2 bottles of Pepsi as a drink"). The gateway searches the local catalogue, ranks candidates (Claude when configured), stock-checks the top few in ONE call and prefers a deliverable SKU, then appends a basket line with `dishId: null` (or adds to an existing line of the same SKU). Counted units ("2 bottles", "3 packs") mean that many sales units; kg/l amounts are converted with the pack size like any need. The line follows the normal issue, swap and mandate rules. ChatAction gains `kind: "add_product"` and optional `lineId` (the added/updated line). The assistant's `chat` audit event carries `data.added: {lineId, label}[]` so clients can render an "Added …" card from the thread.
+
+## Additive trust layer: signed offer receipts (T-TRUST)
+Every price/stock fact the gateway hands to an agent can carry an **offer receipt** signed by the gateway (Ed25519).
+An agent verifies it offline with the public key, or online via the verify route. Spec: `TRUST.md`.
+```
+GET  /.well-known/aimo-gateway.json   -> { name, version, kid, alg: "Ed25519", publicKeyJwk, mcp: "/mcp", openapi?: string,
+                                           receipt: { fields: string[], canonicalization: "sorted-keys JSON" }, spec: "TRUST.md" }
+POST /api/stock                       -> StockCheck & { receipts: OfferReceipt[] }   # one per returned line, same order
+GET  /api/basket/:id/receipts         -> OfferReceipt[]                              # one per basket line (qty > 0)
+POST /api/receipts/verify { receipt } -> { valid: boolean, reason?: string, expired?: boolean }
+```
+```ts
+type OfferClaims = { v: 1; kid: string; sku: string; name: string; customer: string; deliveryDate: string;
+  price: number; priceWithTax: number; currency: "EUR"; customerPrice: boolean;      // netPriceFound from the Valio API
+  available: number | null; availableDate: string | null; deliverable: boolean; status: StockLine["status"];
+  orderCutoff: string | null;                                                         // Valio closingTime for that date
+  origin: string | null; labels: string[];                                            // from the Valio product catalogue
+  source: "valio-aimo-api"; checkedAt: string;                                        // when the gateway asked Valio
+  validUntil: string };  // min(checkedAt + 15 min, orderCutoff): after that, re-check; approval always re-checks
+type OfferReceipt = { claims: OfferClaims; kid: string; alg: "Ed25519"; sig: string };   // sig = base64url over canonical JSON of claims
+```
+MCP: `check_stock` returns the same `receipts`; new tool `verify_receipt { receipt }`. Key: `GATEWAY_SIGNING_KEY` (PKCS8 PEM,
+optional); without it a key is generated at start (receipts then don't survive a restart; stated in TRUST.md).
