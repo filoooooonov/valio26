@@ -84,13 +84,14 @@ export async function checkStock(
   skus: string[],
   date: string,
   customer = "123",
+  opts: { fresh?: boolean } = {},
 ): Promise<StockCheck> {
   const want = [...new Set(skus)].filter(Boolean);
   const now = Date.now();
   const fresh = new Map<string, StockLine>();
   const missing = want.filter((s) => {
     const c = cache.get(`${customer}|${date}|${s}`);
-    if (c && now - c.at < TTL_MS) fresh.set(s, c.line);
+    if (!opts.fresh && c && now - c.at < TTL_MS) fresh.set(s, c.line);
     return !fresh.has(s);
   });
   let calls = 0;

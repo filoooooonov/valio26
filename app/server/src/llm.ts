@@ -1,0 +1,200 @@
+// Claude calls for the planner. The LLM only does language work: request -> dishes + needs, and picking the
+// best SKU from a short candidate list the SERVER found. It never sees prices/stock and never decides rules.
+import Anthropic from "@anthropic-ai/sdk";
+import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
+import { z } from "zod";
+
+export const MODEL = "claude-opus-5-5";
+export const DIET_KEYS = [
+  "lactose-free",
+  "milk-free",
+  "vegan",
+  "vegetarian",
+  "gluten-free",
+] as const;
+
+const Diet = z.enum(DIET_KEYS);
+export const DraftSchema = z.object({
+  people: z.number().int().describe("number of guests / portions overall"),
+  dishes: z.array(
+    z.object({
+      id: z.string().describe("short slug, e.g. salmon-soup"),
+      name: z.string().describe("dish name in English, e.g. Salmon soup"),
+      portions: z.number().int(),
+      basis: z
+        .string()
+        .describe(
+          'per-portion basis in kitchen terms, e.g. "2.5 dl soup, 140 g salmon each"',
+        ),
+      diet: z
+        .array(Diet)
+        .describe(
+          "diet constraints that apply to every ingredient of this dish",
+        ),
+    }),
+  ),
+  needs: z.array(
+    z.object({
+      id: z.string().describe("short slug, unique"),
+      dishId: z
+        .string()
+        .nullable()
+        .describe(
+          "dish this ingredient is for, or null for a plain product order",
+        ),
+      item: z
+        .string()
+        .describe(
+          'what to buy, short English product noun, e.g. "salmon fillet"',
+        ),
+      queries: z
+        .array(z.string())
+        .describe(
+          "1-3 catalogue search terms, most specific first; English or Finnish product words only (e.g. 'salmon fillet', 'lohi')",
+        ),
+      perPortion: z
+        .number()
+        .nullable()
+        .describe("amount per portion, or null if not per portion"),
+      perPortionUnit: z.enum(["g", "ml", "pcs"]).nullable(),
+      totalQty: z.number().describe("total amount needed for all portions"),
+      totalUnit: z.enum(["kg", "l", "pcs"]),
+      diet: z
+        .array(Diet)
+        .describe(
+          "extra diet constraints for this ingredient only (usually empty)",
+        ),
+    }),
+  ),
+  assumed: z
+    .array(z.string())
+    .describe(
+      "pantry basics a professional kitchen already has and that are NOT ordered (salt, pepper, oil, sugar, flour...)",
+    ),
+});
+export type Draft = z.infer<typeof DraftSchema>;
+
+export const PickSchema = z.object({
+  picks: z.array(
+    z.object({
+      needId: z.string(),
+      ranked: z
+        .array(z.string())
+        .describe(
+          "candidate ids that genuinely fit this need, best first, max 6; empty if none fits",
+        ),
+    }),
+  ),
+});
+export type Picks = z.infer<typeof PickSchema>;
+
+export type Candidate = {
+  id: string;
+  name: string;
+  brand: string;
+  cat: string;
+  size?: string;
+  claims: string[];
+  contains: string[];
+};
+export type PickInput = {
+  id: string;
+  item: string;
+  total: string;
+  diet: string[];
+  dish?: string;
+  candidates: Candidate[];
+};
+
+export interface Llm {
+  draft(
+    request: string,
+    people: number | undefined,
+    date: string,
+  ): Promise<Draft>;
+  pick(request: string, needs: PickInput[]): Promise<Picks>;
+}
+
+const DRAFT_SYSTEM = `You plan wholesale food orders for professional kitchens in Finland (Valio Aimo webshop).
+Turn the buyer's request into dishes and the ingredient quantities to order.
+- Use realistic professional portion sizes and state each dish's per-portion basis.
+- Every ingredient that must be bought becomes a need with a total quantity in kg, l or pcs.
+- Put pantry basics a kitchen already stocks into "assumed" instead of needs (salt, pepper, oil, sugar, flour, spices, water).
+- If the request gives no menu, propose a simple, typical Finnish catering menu of 2-4 dishes that fits it.
+- If the request names a plain product and amount (e.g. "1000 L lactose-free milk"), return no dishes and one need with dishId null.
+- Diet words in the request (lactose-free, vegan, gluten-free...) become dish or need diet constraints.
+- totalQty is the amount of the PRODUCT AS BOUGHT: bouillon or stock powder in kg (about 10 g per litre of soup), never litres of prepared stock; flour, sugar etc. in kg.
+- Use kg or l for everything you can (eggs: about 60 g each, in kg); use pcs only for items that are only sold by count.
+- Keep it short: at most 6 dishes and 16 needs.`;
+
+const PICK_SYSTEM = `You match ingredient needs to wholesale catalogue products for a professional kitchen.
+For each need, rank only the candidate ids that genuinely are that ingredient in a form a kitchen would cook with
+(no utensils, no ready meals, no flavoured variants unless asked). Best first: closest match, then sensible pack size
+for the total amount. Return an empty list if nothing fits.`;
+
+export class ClaudeLlm implements Llm {
+  client = new Anthropic();
+  async draft(
+    request: string,
+    people: number | undefined,
+    date: string,
+  ): Promise<Draft> {
+    const r = await this.client.beta.messages.parse({
+      model: MODEL,
+      max_tokens: 16000,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      output_config: {
+        effort: "low",
+        format: betaZodOutputFormat(DraftSchema),
+      },
+      system: DRAFT_SYSTEM,
+      messages: [
+        {
+          role: "user",
+          content: `Request: ${request}\nGuests: ${people ?? "as stated in the request"}\nDelivery date: ${date}`,
+        },
+      ],
+    });
+    if (r.stop_reason === "refusal" || !r.parsed_output)
+      throw new Error(`planner LLM gave no plan (${r.stop_reason})`);
+    return r.parsed_output;
+  }
+  async pick(request: string, needs: PickInput[]): Promise<Picks> {
+    const body = needs
+      .map(
+        (n) =>
+          `NEED ${n.id}: ${n.item} (${n.total}${n.dish ? `, for ${n.dish}` : ""}${n.diet.length ? `, must be ${n.diet.join(", ")}` : ""})\n` +
+          n.candidates
+            .map(
+              (c) =>
+                `  ${c.id} | ${c.name} | ${c.brand || "-"} | ${c.cat || "-"} | ${c.size ?? "?"} | ${c.claims.join(",") || "-"} | allergens:${c.contains.join(",") || "-"}`,
+            )
+            .join("\n"),
+      )
+      .join("\n\n");
+    const r = await this.client.beta.messages.parse({
+      model: MODEL,
+      max_tokens: 16000,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      output_config: { effort: "low", format: betaZodOutputFormat(PickSchema) },
+      system: PICK_SYSTEM,
+      messages: [
+        { role: "user", content: `Order request: ${request}\n\n${body}` },
+      ],
+    });
+    if (r.stop_reason === "refusal" || !r.parsed_output)
+      throw new Error(`pick LLM gave no answer (${r.stop_reason})`);
+    return r.parsed_output;
+  }
+}
+
+let llm: Llm | null | undefined;
+/** null = no key: the planner uses its labelled deterministic fallback. */
+export function getLlm(): Llm | null {
+  if (llm === undefined)
+    llm = process.env.ANTHROPIC_API_KEY ? new ClaudeLlm() : null;
+  return llm;
+}
+export const setLlm = (l: Llm | null) => (llm = l);
