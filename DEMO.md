@@ -8,7 +8,7 @@ The stage demo is three minutes; the pitch video must be at most two minutes.
 2. The current buyer is Anna at Hotelli Kaleva. Delivery defaults to Friday 20 November 2026; the event is Saturday 21 November. Override delivery with ?date=YYYY-MM-DD only when the sponsor data supports it.
 3. The gateway enforces a EUR500 per-order and EUR1500 daily limit. Same-use swaps can be automatic under the gateway rule; other substitutions require the buyer's choice. An over-limit order requires Mikko L.'s approval.
 4. Repeated takes share today's pending and placed totals. A basket below EUR500 may therefore still require daily-limit approval. Restarting the gateway clears its in-memory baskets/orders; preserve evidence before restarting.
-5. This is a prototype webshop and local order ledger. Valio's sponsor API supplies real price/availability responses but has NO order endpoint. An approved order is recorded locally; it is not transmitted to Valio Aimo. State this aloud despite the existing UI's misleading 'sent to Valio Aimo' wording.
+5. This is a prototype webshop and local order ledger. Valio's sponsor API supplies real price/availability responses but has NO order endpoint. An approved order is recorded locally; it is not transmitted to Valio Aimo. State this aloud; the UI now says "order recorded".
 
 ## Try it yourself
 
@@ -47,7 +47,7 @@ The verified script below records the earlier direct-basket run; the app now add
 | **Response logic** | Step 4: the issue card shows **Best / Better / Good** with a one-line reason (allergens, on-time %, price, CO₂). Short lines offer "Take the N available". | "Ranked inside Valio's own assortment: safety first, then reliability, price and CO₂." |
 | **Audit trail** | Step 6: **View order**. Switch **Buyer view** / **Valio view**; "Record intact" badge; **Download audit record (JSON)**. | "Every step is hash-chained. Valio and the buyer read the same record, and any change is detected." |
 
-Check before recording: `node video/record/agent-milk.ts` output includes "signature valid" and "forged copy … rejected".
+Check before recording: `cd video && bun record/agent-milk.ts` output includes "signature valid" and "forged copy … rejected".
 
 ## Evidence and remaining limits
 
