@@ -1,4 +1,4 @@
-// Gateway client. Shapes mirror CONTRACT.md v1.1 (app/server is the source of truth).
+// Gateway client. Shapes mirror CONTRACT.md v1.2 (app/server is the source of truth).
 export type StockLine = {
   sku: string;
   price: number;
@@ -138,6 +138,22 @@ export type AuditEvent = {
   data?: Record<string, unknown>;
 };
 
+export type ChatAction = {
+  kind: "set_guests" | "set_qty" | "choose_option" | "remove_line" | "replan";
+  summary: string;
+};
+export type ChatReply = {
+  reply: string;
+  actions: ChatAction[];
+  basket: Basket;
+  question?: string;
+};
+export type OrderConflict = {
+  error: string;
+  mandate?: MandateResult;
+  changes?: Change[];
+};
+
 export class ApiError extends Error {
   status: number;
   body: unknown;
@@ -151,17 +167,24 @@ export class ApiError extends Error {
 async function call<T>(
   path: string,
   body?: unknown,
+  signal?: AbortSignal,
 ): Promise<{ status: number; data: T }> {
-  const r = await fetch(
-    `/api${path}`,
-    body === undefined
-      ? undefined
-      : {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(body),
-        },
-  );
+  let r: Response;
+  try {
+    r = await fetch(`/api${path}`, {
+      signal,
+      ...(body === undefined
+        ? {}
+        : {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(body),
+          }),
+    });
+  } catch (e) {
+    if ((e as Error).name === "AbortError") throw e;
+    throw new ApiError(0, "Network error", null);
+  }
   const data = await r.json().catch(() => ({}));
   if (!r.ok && r.status !== 409)
     throw new ApiError(
@@ -174,12 +197,24 @@ async function call<T>(
 
 export const BUYER = "Anna K.";
 export const APPROVER = "Mikko L.";
+export const isNotFound = (e: unknown) =>
+  e instanceof ApiError && e.status === 404;
 
 export const api = {
   mandate: (customer: string) =>
     call<Mandate>(`/mandate/${customer}`).then((r) => r.data),
-  build: (request: string, date: string) =>
-    call<Basket>("/basket", { request, date }).then((r) => r.data),
+  build: (
+    request: string,
+    date: string,
+    people?: number,
+    signal?: AbortSignal,
+  ) =>
+    call<Basket>("/basket", { request, date, people }, signal).then(
+      (r) => r.data,
+    ),
+  basket: (id: string) => call<Basket>(`/basket/${id}`).then((r) => r.data),
+  basketAudit: (id: string) =>
+    call<AuditEvent[]>(`/basket/${id}/audit`).then((r) => r.data),
   edit: (
     id: string,
     lineId: string,
@@ -188,17 +223,36 @@ export const api = {
     call<Basket>(`/basket/${id}/lines/${lineId}`, { ...e, by: BUYER }).then(
       (r) => r.data,
     ),
-  order: (id: string) =>
-    call<Order | { error: string; mandate: MandateResult }>(
-      `/basket/${id}/order`,
-      { by: BUYER },
+  // v1.2: may 404 on an older gateway; callers fall back.
+  guests: (id: string, people: number) =>
+    call<Basket>(`/basket/${id}/guests`, { people, by: BUYER }).then(
+      (r) => r.data,
+    ),
+  chat: (id: string, text: string) =>
+    call<ChatReply>(`/basket/${id}/chat`, { text, by: BUYER }).then(
+      (r) => r.data,
+    ),
+  image: (sku: string) =>
+    call<{ url: string | null }>(`/products/${sku}/image`).then(
+      (r) => r.data.url,
+    ),
+  stock: (skus: string[], date: string) =>
+    call<{ checkedAt: string; lines: StockLine[] }>("/stock", {
+      skus,
+      date,
+    }).then((r) => r.data),
+  order: (id: string) => call<Order | OrderConflict>(`/basket/${id}/order`, { by: BUYER }),
+  getOrder: (id: string) => call<Order>(`/orders/${id}`).then((r) => r.data),
+  orders: (status?: string) =>
+    call<Order[]>(`/orders${status ? `?status=${status}` : ""}`).then(
+      (r) => r.data,
     ),
   decide: (orderId: string, decision: "approve" | "reject", note?: string) =>
-    call<Order>(`/orders/${orderId}/decision`, {
+    call<Order | OrderConflict>(`/orders/${orderId}/decision`, {
       decision,
       by: APPROVER,
-      note,
-    }).then((r) => r.data),
+      note: note || undefined,
+    }),
   audit: (orderId: string) =>
     call<AuditEvent[]>(`/orders/${orderId}/audit`).then((r) => r.data),
 };

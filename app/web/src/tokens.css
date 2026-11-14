@@ -1,0 +1,132 @@
+/*
+ * Design tokens for the V2 chat-left webshop assistant.
+ * Generated from the pen variables of valio.pen (GetVariables(), Sat 14 Nov) and the measured
+ * values of frames UK3jg / crmnI / TCpgA / ZrHXw / i2hGj8. This is the ONLY file with raw
+ * colour / size literals; components use these custom properties.
+ */
+:root {
+  /* colour: pen variables */
+  --teal: #005670;
+  --teal-deep: #003d50;
+  --brand-dark: #003747;
+  --lime: #c0e021;
+  --lime-hover: #b1cf1a;
+  --lime-light: #ecf5c5;
+  --ink: #23282d;
+  --text-2: #6b7478;
+  --muted: #5e6a72;
+  --hair: #e6eaeb;
+  --line: #0000001a;
+  --surface: #f4f6f6;
+  --light-blue: #f2f7f8;
+  --petrol-15: #d9e6ea;
+  --blueberry-light: #eee8f5;
+  --blueberry: #c7b2de;
+  --plum: #3f1f6b;
+  --amber: #8f5500;
+  --amber-bg: #fff4de;
+  --green: #2e7d32;
+  --green-bg: #e7f4e8;
+  --red: #f9423a;
+  --red-light: #ffc9c6;
+  --red-ink: #b3261e;
+  --white: #ffffff;
+  --scrim: #23282d66;
+  --shadow-sheet: 0 24px 64px #00374733;
+  --shadow-card: 0 1px 2px #0037470f;
+
+  /* type: pen font variables */
+  --font-display: "National", helvetica, arial, sans-serif;
+  --font-body: "Matter", helvetica, arial, sans-serif;
+  --fs-11: 0.6875rem;
+  --fs-12: 0.75rem;
+  --fs-13: 0.8125rem;
+  --fs-14: 0.875rem;
+  --fs-15: 0.9375rem;
+  --fs-17: 1.0625rem;
+  --fs-18: 1.125rem;
+  --fs-22: 1.375rem;
+  --fs-28: 1.75rem;
+  --fs-40: 2.5rem;
+  --lh-tight: 1.05;
+  --lh-ui: 1.25;
+  --lh-body: 1.45;
+  --lh-chat: 1.5;
+  --tracking-eyebrow: 1.2px;
+  --tracking-display: -0.01em;
+  --w-regular: 400;
+  --w-medium: 500;
+  --w-bold: 700;
+
+  /* space (px grid used in the frames) */
+  --s-2: 2px;
+  --s-3: 3px;
+  --s-4: 4px;
+  --s-6: 6px;
+  --s-8: 8px;
+  --s-10: 10px;
+  --s-12: 12px;
+  --s-14: 14px;
+  --s-16: 16px;
+  --s-18: 18px;
+  --s-20: 20px;
+  --s-24: 24px;
+  --s-28: 28px;
+  --s-32: 32px;
+  --s-40: 40px;
+
+  /* sizes */
+  --header-h: 72px;
+  --chat-w: 560px;
+  --hit: 44px;
+  --btn-h: 40px;
+  --stepper-h: 48px;
+  --control-h: 52px;
+  --cta-h: 60px;
+  --tile: 52px;
+  --dish-photo: 44px;
+  --badge: 32px;
+  --avatar: 28px;
+  --check: 22px;
+  --tag-h: 22px;
+  --price-w: 140px;
+  --qty-w: 72px;
+  --bubble-w: 420px;
+  --sheet-w: 520px;
+  --mikko-w: 420px;
+  --icon-xs: 13px;
+  --icon-sm: 14px;
+  --icon-md: 16px;
+  --icon-lg: 18px;
+  --icon-xl: 22px;
+  --hair-w: 1px;
+  --ring-w: 2px;
+  --logo-w: 90px;
+  --logo-h: 30px;
+  --divider-h: 24px;
+
+  /* radii */
+  --r-6: 6px;
+  --r-10: 10px;
+  --r-11: 11px;
+  --r-12: 12px;
+  --r-16: 16px;
+  --r-20: 20px;
+  --r-pill: 999px;
+  --r-bubble: 16px 16px 4px 16px;
+
+  /* motion (animate skill tokens) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-drawer: 300ms;
+  --dur-spin: 800ms;
+  --dur-progress: 250ms;
+  --dur-press: 160ms;
+  --dur-hover: 150ms;
+  --dur-enter: 220ms;
+  --dur-sheet: 250ms;
+  --press-scale: 0.97;
+  --enter-y: 6px;
+  --enter-scale: 0.96;
+}
