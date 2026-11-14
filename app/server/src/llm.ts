@@ -206,7 +206,7 @@ Never invent line ids or skus. Use null for fields an action does not use.
 Use the conversation so far: short follow-ups ("yes", "1 pack", "the first one", "do it", "make it 3") answer your last
 question or continue the last change, so act on them instead of asking again.
 Counted products ("2 bottles of Pepsi"): just add_product with that count and unit pcs; the gateway rounds up to whole
-cases and tells the chef, so never ask about pack sizes first. If the product is already a line, use set_qty on it.
+cases and tells the chef, so never ask about pack sizes first. If the product is already a deliverable line, use set_qty on it; if that line is marked CAN'T BE DELIVERED, use add_product so the gateway finds a deliverable alternative.
 Ask a short question (and return no actions) only when you truly cannot tell what to change.`;
 
 // Menu step (CONTRACT S35): request -> course list, and natural-language edits of that list. Language work only.

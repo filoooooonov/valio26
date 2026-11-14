@@ -78,3 +78,31 @@ test("nothing deliverable: adds nothing and says why", async () => {
   expect(r.basket.lines.length).toBe(before);
   expect(r.reply).toMatch(/is unavailable for Fri, 20 Nov .*so I didn't add anything/);
 });
+
+test("'add a bottle of pepsi' on a removed, undeliverable Pepsi line finds a deliverable alternative instead", async () => {
+  setLlm(null); fakeValio();
+  const b = await buildBasket({ request: "salmon soup for 20", people: 20, date: "2026-11-20" });
+  const first = await chat(b.id, "add 2 bottles of Pepsi as a drink");
+  const dead = first.basket.lines.find((l) => l.id === first.actions[0].lineId)!;
+  // Same state as the screenshot: cut-off passed, buyer removed it.
+  blocked.add(dead.sku);
+  Object.assign(dead, { qty: 0, total: 0, stock: { ...dead.stock, deliverable: false, status: "cutoff_passed" } });
+  dead.issue = { kind: "cutoff", text: "Ordering is closed.", options: [], decided: "remove", decidedBy: "Anna K." };
+  fakeValio(); // fresh stock cache: the blocked SKU now reads as undeliverable
+  setLlm({
+    draft: async () => { throw new Error("unused"); },
+    pick: async (_r, needs) => ({ picks: needs.map((n) => ({ needId: n.id, ranked: n.candidates.map((c) => c.id) })) }),
+    chat: async (_t, summary) => {
+      expect(summary).toContain("CAN'T BE DELIVERED");
+      return { actions: [{ kind: "set_qty", lineId: dead.id, qty: 1, people: null, option: null, change: null, product: null, queries: null, amount: null, unit: null, label: null, dishId: null, category: null }], question: null };
+    },
+  });
+  const r = await chat(b.id, "add a bottle of pepsi");
+  const added = r.basket.lines.find((l) => l.id === r.actions[0].lineId)!;
+  expect(r.actions[0].kind).toBe("add_product");
+  expect(added.id).not.toBe(dead.id);
+  expect(added.sku).not.toBe(dead.sku);
+  expect(added.stock.deliverable).toBe(true);
+  expect(r.basket.lines.find((l) => l.id === dead.id)!.qty).toBe(0);
+  expect(r.reply).toMatch(/can't be delivered for Fri, 20 Nov, so I added .+ instead/);
+});

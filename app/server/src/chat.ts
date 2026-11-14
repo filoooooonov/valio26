@@ -4,9 +4,11 @@
 import { audit, events } from "./audit";
 import { getLlm, type ChatPlan } from "./llm";
 import { eur } from "./policy";
+import { getProduct } from "./catalog";
 import {
   addProduct,
   buildBasket,
+  caseSize,
   editLine,
   HttpError,
   isOpen,
@@ -17,7 +19,13 @@ import {
 import { baskets } from "./store";
 
 export type ChatAction = {
-  kind: "set_guests" | "set_qty" | "choose_option" | "remove_line" | "add_product" | "replan";
+  kind:
+    | "set_guests"
+    | "set_qty"
+    | "choose_option"
+    | "remove_line"
+    | "add_product"
+    | "replan";
   summary: string;
   lineId?: string;
   label?: string; // add_product: "2 bottles of Pepsi"
@@ -33,10 +41,19 @@ export type ChatReply = {
 type Planned = ChatPlan["actions"][number];
 
 const dayName = (d: string) =>
-  new Date(d + "T12:00:00Z").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+  new Date(d + "T12:00:00Z").toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
 // Catalogue names can run on ("... pan bread. Baked with sourdough. Thaw and serve."): first sentence, capped.
 const niceLine = (name: string) => {
-  const s = name.replace(/\s+/g, " ").trim().split(/\.\s/)[0].replace(/\.$/, "");
+  const s = name
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(/\.\s/)[0]
+    .replace(/\.$/, "");
   return s.length > 70 ? s.slice(0, 67).replace(/\s+\S*$/, "") + "…" : s;
 };
 
@@ -46,7 +63,8 @@ export const ASK =
 /** Compact basket view for Claude: ids, names, quantities, open issues with their option skus. */
 export function summarize(b: Basket): string {
   const rows = b.lines.map((l) => {
-    const head = `${l.id} | ${l.name} | ${l.qty} × ${l.pack}${l.qty === 0 ? " (removed)" : ""}`;
+    const dead = !orderableLine(l);
+    const head = `${l.id} | ${l.name} | ${l.qty} × ${l.pack}${dead ? " (CAN'T BE DELIVERED: use add_product for more of this, never set_qty)" : l.qty === 0 ? " (unchecked)" : ""}`;
     if (!isOpen(l)) return head;
     const opts = l.issue!.options.map((o) => `${o.sku} = ${o.name}`).join("; ");
     return `${head} | OPEN ISSUE: ${l.issue!.text} | options: ${opts || "none"}${l.issue!.kind === "short" ? "; keep" : ""}; remove`;
@@ -59,11 +77,29 @@ export function summarize(b: Basket): string {
   ].join("\n");
 }
 
+/** A line the chef can simply set a quantity on: its product can be delivered for the basket's date. */
+export function orderableLine(l: Basket["lines"][number]): boolean {
+  // Swapped to an offered option: the line now holds that option's product and stock.
+  const swapped =
+    !!l.issue?.decided &&
+    l.issue.decided !== "remove" &&
+    l.issue.decided !== "keep";
+  if (
+    !swapped &&
+    (l.issue?.kind === "cutoff" || l.issue?.kind === "unavailable")
+  )
+    return false;
+  return l.stock.deliverable !== false;
+}
+
 /** The last chat turns for this basket (and the basket it was replanned from), oldest first, so follow-ups
  *  like "yeah 1 pack" are read against the assistant's previous question. Excludes the message being handled. */
 export function chatHistory(basketId: string, max = 10): string {
   const own = events(basketId);
-  const from = (own.find((e) => e.kind === "replan" && (e.data as { from?: string })?.from)?.data as { from?: string } | undefined)?.from;
+  const from = (
+    own.find((e) => e.kind === "replan" && (e.data as { from?: string })?.from)
+      ?.data as { from?: string } | undefined
+  )?.from;
   const all = [...(from ? events(from) : []), ...own];
   const turns = all
     .filter((e) => e.kind === "chat" || e.kind === "chat_question")
@@ -134,10 +170,22 @@ export function parseFallback(
     const unit = /^k/.test(u) ? "kg" : /^l/.test(u) ? "l" : "pcs";
     const product = add[3].trim();
     const label = `${add[1]}${add[2] ? " " + add[2] : ""} ${product}`;
-    const hint = add[4]?.trim().replace(/s?$/, "s").replace(/^./, (c) => c.toUpperCase());
+    const hint = add[4]
+      ?.trim()
+      .replace(/s?$/, "s")
+      .replace(/^./, (c) => c.toUpperCase());
     return {
       actions: [
-        { ...base, kind: "add_product", product, queries: [product], amount, unit, label, category: hint ?? null },
+        {
+          ...base,
+          kind: "add_product",
+          product,
+          queries: [product],
+          amount,
+          unit,
+          label,
+          category: hint ?? null,
+        },
       ],
     };
   }
@@ -222,6 +270,43 @@ export async function chat(
         const was = b.people;
         b = await rescaleGuests(b.id, a.people, by);
         done.push({ kind: a.kind, summary: `Guests ${was} → ${a.people}` });
+      } else if (
+        a.kind === "set_qty" &&
+        line &&
+        a.qty != null &&
+        a.qty > 0 &&
+        !orderableLine(line)
+      ) {
+        // Reviving a removed/undeliverable line would make an order line that can't be placed. Find a deliverable
+        // alternative instead, same as "add X" (the gateway says what was unavailable).
+        const count = a.qty * caseSize(getProduct(line.sku));
+        const product = niceLine(line.name).replace(
+          /^\s*(?:\d{1,3}\s*[x×]\s*)+/i,
+          "",
+        );
+        const label = `${count} × ${product}`;
+        const r = await addProduct(
+          b.id,
+          {
+            item: product,
+            queries: [product],
+            amount: count,
+            unit: "pcs",
+            label,
+            dishId: line.dishId,
+            category: null,
+          },
+          by,
+        );
+        b = r.basket;
+        done.push({
+          kind: "add_product",
+          lineId: r.line.id,
+          label,
+          category: r.category,
+          unavailable: `${niceLine(line.name)} is unavailable`,
+          summary: `${niceLine(line.name)} can't be delivered for ${dayName(b.date)}, so I added ${niceLine(r.line.name)} instead`,
+        });
       } else if (a.kind === "set_qty") {
         if (!line || a.qty == null)
           throw new HttpError(400, "which line and how many?");
@@ -266,13 +351,17 @@ export async function chat(
           by,
         );
         b = r.basket;
-        const where = r.createdCategory ? ` under a new ${r.category} category` : ` to ${r.category}`;
+        const where = r.createdCategory
+          ? ` under a new ${r.category} category`
+          : ` to ${r.category}`;
         done.push({
           kind: a.kind,
           lineId: r.line.id,
           label,
           category: r.category,
-          unavailable: r.unavailable ? `${r.unavailable.name} is unavailable (${r.unavailable.reason})` : undefined,
+          unavailable: r.unavailable
+            ? `${r.unavailable.name} is unavailable (${r.unavailable.reason})`
+            : undefined,
           summary: r.unavailable
             ? `${r.unavailable.name} is unavailable for ${dayName(b.date)} (${r.unavailable.reason}), so I added ${niceLine(r.line.name)} instead${where}`
             : `Added ${label}${where}`,
@@ -310,13 +399,22 @@ export async function chat(
       failed,
       added: done
         .filter((d) => d.kind === "add_product" && d.lineId)
-        .map((d) => ({ lineId: d.lineId, label: d.label, category: d.category, unavailable: d.unavailable })),
+        .map((d) => ({
+          lineId: d.lineId,
+          label: d.label,
+          category: d.category,
+          unavailable: d.unavailable,
+        })),
     },
   );
 
   const total = `New total ${eur(b.total)}${b.openIssues ? ` (${eur(b.totalIfAccepted)} if you accept the suggested swaps)` : ""}.`;
   if (!done.length && failed.length)
-    return { reply: `${failed.join(". ")}.`.replace(/\.\.$/, "."), actions: done, basket: b };
+    return {
+      reply: `${failed.join(". ")}.`.replace(/\.\.$/, "."),
+      actions: done,
+      basket: b,
+    };
   const did = done.length
     ? `${done.map((d) => d.summary).join(". ")}.`
     : "I couldn't change anything.";
