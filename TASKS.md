@@ -1,6 +1,8 @@
 # TASKS.md: claim before starting
 
-- [~] @aleksei-codex S43 Remove cart Undo and Repeat this order buttons, retain keyboard undo (rubric: demo) - files: app/web/src/components/OrderPanel.tsx.
+- [x] @aleksei-codex S43 Removed cart Undo and Repeat this order buttons; keyboard undo retained. Build and89fast tests pass (rubric: demo) - files: app/web/src/components/OrderPanel.tsx.
+
+- [~] @aleksei-codex S44 Redesign Scheduled menus overview and editor with the current brand kit; preserve schedule behavior and device-local persistence (rubric: demo, user need) - files: app/web/src/components/ScheduledMenus.tsx, scheduled-menus.css, ScheduleDateTime.tsx, schedule-date-time.css, ui/README.md.
 
 - [x] @aleksei-codex S40 Product-review cards keep their first position in the chat timeline above newer user/reply messages; later issues get separate turns and partial resolution/undo preserves positions. Replaced visible request wording with order. Desktop1440/phone390 chronology and review popup checked; build and88fast tests pass (rubric: demo, user need) - files: app/web/src/components/Chat.tsx, thread.ts and UI copy; app/server/src/product-review-order.test.ts.
 

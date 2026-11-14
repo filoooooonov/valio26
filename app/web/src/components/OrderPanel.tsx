@@ -30,7 +30,6 @@ import { Segmented } from "./Header";
 import { AssistantGlyph } from "./Mark";
 import "./order-polish.css";
 import { RecipeDialog } from "./RecipeDialog";
-import { Button } from "../ui";
 
 export type OrderProps = {
   canUndo?: boolean;
@@ -235,8 +234,6 @@ function Controls({ p, b }: { p: OrderProps; b: Basket }) {
           </div>
         )}
         <button className="pill" type="button" onClick={() => setRecipeOpen(true)} aria-haspopup="dialog"><Icon name="utensils" className="i-16" />Recipe</button>
-        {p.onRepeat && <button className="pill" type="button" aria-haspopup="dialog" onClick={p.onRepeat}><Icon name="repeat" className="i-16" />Repeat this order</button>}
-        {!locked && p.onUndo && <Button variant="secondary" size="sm" icon="undo-2" disabled={!p.canUndo || p.busy} onClick={p.onUndo} title="Undo last cart change (Ctrl+Z / Cmd+Z)" aria-keyshortcuts="Control+z Meta+z">Undo</Button>}
         {recipeOpen && <RecipeDialog basket={b} onClose={() => setRecipeOpen(false)} />}
         <span className="grow" />
         {per}
