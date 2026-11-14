@@ -775,20 +775,7 @@ function Suggestions({ p }: { p: Props }) {
   if (!b || p.building) return null;
   const chips: { label: string; run: () => void }[] = [];
   const thu = weekdayLong(addDays(b.date, -1));
-  if (p.phase === "draft") {
-    chips.push({
-      label: `Make it ${b.people + 10} guests`,
-      run: () => p.onGuests(b.people + 10),
-    });
-    chips.push({
-      label: "Add a vegan main",
-      run: () => p.onSend("Add a vegan main"),
-    });
-    chips.push({
-      label: `Deliver ${thu}`,
-      run: () => p.onSend(`Deliver on ${thu} instead`),
-    });
-  } else if (p.phase === "review") {
+  if (p.phase === "review") {
     const cheaper = cheaperSwap(b);
     if (cheaper)
       chips.push({
