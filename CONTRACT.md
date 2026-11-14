@@ -72,11 +72,11 @@ type StockLine = { sku: string; price: number; priceWithTax: number; taxRate: nu
 type StockCheck = { checkedAt: string; date: string; calls: number; skus: number; lines: StockLine[] };
 type Dish = { id: string; name: string; portions: number; basis: string; diet: string[] };   // basis: "2.5 dl soup, 140 g salmon each"
 type Option = { sku: string; name: string; reason: string; delta: number;    // reason: "no new allergens · in stock, available from Mon 16 Nov · 96 % on time · €14.11/kg"
-  qty: number; pack: string; why: string; total: number; stock: StockLine; contains: string[] };
+  qty: number; pack: string; why: string; total: number; stock: StockLine; contains: string[]; frozen?: boolean };
 type BasketLine = { id: string; dishId: string | null; needIds: string[]; sku: string; name: string; brand: string;
   qty: number; pack: string;                 // pack: "2.5 kg" | "1 l" | "by kg"
   why: string;                               // "50 × 140 g = 7 kg → 3 × 2.5 kg"
-  stock: StockLine; total: number; contains: string[]; claims: string[]; reliability?: number; co2?: number; image?: string;
+  stock: StockLine; total: number; contains: string[]; claims: string[]; frozen?: boolean; reliability?: number; co2?: number; image?: string;
   issue?: { kind: "short"|"unavailable"|"cutoff"; text: string; options: Option[]; decided?: string; decidedBy?: string };
   replaced?: { sku: string; name: string };  // set after a swap
   usedIn?: string[] };                       // one SKU serving several dishes
@@ -104,3 +104,5 @@ State is in memory: restarting the server clears baskets and orders.
 
 ## Env vars
 Every var is listed in `.env.example`. Add new ones there in the same PR.
+
+Frozen metadata (additive): BasketLine.frozen and Option.frozen indicate freezer storage from catalogue freezeTemperature labels, with explicit frozen/deepfrozen/deepfrost/FRO name fallback. Numeric storage codes are not interpreted. Absent fields mean unknown for older clients.
