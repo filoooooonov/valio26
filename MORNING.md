@@ -1,4 +1,4 @@
-# Morning brief: Sat 14 Nov (written 07:20)
+# Morning brief: Sat 14 Nov (written 07:20, corrected 07:45)
 
 ## 1. TL;DR
 
@@ -6,7 +6,7 @@
 git switch night/2026-11-14 && bun run demos
 ```
 
-- **None of the three demo apps exist.** A-split (:5175), B-cartfirst (:5174) and C-eventplan (:5176) were never built: the build runs stalled from about 03:00 to 07:00 and missed the 06:40 deadline. There are no `demos/` folders and no `night/demo-*` branches. `bun run demos` starts only the gateway and the console.
+- **None of the three demo apps exist.** A-split (:5175), B-cartfirst (:5174) and C-eventplan (:5176) were never built. **Root cause (found 07:40):** all three build agents failed at ~03:15 because the workflow refused their isolation worktrees. The repo path has two spellings (`onedrive	iedostot\github` vs `OneDrive\Tiedostot\GitHub`), so git resolved each worktree outside itself. Separately, the session stalled from ~03:00 to 07:00. **Fix for next time:** launch from the canonical-case path, or build the UI in the main checkout. There are no `demos/` folders and no `night/demo-*` branches. `bun run demos` starts only the gateway and the console.
 - **What works:** the **gateway on http://localhost:8787**. It does the full flow against the live Valio API: request, basket (Claude planner), stock check with substitutes, mandate, order, approval by Mikko L., and audit. There is also an MCP endpoint at `/mcp`. 30 tests pass, 0 fail.
 - **Console http://localhost:5173:** only a stub of the approvals page. It has no request box and no basket.
 - **Show Valio B-cartfirst:** the polished W3 mockups (`docs/design/night/W3/`), then the same flow run live against the gateway. **Why:** it got the most design work (3 polish rounds, W1 to W3) and matches the in-webshop "review and confirm" cart Valio asked for. The live API run proves the mockup's numbers are real, not invented.
@@ -23,6 +23,33 @@ All live scores are 0 to 20 per lens. Every reviewer found the app port dead and
 | C-eventplan | :5176 (dead) | 12 / 5 | No. Never built | Exists only as 3 mockup PNGs (`docs/design/night/C-eventplan/`) |
 | Gateway (API/MCP) | :8787 | not re-scored after the fix | **Yes, by API**: the catering basket, then the order placed (o_cslnp7). 1000 L milk goes to needs_approval, the agent's own approval gets 403, Mikko's approval places it | No UI drives it yet |
 | Console | :5173 | n/a | No. Approvals stub only | No request box or basket |
+
+## 2b. Mockup reviews (pen exports, 3 reviewers per round)
+
+The Valio reviewer is the `valio-voice` agent (handout + meeting notes only, Opus). Chef = "Sanna" usability persona. Each round's reviews were fed into the next polish round.
+
+| Round | Valio | Chef | Design |
+|---|---|---|---|
+| Directions (A · split / B · cart-first / C · event plan) | 64 / 60 / 67 | 66 / 66 / 60 | 74 / 80 / 80 |
+| W1 (B polished) | 68 | 72 | 79 |
+| W2 | **72** | 72 | 84 |
+| W3 | 71 | 68 | 84 |
+
+The pick agent chose B over A (avg 70 vs 72) because B is the real valioaimo.fi cart. Valio's verdict on W2 and W3: "probably 2nd, not win yet".
+
+**W3 feedback NOT applied yet (no W4 round). Fix these in the working UI:**
+1. Openness is barely visible (15 % of the score): show the hotel/Kaleva agent creating the same quote over the API/MCP, on screen.
+2. Mikko's approval screen and the reject path are missing (W2 had the phone screen; W3 dropped it).
+3. The wrong pick is suggested: list-price salmon cubes with no on-time history push the order over €500, while trout is at contract price and 100 % on time. Also 180 g/guest salmon is a main-course portion; soup is 90–120 g.
+4. The agent never orders on its own: show one in-mandate order with no human.
+5. Smaller fixes:
+   - Cream 13 × 3.3 dl = 4.29 l is short of the 4.30 l needed; round up, and use kitchen packs instead of retail cartons.
+   - Screen 1's primary button is disabled; the real actions are 4 equal outline buttons.
+   - No phone layout.
+   - No partial-stock case.
+   - Stock is not held during approval (only prices are).
+
+The server already handles points 1, 3 (deliverable alternatives with on-time %), 4 (`agent_may_order`) and the pack rounding. The UI needs to show them.
 
 ## 3. Real vs fallback
 
@@ -48,7 +75,7 @@ All live scores are 0 to 20 per lens. Every reviewer found the app port dead and
 
 ## 5. Decisions only you can make
 
-1. **What to show at 09:00.** I recommend the W3 B-cartfirst mockups plus a live gateway run (curl, or the web WIP if it works). Don't show the console stub on its own.
+1. **What to show at 09:00.** I recommend building one working UI from W3 on the gateway first (S4; ~1–1.5 h; the server already does the hard parts). Fallback if it isn't solid by 08:45: the W3 mockups plus a live gateway run. Don't show the console stub on its own.
 2. **Whether to keep the web WIP in `app/web/src`.** I recommend building it now (`bun run build`) and clicking through. If the request-to-basket flow works, commit it and make it the demo. If not, park it on a branch.
 3. **Whether to merge CONTRACT v1.1.** I recommend yes, since the changes are additive. The other owner needs to approve the PR.
 4. **Model choice.** I recommend keeping `claude-opus-5-5` at effort low for quality. Switch to Haiku only if the 21 s wait hurts the demo.
@@ -75,7 +102,7 @@ All live scores are 0 to 20 per lens. Every reviewer found the app port dead and
 - **Night timeline:**
   - 3 design directions with mockups
   - W1 to W3 polish of B-cartfirst
-  - a ~4 h stall (03:00 to 07:00) killed the three demo builds
+  - the three demo builds failed at ~03:15 (worktree path-case refusal, see TL;DR), then a ~4 h stall (03:00 to 07:00)
   - after 07:00: server S2+S3 built and proven live (`738c0d9`), routes wired (`1d12636`), `bun run demos` launcher added (`c865c3e`)
 - **Screenshots:**
   - live reviewer runs: `docs/design/night/demos/*/live-*`
