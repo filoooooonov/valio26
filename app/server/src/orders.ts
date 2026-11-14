@@ -236,6 +236,29 @@ export async function decide(orderId: string, d: Decision): Promise<Order> {
   }
   const b = baskets.get(o.basketId);
   if (d.decision === "approve" && b) {
+    // The approver approves exactly what they saw: same products, same quantities (prices may move; see recheck).
+    const seen = o.lines
+      .map((l) => `${l.sku}x${l.qty}`)
+      .sort()
+      .join(",");
+    const nowLines = b.lines
+      .filter((l) => l.qty > 0 && !isOpen(l))
+      .map((l) => `${l.sku}x${l.qty}`)
+      .sort()
+      .join(",");
+    if (seen !== nowLines) {
+      audit(
+        o.basketId,
+        "gateway",
+        "decision",
+        `Not placed: the basket changed after it was sent for approval`,
+        { orderId },
+      );
+      throw new HttpError(
+        409,
+        "the basket changed after it was sent for approval; send it again",
+      );
+    }
     const { changes, calls } = await recheck(b, d.by);
     o.changes = changes;
     o.apiCalls += calls;

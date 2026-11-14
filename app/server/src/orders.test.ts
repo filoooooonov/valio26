@@ -168,7 +168,9 @@ describe("fallback planner", () => {
     const salmon = b.lines.find((l: any) => l.sku === "461814");
     expect(salmon.why).toBe("50 × 140 g = 7 kg → 7 kg (sold by kg)");
     expect(b.assumed).toContain("salt");
-    expect(b.mandate.state).toBe(b.total > 500 ? "needs_approval" : "agent_may_order");
+    expect(b.mandate.state).toBe(
+      b.total > 500 ? "needs_approval" : "agent_may_order",
+    );
     for (const l of b.lines)
       expect(l.total).toBeCloseTo(l.qty * l.stock.price, 2);
   });
@@ -215,7 +217,11 @@ describe("orders", () => {
     mocks["463380"] = { deliverable: false };
     mocks["464119"] = { deliverable: false };
     const b = await (
-      await post("/api/basket", { request: "100 L lactose-free milk", date: "2026-11-20", customer: "c0" })
+      await post("/api/basket", {
+        request: "100 L lactose-free milk",
+        date: "2026-11-20",
+        customer: "c0",
+      })
     ).json();
     expect(b.lines[0].issue.decided).toBe("464201");
     expect(b.lines[0].issue.decidedBy).toBe("gateway (same-use rule)");
@@ -344,6 +350,49 @@ describe("orders", () => {
     expect(
       events(b.id).some((x) => x.kind === "edit" && x.actor === "Anna K."),
     ).toBe(true);
+  });
+
+  test("a basket waiting for approval is locked, so the approver approves what they saw", async () => {
+    const b = await cheapMilk(600);
+    const o = await (
+      await post(`/api/basket/${b.id}/order`, { by: "Anna K." })
+    ).json();
+    expect(o.status).toBe("pending_approval");
+    // raising qty or guests after sending is refused
+    const edit = await post(`/api/basket/${b.id}/lines/l1`, {
+      qty: 5000,
+      by: "Anna K.",
+    });
+    expect(edit.status).toBe(409);
+    expect((await edit.json()).error).toContain("waiting for approval");
+    expect(
+      (await post(`/api/basket/${b.id}/guests`, { people: 500 })).status,
+    ).toBe(409);
+    const d = await (
+      await post(`/api/orders/${o.id}/decision`, {
+        decision: "approve",
+        by: "Mikko L.",
+      })
+    ).json();
+    expect(d.status).toBe("placed");
+    expect(d.total).toBe(600);
+  });
+
+  test("a sent-back basket can be edited and re-sent", async () => {
+    const b = await cheapMilk(600);
+    const o = await (
+      await post(`/api/basket/${b.id}/order`, { by: "Anna K." })
+    ).json();
+    await post(`/api/orders/${o.id}/decision`, {
+      decision: "reject",
+      by: "Mikko L.",
+    });
+    const e = await post(`/api/basket/${b.id}/lines/l1`, {
+      qty: 400,
+      by: "Anna K.",
+    });
+    expect(e.status).toBe(200);
+    expect((await e.json()).total).toBe(400);
   });
 });
 

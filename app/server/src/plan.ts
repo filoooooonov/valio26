@@ -13,7 +13,7 @@ import {
   type Mandate,
   type MandateResult,
 } from "./policy";
-import { baskets, dailySoFar, newId } from "./store";
+import { baskets, dailySoFar, newId, orders } from "./store";
 import { checkStock, contentPerUnit, type StockLine } from "./valio";
 
 export type Dish = {
@@ -195,7 +195,8 @@ export function packOf(
   st: StockLine,
   p?: Product,
 ): Amt & { byWeight: boolean } {
-  if (st.salesUnit === "KG" || p?.unit === "KG") // base unit KG = catch weight, priced per kg
+  if (st.salesUnit === "KG" || p?.unit === "KG")
+    // base unit KG = catch weight, priced per kg
     return { qty: 1, unit: "KG", byWeight: true };
   const c = contentPerUnit(st);
   if (c && (c.unit === "KG" || c.unit === "L"))
@@ -311,7 +312,12 @@ const FALLBACK_MENU: {
     basis: "1 slice: 60 g blueberries, 112 g pastry, 60 ml sauce",
     diet: ["lactose-free"],
     items: [
-      { item: "blueberries", per: 60, unit: "g", skus: ["461154", "460649", "465273", "461043"] },
+      {
+        item: "blueberries",
+        per: 60,
+        unit: "g",
+        skus: ["461154", "460649", "465273", "461043"],
+      },
       {
         item: "short crust pastry",
         per: 112,
@@ -495,10 +501,18 @@ const orderable = (st: StockLine, qty: number) =>
 type Group = { sku: string; needs: Need[]; ranked: string[] };
 
 /** Catalogue storage label is authoritative; numeric temp codes are undocumented. */
-export function isFrozenProduct(p?: Pick<Product, "labels" | "en" | "fi" | "sv">): boolean {
+export function isFrozenProduct(
+  p?: Pick<Product, "labels" | "en" | "fi" | "sv">,
+): boolean {
   if (!p) return false;
-  if (p.labels.length) return p.labels.includes("freezeTemperature") && !p.labels.some(label => /^(?:warm|cool)Temperature$/.test(label));
-  return /\b(?:frozen|deep[ -]?frozen|deepfrost|FRO)\b/i.test([p.en, p.fi, p.sv].join(" "));
+  if (p.labels.length)
+    return (
+      p.labels.includes("freezeTemperature") &&
+      !p.labels.some((label) => /^(?:warm|cool)Temperature$/.test(label))
+    );
+  return /\b(?:frozen|deep[ -]?frozen|deepfrost|FRO)\b/i.test(
+    [p.en, p.fi, p.sv].join(" "),
+  );
 }
 
 function makeLine(
@@ -657,17 +671,28 @@ export type BasketRequest = {
 /** Reject structurally valid LLM plans that silently leave part of the menu unpurchased. */
 export function draftCompletenessIssues(draft: Draft): string[] {
   const issues: string[] = [];
-  const dishIds = new Set(draft.dishes.map(d => d.id));
-  const positive = draft.needs.filter(n => Number.isFinite(n.totalQty) && n.totalQty > 0);
-  if (!positive.length) issues.push("No positive purchasing needs were provided");
+  const dishIds = new Set(draft.dishes.map((d) => d.id));
+  const positive = draft.needs.filter(
+    (n) => Number.isFinite(n.totalQty) && n.totalQty > 0,
+  );
+  if (!positive.length)
+    issues.push("No positive purchasing needs were provided");
   for (const dish of draft.dishes)
-    if (!positive.some(n => n.dishId === dish.id))
-      issues.push("Missing purchasing needs for " + dish.name + " (" + dish.id + ")");
+    if (!positive.some((n) => n.dishId === dish.id))
+      issues.push(
+        "Missing purchasing needs for " + dish.name + " (" + dish.id + ")",
+      );
   for (const need of draft.needs) {
     if (!Number.isFinite(need.totalQty) || need.totalQty <= 0)
       issues.push("Need " + need.id + " must have a positive totalQty");
-    if (need.dishId === null ? draft.dishes.length > 0 : !dishIds.has(need.dishId))
-      issues.push("Need " + need.id + " must reference a valid dish; dishId null is only for product orders without dishes");
+    if (
+      need.dishId === null ? draft.dishes.length > 0 : !dishIds.has(need.dishId)
+    )
+      issues.push(
+        "Need " +
+          need.id +
+          " must reference a valid dish; dishId null is only for product orders without dishes",
+      );
   }
   return issues;
 }
@@ -700,15 +725,36 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
   if (planner === "llm" && llm) {
     let missing = draftCompletenessIssues(draft);
     if (missing.length) {
-      audit(id, "gateway", "plan_retry", "Incomplete menu plan; retrying before any product lookup", { issues: missing });
+      audit(
+        id,
+        "gateway",
+        "plan_retry",
+        "Incomplete menu plan; retrying before any product lookup",
+        { issues: missing },
+      );
       try {
-        draft = await llm.draft(req.request + "\n\nREPAIR INCOMPLETE PLAN: " + missing.join("; ") + ". Return the full corrected plan, not a patch. Every approved dish/category needs its own positive purchasing needs, including drinks, snacks and fillings. Keep all approved categories and reference valid dish ids.", req.people, req.date);
+        draft = await llm.draft(
+          req.request +
+            "\n\nREPAIR INCOMPLETE PLAN: " +
+            missing.join("; ") +
+            ". Return the full corrected plan, not a patch. Every approved dish/category needs its own positive purchasing needs, including drinks, snacks and fillings. Keep all approved categories and reference valid dish ids.",
+          req.people,
+          req.date,
+        );
       } catch {
-        throw new HttpError(502, "Could not complete the approved menu after one retry. No products were looked up or ordered; please retry.");
+        throw new HttpError(
+          502,
+          "Could not complete the approved menu after one retry. No products were looked up or ordered; please retry.",
+        );
       }
       missing = draftCompletenessIssues(draft);
       if (missing.length)
-        throw new HttpError(502, "Could not complete the approved menu after one retry: " + missing.join("; ") + ". No products were looked up or ordered; please retry.");
+        throw new HttpError(
+          502,
+          "Could not complete the approved menu after one retry: " +
+            missing.join("; ") +
+            ". No products were looked up or ordered; please retry.",
+        );
     }
   }
   const people = req.people ?? draft.people;
@@ -841,8 +887,14 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
         ? [] // Claude already said which candidates genuinely fit
         : (cands.get(g.needs[0].id) ?? []).map((p) => p.id)),
     ];
-    alt.set(l.id, [...new Set(pool)].filter((s) => !chosen.has(s)).slice(0, 10));
-    ctx.set(l.id, { needs: g.needs.map((n) => ({ ...n })), pool: alt.get(l.id)! });
+    alt.set(
+      l.id,
+      [...new Set(pool)].filter((s) => !chosen.has(s)).slice(0, 10),
+    );
+    ctx.set(l.id, {
+      needs: g.needs.map((n) => ({ ...n })),
+      pool: alt.get(l.id)!,
+    });
   }
   basketCtx.set(id, ctx);
   const withIssue = lines.filter((x) => x.l.issue);
@@ -920,7 +972,8 @@ const FISH_MEAT = /^(18|41(70|71|72|73))/; // fresh fish/meat, frozen fish/meat 
 /** A swap the gateway may make without asking: same product group (first 3 digits), no allergen the original
  *  didn't have, never fish or meat, and at most +20 % or +€25 on the line. Everything else waits for the buyer. */
 export function isSameUse(orig: BasketLine, o: Option): boolean {
-  const a = getProduct(orig.sku), b = getProduct(o.sku);
+  const a = getProduct(orig.sku),
+    b = getProduct(o.sku);
   if (!a || !b) return false;
   if (FISH_MEAT.test(a.cat) || FISH_MEAT.test(b.cat)) return false;
   if (a.cat.slice(0, 3) !== b.cat.slice(0, 3)) return false;
@@ -931,7 +984,8 @@ export function autoSwapSameUse(b: Basket): void {
   if (!b.rules.autoSwapSameUse) return;
   for (const l of b.lines) {
     const o = l.issue && !l.issue.decided ? l.issue.options[0] : undefined;
-    if (o && isSameUse(l, o)) editLine(b.id, l.id, { chooseOption: o.sku, by: SAME_USE_BY });
+    if (o && isSameUse(l, o))
+      editLine(b.id, l.id, { chooseOption: o.sku, by: SAME_USE_BY });
   }
 }
 
@@ -946,6 +1000,21 @@ export class HttpError extends Error {
   }
 }
 
+/** A basket is frozen once it has a placed or pending order: the approver must approve exactly what they saw.
+ *  Edits are allowed again only after the order is rejected (sent back). */
+export function assertEditable(b: Basket): void {
+  const o = [...orders.values()].find(
+    (x) => x.basketId === b.id && x.status !== "rejected",
+  );
+  if (o)
+    throw new HttpError(
+      409,
+      o.status === "placed"
+        ? `order ${o.id} is already placed; start a new request to change it`
+        : `order ${o.id} is waiting for approval; it can't be changed until it is approved or sent back`,
+    );
+}
+
 export function editLine(
   basketId: string,
   lineId: string,
@@ -953,6 +1022,7 @@ export function editLine(
 ): Basket {
   const b = baskets.get(basketId);
   if (!b) throw new HttpError(404, "basket not found");
+  assertEditable(b);
   const l = b.lines.find((x) => x.id === lineId);
   if (!l) throw new HttpError(404, "line not found");
   const by = e.by || "buyer";
@@ -1056,10 +1126,12 @@ export async function rescaleGuests(
 ): Promise<Basket> {
   const b = baskets.get(basketId);
   if (!b) throw new HttpError(404, "basket not found");
+  assertEditable(b);
   if (!Number.isInteger(people) || people < 1 || people > 2000)
     throw new HttpError(400, "people must be a whole number from 1 to 2000");
   const ctx = basketCtx.get(b.id);
-  if (!ctx) throw new HttpError(409, "this basket has no planning data to rescale");
+  if (!ctx)
+    throw new HttpError(409, "this basket has no planning data to rescale");
   const old = b.people;
   if (people === old) return recompute(b);
 
@@ -1086,7 +1158,12 @@ export async function rescaleGuests(
     .filter((l) => !(l.issue?.decided === "remove") && ctx.has(l.id))
     .map((l) => {
       const needs = ctx.get(l.id)!.needs;
-      const nl = makeLine({ sku: l.sku, needs, ranked: [] }, l.stock, people, b.dishes);
+      const nl = makeLine(
+        { sku: l.sku, needs, ranked: [] },
+        l.stock,
+        people,
+        b.dishes,
+      );
       return { l, needs, qty: nl.qty };
     });
   const changed = plan.filter((x) => x.qty !== x.l.qty || isOpen(x.l));
@@ -1109,7 +1186,12 @@ export async function rescaleGuests(
   let nChanged = 0;
   for (const { l, needs } of plan) {
     const stock = st.get(l.sku) ?? l.stock;
-    const nl = makeLine({ sku: l.sku, needs, ranked: [] }, stock, people, b.dishes);
+    const nl = makeLine(
+      { sku: l.sku, needs, ranked: [] },
+      stock,
+      people,
+      b.dishes,
+    );
     const wasQty = l.qty;
     l.stock = stock;
     l.why = nl.why;
@@ -1128,9 +1210,20 @@ export async function rescaleGuests(
     if (isOpen(l)) {
       // still a problem: rescale its options with the fresh stock
       const opts = l.issue!.options.map((o) =>
-        optionFor(o.sku, st.get(o.sku) ?? o.stock, nl._need, l, people, b.dishes, needs),
+        optionFor(
+          o.sku,
+          st.get(o.sku) ?? o.stock,
+          nl._need,
+          l,
+          people,
+          b.dishes,
+          needs,
+        ),
       );
-      l.issue = { ...iss, options: rankOptions(opts, getProduct(l.sku)?.contains ?? []) };
+      l.issue = {
+        ...iss,
+        options: rankOptions(opts, getProduct(l.sku)?.contains ?? []),
+      };
       if (!l.issue.options.length) needAlt.push({ l, needs });
     } else {
       // new problem (or the swapped-in product no longer fits): a fresh issue, original product kept in `replaced`
@@ -1143,7 +1236,10 @@ export async function rescaleGuests(
   if (needAlt.length) {
     const inBasket = new Set(b.lines.map((l) => l.sku));
     const alt = new Map(
-      needAlt.map(({ l }) => [l.id, (ctx.get(l.id)?.pool ?? []).filter((s) => !inBasket.has(s))]),
+      needAlt.map(({ l }) => [
+        l.id,
+        (ctx.get(l.id)?.pool ?? []).filter((s) => !inBasket.has(s)),
+      ]),
     );
     const altSkus = [...new Set([...alt.values()].flat())];
     if (altSkus.length) {
@@ -1151,7 +1247,12 @@ export async function rescaleGuests(
       calls += sc2.calls;
       const st2 = new Map(sc2.lines.map((x) => [x.sku, x]));
       for (const { l, needs } of needAlt) {
-        const need = makeLine({ sku: l.sku, needs, ranked: [] }, l.stock, people, b.dishes)._need;
+        const need = makeLine(
+          { sku: l.sku, needs, ranked: [] },
+          l.stock,
+          people,
+          b.dishes,
+        )._need;
         const opts = (alt.get(l.id) ?? []).map((s) =>
           optionFor(s, st2.get(s)!, need, l, people, b.dishes, needs),
         );
@@ -1159,7 +1260,8 @@ export async function rescaleGuests(
       }
     }
     for (const { l } of needAlt)
-      if (!l.issue!.options.length) l.issue!.text += " No deliverable alternative found.";
+      if (!l.issue!.options.length)
+        l.issue!.text += " No deliverable alternative found.";
   }
   b.apiCalls += calls;
   recompute(b);
@@ -1177,8 +1279,15 @@ export async function rescaleGuests(
     },
   );
   autoSwapSameUse(b);
-  audit(b.id, "gateway", "mandate", `${b.mandate.state}: ${b.mandate.reasons.join(" ")}`, {
-    total: b.total,
-  });
+  audit(
+    b.id,
+    "gateway",
+    "mandate",
+    `${b.mandate.state}: ${b.mandate.reasons.join(" ")}`,
+    {
+      total: b.total,
+    },
+  );
   return b;
 }
+
