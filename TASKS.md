@@ -92,3 +92,5 @@ S28/S29 verification: build passes;46fast tests pass with186assertions. Pen C5KN
 - [x] @aleksei-codex S34 Added compact accessible cart remove controls for available/unavailable suggested products; removed rows leave the cart and recipe contents, totals follow existing edit routes. Replacement popup hides raw verification errors/retry button and redundant unavailable/VAT copy. Buyer-facing chat/actions/order labels use You instead of Anna; backend identity preserved. Desktop/phone intercepted removal and404 checks pass, mobile controls wrap cleanly; build and62fast tests pass. No gateway restart or real order changes.
 
 - [x] @aleksei-codex S45 Trusted commerce pivot: shared structured direct purchasing, authenticated versioned API, exact approvals, persistent simulation, decision-led demos and evidence; recurrence removed after sponsor clarification; preserve all branding/layouts.
+
+- [ ] @aleksei-codex S46 Single-product comparative quotes: real catalogue shortlist, quantity-aware total-cost ranking, 2 alternatives, source/rejection reasons and server-validated selection. Menus remain compact.
