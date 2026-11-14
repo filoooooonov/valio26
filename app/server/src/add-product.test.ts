@@ -9,13 +9,17 @@ import { resetStore } from "./store";
 import { events } from "./audit";
 
 beforeAll(() => { loadCatalog(); process.env.VALIO_API_KEY ??= "test"; });
-afterEach(() => { setLlm(null); resetStore(); });
+afterEach(() => { setLlm(null); resetStore(); blocked.clear(); blockNextFirst = 0; });
+// SKUs listed here come back with no delivery date (unavailable for the requested day).
+const blocked = new Set<string>();
+let blockNextFirst = 0; // block the first N SKUs of the next availability calls (= the best-ranked matches)
 function fakeValio() {
   setFetcher((async (url: string, init: RequestInit) => {
     const { products: ids } = JSON.parse(init.body as string);
+    if (!String(url).endsWith("/price") && blockNextFirst > 0) for (const s of ids) if (blockNextFirst-- > 0) blocked.add(s);
     const products = ids.map((productId: string) => String(url).endsWith("/price")
       ? { productId, netPriceFound: true, error: false, catalogPrice: { value: 2, valueWithTax: 2.27, validTo: "2026-12-31" }, comparisonPrice: { value: 2 }, comparisonUnit: "L", tax: { taxRate: 13.5 } }
-      : { productId, salesBlock: false, logisticModel: "Stock", closingTime: "2099-01-01T12:00:00+0200", scheduleLines: [{ salesBlock: false, availableAmount: 999, availableDate: "2026-11-16", salesUnit: "ST" }] });
+      : { productId, salesBlock: false, logisticModel: "Stock", closingTime: "2099-01-01T12:00:00+0200", scheduleLines: blocked.has(productId) ? [] : [{ salesBlock: false, availableAmount: 999, availableDate: "2026-11-16", salesUnit: "ST" }] });
     return new Response(JSON.stringify({ products, timeNow: new Date().toISOString() }));
   }) as typeof fetch);
 }
@@ -48,4 +52,29 @@ test("caseSize reads multi-pack names", () => {
   expect(caseSize({ en: "6xVilarnau 75cl White" } as any)).toBe(6);
   expect(caseSize({ en: "Valio butter 500 g" } as any)).toBe(1);
   expect(caseSize({ en: "2 kg potatoes" } as any)).toBe(1);
+  expect(caseSize({ en: "4 x 6 x Pepsi soft drink 0,33 l" } as any)).toBe(24);
+  expect(caseSize({ en: "Fazer Kiireetön Sourdough bread 9 x 370g, pre-baked frozen" } as any)).toBe(9);
+});
+
+test("unavailable best match: says so and adds a deliverable alternative without asking", async () => {
+  setLlm(null); fakeValio();
+  const b = await buildBasket({ request: "salmon soup for 20", people: 20, date: "2026-11-20" });
+  blockNextFirst = 1; // the best-ranked Pepsi can't be delivered
+  const r = await chat(b.id, "add 2 bottles of Pepsi as a drink");
+  const line = r.basket.lines.find((l) => l.id === r.actions[0]?.lineId)!;
+  expect(r.reply).toMatch(/is unavailable for Fri, 20 Nov \(no delivery that day\), so I added .+ instead/);
+  expect(blocked.has(line.sku)).toBe(false);
+  expect(line.stock.deliverable).toBe(true);
+  expect(line.issue).toBeUndefined();
+});
+
+test("nothing deliverable: adds nothing and says why", async () => {
+  setLlm(null); fakeValio();
+  const b = await buildBasket({ request: "salmon soup for 20", people: 20, date: "2026-11-20" });
+  const before = b.lines.length;
+  blockNextFirst = 1000; // every Pepsi candidate, including the wider search
+  const r = await chat(b.id, "add 2 bottles of Pepsi as a drink");
+  expect(r.actions).toHaveLength(0);
+  expect(r.basket.lines.length).toBe(before);
+  expect(r.reply).toMatch(/is unavailable for Fri, 20 Nov .*so I didn't add anything/);
 });

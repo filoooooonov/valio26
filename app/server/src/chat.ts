@@ -21,6 +21,7 @@ export type ChatAction = {
   summary: string;
   lineId?: string;
   label?: string; // add_product: "2 bottles of Pepsi"
+  unavailable?: string; // add_product: the asked-for product couldn't be delivered; an alternative was added
   category?: string; // add_product: where the line went
 };
 export type ChatReply = {
@@ -30,6 +31,14 @@ export type ChatReply = {
   question?: string;
 };
 type Planned = ChatPlan["actions"][number];
+
+const dayName = (d: string) =>
+  new Date(d + "T12:00:00Z").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+// Catalogue names can run on ("... pan bread. Baked with sourdough. Thaw and serve."): first sentence, capped.
+const niceLine = (name: string) => {
+  const s = name.replace(/\s+/g, " ").trim().split(/\.\s/)[0].replace(/\.$/, "");
+  return s.length > 70 ? s.slice(0, 67).replace(/\s+\S*$/, "") + "…" : s;
+};
 
 export const ASK =
   "I can change guests, quantities, swaps or remove items. What should I change?";
@@ -257,12 +266,16 @@ export async function chat(
           by,
         );
         b = r.basket;
+        const where = r.createdCategory ? ` under a new ${r.category} category` : ` to ${r.category}`;
         done.push({
           kind: a.kind,
           lineId: r.line.id,
           label,
           category: r.category,
-          summary: `Added ${label}${r.createdCategory ? ` under a new ${r.category} category` : ` to ${r.category}`}`,
+          unavailable: r.unavailable ? `${r.unavailable.name} is unavailable (${r.unavailable.reason})` : undefined,
+          summary: r.unavailable
+            ? `${r.unavailable.name} is unavailable for ${dayName(b.date)} (${r.unavailable.reason}), so I added ${niceLine(r.line.name)} instead${where}`
+            : `Added ${label}${where}`,
         });
       } else if (a.kind === "replan") {
         if (!a.change)
@@ -297,11 +310,13 @@ export async function chat(
       failed,
       added: done
         .filter((d) => d.kind === "add_product" && d.lineId)
-        .map((d) => ({ lineId: d.lineId, label: d.label, category: d.category })),
+        .map((d) => ({ lineId: d.lineId, label: d.label, category: d.category, unavailable: d.unavailable })),
     },
   );
 
   const total = `New total ${eur(b.total)}${b.openIssues ? ` (${eur(b.totalIfAccepted)} if you accept the suggested swaps)` : ""}.`;
+  if (!done.length && failed.length)
+    return { reply: `${failed.join(". ")}.`.replace(/\.\.$/, "."), actions: done, basket: b };
   const did = done.length
     ? `${done.map((d) => d.summary).join(". ")}.`
     : "I couldn't change anything.";

@@ -991,7 +991,12 @@ export function autoSwapSameUse(b: Basket): void {
 }
 
 // ---------- edits ----------
-export type LineEdit = { qty?: number; chooseOption?: string; included?: boolean; by?: string };
+export type LineEdit = {
+  qty?: number;
+  chooseOption?: string;
+  included?: boolean;
+  by?: string;
+};
 export class HttpError extends Error {
   constructor(
     public status: number,
@@ -1028,9 +1033,14 @@ export function editLine(
   if (!l) throw new HttpError(404, "line not found");
   const by = e.by || "buyer";
   if (e.included != null) {
-    if (typeof e.included !== "boolean" || e.qty != null || e.chooseOption != null)
+    if (
+      typeof e.included !== "boolean" ||
+      e.qty != null ||
+      e.chooseOption != null
+    )
       throw new HttpError(400, "included must be a boolean used on its own");
-    if (isOpen(l)) throw new HttpError(400, "review replacements before changing inclusion");
+    if (isOpen(l))
+      throw new HttpError(400, "review replacements before changing inclusion");
     if (e.included) {
       if (l.excludedQty == null) return recompute(b);
       e = { ...e, qty: l.excludedQty };
@@ -1172,7 +1182,12 @@ export async function rescaleGuests(
 
   // 2. which lines change qty (removed lines stay removed)
   const plan = b.lines
-    .filter((l) => l.excludedQty == null && !(l.issue?.decided === "remove") && ctx.has(l.id))
+    .filter(
+      (l) =>
+        l.excludedQty == null &&
+        !(l.issue?.decided === "remove") &&
+        ctx.has(l.id),
+    )
     .map((l) => {
       const needs = ctx.get(l.id)!.needs;
       const nl = makeLine(
@@ -1311,91 +1326,263 @@ export async function rescaleGuests(
 // Scoped recovery: checking an item never replans the basket.
 export async function checkReplacements(basketId: string, lineId: string) {
   const b = baskets.get(basketId);
-  if (!b) throw new HttpError(404, 'basket not found');
+  if (!b) throw new HttpError(404, "basket not found");
   assertEditable(b);
-  const l = b.lines.find(l => l.id === lineId);
+  const l = b.lines.find((l) => l.id === lineId);
   const lc = basketCtx.get(b.id)?.get(lineId);
-  if (!l || !lc) throw new HttpError(409, 'Planning context unavailable; keep this item unavailable.');
+  if (!l || !lc)
+    throw new HttpError(
+      409,
+      "Planning context unavailable; keep this item unavailable.",
+    );
   const before = recipeFingerprint(b);
   const skus = [...new Set([l.sku, ...lc.pool])];
-  const checked = await checkStock(skus, b.date, b.customer, {fresh: true});
+  const checked = await checkStock(skus, b.date, b.customer, { fresh: true });
   assertEditable(b);
-  if (baskets.get(b.id) !== b || before !== recipeFingerprint(b)) throw new HttpError(409, 'Basket changed; reopen this item.');
-  const stock = new Map(checked.lines.map(s => [s.sku,s]));
-  l.stock = stock.get(l.sku)!; l.total = r2(l.qty * l.stock.price);
-  const issue = issueFor(l.stock,l.qty,b.date);
+  if (baskets.get(b.id) !== b || before !== recipeFingerprint(b))
+    throw new HttpError(409, "Basket changed; reopen this item.");
+  const stock = new Map(checked.lines.map((s) => [s.sku, s]));
+  l.stock = stock.get(l.sku)!;
+  l.total = r2(l.qty * l.stock.price);
+  const issue = issueFor(l.stock, l.qty, b.date);
   if (issue) {
-    const need = makeLine({sku:l.sku, needs:lc.needs, ranked:[]},l.stock,b.people,b.dishes)._need;
-    l.issue = {...issue, options:rankOptions(lc.pool.filter(s => stock.has(s)).map(s => optionFor(s,stock.get(s)!,need,l,b.people,b.dishes,lc.needs)),getProduct(l.sku)?.contains ?? [])};
+    const need = makeLine(
+      { sku: l.sku, needs: lc.needs, ranked: [] },
+      l.stock,
+      b.people,
+      b.dishes,
+    )._need;
+    l.issue = {
+      ...issue,
+      options: rankOptions(
+        lc.pool
+          .filter((s) => stock.has(s))
+          .map((s) =>
+            optionFor(s, stock.get(s)!, need, l, b.people, b.dishes, lc.needs),
+          ),
+        getProduct(l.sku)?.contains ?? [],
+      ),
+    };
   } else delete l.issue;
-  b.checkedAt = checked.checkedAt; b.apiCalls += checked.calls;
-  audit(b.id,'gateway','alternatives',`Rechecked ${skus.length} shortlisted products for ${l.name}; ${l.issue?.options.length ?? 0} suitable replacements.`);
+  b.checkedAt = checked.checkedAt;
+  b.apiCalls += checked.calls;
+  audit(
+    b.id,
+    "gateway",
+    "alternatives",
+    `Rechecked ${skus.length} shortlisted products for ${l.name}; ${l.issue?.options.length ?? 0} suitable replacements.`,
+  );
   return recompute(b);
 }
-const recipeFingerprint = (b: Basket) => JSON.stringify([b.lines,b.dishes,b.people,b.date,b.request]);
-export type RecipeProposal = {id:string; from:string; to:string; before:BasketLine[]; after:BasketLine[]; totalBefore:number; totalAfter:number};
-const recipeProposals = new Map<string,{basketId:string; fingerprint:string; expires:number; next:Basket; ctx:Map<string,LineCtx>; public:RecipeProposal}>();
-export async function proposeRecipeChange(basketId:string,lineId:string):Promise<RecipeProposal> {
+const recipeFingerprint = (b: Basket) =>
+  JSON.stringify([b.lines, b.dishes, b.people, b.date, b.request]);
+export type RecipeProposal = {
+  id: string;
+  from: string;
+  to: string;
+  before: BasketLine[];
+  after: BasketLine[];
+  totalBefore: number;
+  totalAfter: number;
+};
+const recipeProposals = new Map<
+  string,
+  {
+    basketId: string;
+    fingerprint: string;
+    expires: number;
+    next: Basket;
+    ctx: Map<string, LineCtx>;
+    public: RecipeProposal;
+  }
+>();
+export async function proposeRecipeChange(
+  basketId: string,
+  lineId: string,
+): Promise<RecipeProposal> {
   const b = baskets.get(basketId);
-  if (!b) throw new HttpError(404,'basket not found');
+  if (!b) throw new HttpError(404, "basket not found");
   assertEditable(b);
-  const line = b.lines.find(l => l.id === lineId);
+  const line = b.lines.find((l) => l.id === lineId);
   const ctx = basketCtx.get(b.id);
-  const targets = [...new Set(ctx?.get(lineId)?.needs.map(n => n.dishId).filter(Boolean))];
-  if (!line || !ctx || targets.length !== 1) throw new HttpError(409,'This ingredient is shared across recipes. Edit the menu to choose which recipe to change.');
-  const dish = b.dishes.find(d => d.id === targets[0]);
-  if (!dish || !isOpen(line)) throw new HttpError(409,'This recipe no longer needs a replacement.');
-  if (line.issue?.options.length) throw new HttpError(409,'Suitable product replacements are available. Review those first.');
+  const targets = [
+    ...new Set(
+      ctx
+        ?.get(lineId)
+        ?.needs.map((n) => n.dishId)
+        .filter(Boolean),
+    ),
+  ];
+  if (!line || !ctx || targets.length !== 1)
+    throw new HttpError(
+      409,
+      "This ingredient is shared across recipes. Edit the menu to choose which recipe to change.",
+    );
+  const dish = b.dishes.find((d) => d.id === targets[0]);
+  if (!dish || !isOpen(line))
+    throw new HttpError(409, "This recipe no longer needs a replacement.");
+  if (line.issue?.options.length)
+    throw new HttpError(
+      409,
+      "Suitable product replacements are available. Review those first.",
+    );
   const fingerprint = recipeFingerprint(b);
   const apple = /blueberry.*pie|pie.*blueberry/i.test(dish.name);
-  const request = `Prepare ONLY ONE replacement recipe for ${dish.name}, for ${dish.portions} guests. ${apple ? 'Replace it with Apple pie.' : 'Choose a different recipe serving the same role in the menu.'} Unavailable ingredient: ${line.name}, SKU ${line.sku}; do not use it or its equivalents. Preserve all dietary and allergy requirements: ${dish.diet.join(', ')}. Original customer requirements for safety context only: ${b.request}. Return just the new single dish with its complete ingredients. Do not include other original dishes.`;
-  const part = await buildBasket({request,date:b.date,people:dish.portions,customer:b.customer});
+  const request = `Prepare ONLY ONE replacement recipe for ${dish.name}, for ${dish.portions} guests. ${apple ? "Replace it with Apple pie." : "Choose a different recipe serving the same role in the menu."} Unavailable ingredient: ${line.name}, SKU ${line.sku}; do not use it or its equivalents. Preserve all dietary and allergy requirements: ${dish.diet.join(", ")}. Original customer requirements for safety context only: ${b.request}. Return just the new single dish with its complete ingredients. Do not include other original dishes.`;
+  const part = await buildBasket({
+    request,
+    date: b.date,
+    people: dish.portions,
+    customer: b.customer,
+  });
   const partCtx = basketCtx.get(part.id);
-  baskets.delete(part.id); basketCtx.delete(part.id);
-  if (part.planner !== 'llm' || part.dishes.length !== 1 || !partCtx || !part.lines.length || part.openIssues || part.people !== dish.portions || part.dishes[0].portions !== dish.portions || dish.diet.some(d => !part.dishes[0].diet.includes(d)) || part.lines.some(l => l.sku === line.sku || !fits(getProduct(l.sku)!,dish.diet)) || part.notes.some(n => /no catalogue match/i.test(n)) || (apple && !/apple/i.test(part.dishes[0].name)) || part.dishes[0].name.toLowerCase() === dish.name.toLowerCase()) throw new HttpError(422,'Unfortunately, no complete available alternative recipe was found.');
+  baskets.delete(part.id);
+  basketCtx.delete(part.id);
+  if (
+    part.planner !== "llm" ||
+    part.dishes.length !== 1 ||
+    !partCtx ||
+    !part.lines.length ||
+    part.openIssues ||
+    part.people !== dish.portions ||
+    part.dishes[0].portions !== dish.portions ||
+    dish.diet.some((d) => !part.dishes[0].diet.includes(d)) ||
+    part.lines.some(
+      (l) => l.sku === line.sku || !fits(getProduct(l.sku)!, dish.diet),
+    ) ||
+    part.notes.some((n) => /no catalogue match/i.test(n)) ||
+    (apple && !/apple/i.test(part.dishes[0].name)) ||
+    part.dishes[0].name.toLowerCase() === dish.name.toLowerCase()
+  )
+    throw new HttpError(
+      422,
+      "Unfortunately, no complete available alternative recipe was found.",
+    );
   assertEditable(b);
-  if (baskets.get(b.id) !== b || fingerprint !== recipeFingerprint(b)) throw new HttpError(409,'Basket changed while checking the recipe. Try again.');
-  const next = structuredClone(b), nextCtx = new Map(ctx), before:BasketLine[] = [], after:BasketLine[] = [];
+  if (baskets.get(b.id) !== b || fingerprint !== recipeFingerprint(b))
+    throw new HttpError(
+      409,
+      "Basket changed while checking the recipe. Try again.",
+    );
+  const next = structuredClone(b),
+    nextCtx = new Map(ctx),
+    before: BasketLine[] = [],
+    after: BasketLine[] = [];
   next.lines = [];
   for (const old of b.lines) {
     const lc = ctx.get(old.id);
-    if (!lc?.needs.some(n => n.dishId === dish.id)) { next.lines.push(structuredClone(old)); continue; }
-    before.push(old); nextCtx.delete(old.id);
-    const remaining = lc.needs.filter(n => n.dishId !== dish.id);
+    if (!lc?.needs.some((n) => n.dishId === dish.id)) {
+      next.lines.push(structuredClone(old));
+      continue;
+    }
+    before.push(old);
+    nextCtx.delete(old.id);
+    const remaining = lc.needs.filter((n) => n.dishId !== dish.id);
     if (remaining.length) {
-      const baseline = makeLine({sku:old.sku,needs:lc.needs,ranked:[]},old.stock,b.people,b.dishes);
-      const rebuilt = makeLine({sku:old.sku,needs:remaining,ranked:[]},old.stock,b.people,b.dishes);
-      const {_need,_note,...clean} = rebuilt;
-      const kept = {...structuredClone(old),...clean,id:old.id,qty:Math.max(0,old.qty - baseline.qty + rebuilt.qty)};
+      const baseline = makeLine(
+        { sku: old.sku, needs: lc.needs, ranked: [] },
+        old.stock,
+        b.people,
+        b.dishes,
+      );
+      const rebuilt = makeLine(
+        { sku: old.sku, needs: remaining, ranked: [] },
+        old.stock,
+        b.people,
+        b.dishes,
+      );
+      const { _need, _note, ...clean } = rebuilt;
+      const kept = {
+        ...structuredClone(old),
+        ...clean,
+        id: old.id,
+        qty: Math.max(0, old.qty - baseline.qty + rebuilt.qty),
+      };
       kept.total = r2(kept.qty * kept.stock.price);
-      if (kept.issue && !kept.issue.decided) { const issue = issueFor(kept.stock,kept.qty,b.date); if (issue) kept.issue = {...issue,options:[]}; else delete kept.issue; }
-      next.lines.push(kept); after.push(kept); nextCtx.set(old.id,{...lc,needs:remaining});
+      if (kept.issue && !kept.issue.decided) {
+        const issue = issueFor(kept.stock, kept.qty, b.date);
+        if (issue) kept.issue = { ...issue, options: [] };
+        else delete kept.issue;
+      }
+      next.lines.push(kept);
+      after.push(kept);
+      nextCtx.set(old.id, { ...lc, needs: remaining });
     }
   }
-  const replacement = {...part.dishes[0],id:dish.id,portions:dish.portions};
-  next.dishes = b.dishes.map(d => d.id === dish.id ? replacement : structuredClone(d));
+  const replacement = {
+    ...part.dishes[0],
+    id: dish.id,
+    portions: dish.portions,
+  };
+  next.dishes = b.dishes.map((d) =>
+    d.id === dish.id ? replacement : structuredClone(d),
+  );
   for (const l of part.lines) {
-    const id = newId('l');
+    const id = newId("l");
     const lc = partCtx.get(l.id)!;
-    const needs = lc.needs.map(n => ({...n,id:newId('n'),dishId:dish.id}));
-    const added = {...structuredClone(l),id,dishId:dish.id,needIds:needs.map(n=>n.id),usedIn:[replacement.name]};
-    next.lines.push(added); after.push(added); nextCtx.set(id,{...lc,needs});
+    const needs = lc.needs.map((n) => ({
+      ...n,
+      id: newId("n"),
+      dishId: dish.id,
+    }));
+    const added = {
+      ...structuredClone(l),
+      id,
+      dishId: dish.id,
+      needIds: needs.map((n) => n.id),
+      usedIn: [replacement.name],
+    };
+    next.lines.push(added);
+    after.push(added);
+    nextCtx.set(id, { ...lc, needs });
   }
   next.request += `\nApproved recipe change: replace ${dish.name} with ${replacement.name}; all other dishes stay as currently edited.`;
-  next.assumed = [...new Set([...b.assumed,...part.assumed])]; next.apiCalls += part.apiCalls;
+  next.assumed = [...new Set([...b.assumed, ...part.assumed])];
+  next.apiCalls += part.apiCalls;
   recompute(next);
-  const proposal = {id:newId('recipe'),from:dish.name,to:replacement.name,before:structuredClone(before),after:structuredClone(after),totalBefore:r2(before.reduce((s,l)=>s+l.total,0)),totalAfter:r2(after.reduce((s,l)=>s+l.total,0))};
-  for (const [id,p] of recipeProposals) if (p.expires < Date.now()) recipeProposals.delete(id);
-  recipeProposals.set(proposal.id,{basketId:b.id,fingerprint,expires:Date.now()+600000,next,ctx:nextCtx,public:proposal});
+  const proposal = {
+    id: newId("recipe"),
+    from: dish.name,
+    to: replacement.name,
+    before: structuredClone(before),
+    after: structuredClone(after),
+    totalBefore: r2(before.reduce((s, l) => s + l.total, 0)),
+    totalAfter: r2(after.reduce((s, l) => s + l.total, 0)),
+  };
+  for (const [id, p] of recipeProposals)
+    if (p.expires < Date.now()) recipeProposals.delete(id);
+  recipeProposals.set(proposal.id, {
+    basketId: b.id,
+    fingerprint,
+    expires: Date.now() + 600000,
+    next,
+    ctx: nextCtx,
+    public: proposal,
+  });
   return proposal;
 }
-export function applyRecipeChange(basketId:string,proposalId:string,by='buyer') {
-  const b = baskets.get(basketId), p = recipeProposals.get(proposalId);
-  if (!b || !p || p.basketId !== basketId || p.expires < Date.now()) throw new HttpError(409,'Recipe proposal expired. Check again.');
+export function applyRecipeChange(
+  basketId: string,
+  proposalId: string,
+  by = "buyer",
+) {
+  const b = baskets.get(basketId),
+    p = recipeProposals.get(proposalId);
+  if (!b || !p || p.basketId !== basketId || p.expires < Date.now())
+    throw new HttpError(409, "Recipe proposal expired. Check again.");
   assertEditable(b);
-  if (p.fingerprint !== recipeFingerprint(b)) throw new HttpError(409,'Basket changed. Review a new recipe suggestion.');
-  baskets.set(b.id,p.next); basketCtx.set(b.id,p.ctx); recipeProposals.delete(proposalId);
-  audit(b.id,by,'edit',`Recipe changed: ${p.public.from} to ${p.public.to}. Other recipes kept.`,{proposalId});
+  if (p.fingerprint !== recipeFingerprint(b))
+    throw new HttpError(409, "Basket changed. Review a new recipe suggestion.");
+  baskets.set(b.id, p.next);
+  basketCtx.set(b.id, p.ctx);
+  recipeProposals.delete(proposalId);
+  audit(
+    b.id,
+    by,
+    "edit",
+    `Recipe changed: ${p.public.from} to ${p.public.to}. Other recipes kept.`,
+    { proposalId },
+  );
   return recompute(p.next);
 }
 
@@ -1409,30 +1596,86 @@ export type AddProductInput = {
   dishId?: string | null; // existing dish/category it belongs to, if it fits
   category?: string | null; // new category name when nothing fits, e.g. "Drinks"
 };
-const DRINK = /\b(pepsi|cola|coke|soda|juice|mehu|water|vesi|lemonade|limonadi|sparkling|tonic|coffee|kahvi|tea|tee|milk|maito|smoothie|drink|juoma|sprite|fanta|energy)\b/i;
+const DRINK =
+  /\b(pepsi|cola|coke|soda|juice|mehu|water|vesi|lemonade|limonadi|sparkling|tonic|coffee|kahvi|tea|tee|milk|maito|smoothie|drink|juoma|sprite|fanta|energy)\b/i;
 /** Items per sales unit from the catalogue name: "12 x Pepsi 1,5 l" / "6xVilarnau 75cl" -> 12 / 6, else 1. */
 export function caseSize(p?: Product): number {
-  const m = (p?.en || p?.fi || "").match(/^\s*(\d{1,3})\s*[x×]\s*\D/i);
-  return m ? Math.max(1, Number(m[1])) : 1;
+  // Leading "N x" groups multiply: "4 x 6 x Pepsi 0,33 l" = 24 cans.
+  const name = p?.en || p?.fi || "";
+  const m = name.match(/^\s*((?:\d{1,3}\s*[x×]\s*)+)\D/i);
+  if (m)
+    return Math.max(
+      1,
+      m[1]
+        .split(/[x×]/i)
+        .map((n) => Number(n.trim()))
+        .filter((n) => n > 0)
+        .reduce((a, n) => a * n, 1),
+    );
+  // Mid-name "N x size": "Sourdough bread 9 x 370g" = 9 loaves.
+  const mid = name.match(
+    /\b(\d{1,3})\s*[x×]\s*\d+(?:[.,]\d+)?\s*(?:g|kg|ml|cl|dl|l)\b/i,
+  );
+  return mid ? Math.max(1, Number(mid[1])) : 1;
 }
-const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "extras";
+const niceProduct = (sku: string) => {
+  const p = getProduct(sku);
+  const s = (p?.en || p?.fi || sku).replace(/\s+/g, " ").trim().split(/\.\s/)[0].replace(/\.$/, "");
+  return s.length > 70 ? s.slice(0, 67).replace(/\s+\S*$/, "") + "…" : s;
+};
+const UNAVAILABLE: Record<string, string> = {
+  cutoff_passed: "the order cut-off has passed",
+  no_delivery: "no delivery that day",
+  short: "not enough in stock",
+  no_price: "no price for your account",
+  not_found: "not in Valio's system",
+};
+const slug = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "extras";
 
 /** Where an added product goes: the dish Claude named, else a matching category, else a new one. */
-function placeFor(b: Basket, input: AddProductInput): { dishId: string; created?: Dish } {
-  if (input.dishId && b.dishes.some((d) => d.id === input.dishId)) return { dishId: input.dishId };
-  const name = input.category?.trim() || (DRINK.test(`${input.item} ${input.label}`) ? "Drinks" : "Extras");
-  const existing = b.dishes.find((d) => d.name.toLowerCase() === name.toLowerCase() || d.id === slug(name));
+function placeFor(
+  b: Basket,
+  input: AddProductInput,
+): { dishId: string; created?: Dish } {
+  if (input.dishId && b.dishes.some((d) => d.id === input.dishId))
+    return { dishId: input.dishId };
+  const name =
+    input.category?.trim() ||
+    (DRINK.test(`${input.item} ${input.label}`) ? "Drinks" : "Extras");
+  const existing = b.dishes.find(
+    (d) => d.name.toLowerCase() === name.toLowerCase() || d.id === slug(name),
+  );
   if (existing) return { dishId: existing.id };
   let id = slug(name);
   while (b.dishes.some((d) => d.id === id)) id += "-2";
-  return { dishId: id, created: { id, name, portions: b.people, basis: "added from chat", diet: [] } };
+  return {
+    dishId: id,
+    created: {
+      id,
+      name,
+      portions: b.people,
+      basis: "added from chat",
+      diet: [],
+    },
+  };
 }
 
 export async function addProduct(
   basketId: string,
   input: AddProductInput,
   by = "buyer",
-): Promise<{ basket: Basket; line: BasketLine; category: string; createdCategory: boolean }> {
+): Promise<{
+  basket: Basket;
+  line: BasketLine;
+  category: string;
+  createdCategory: boolean;
+  /** The best match the buyer asked for, when it couldn't be delivered and an alternative was added instead. */
+  unavailable?: { name: string; reason: string };
+}> {
   const b = baskets.get(basketId);
   if (!b) throw new HttpError(404, "basket not found");
   assertEditable(b);
@@ -1451,38 +1694,100 @@ export async function addProduct(
     diet: [],
   };
   const cands = candidatesFor(need, []);
-  if (!cands.length) throw new HttpError(404, `no catalogue match for "${input.item}"`);
+  if (!cands.length)
+    throw new HttpError(404, `no catalogue match for "${input.item}"`);
   let ranked = cands.map((p) => p.id);
+  let llmRanked = false;
   const llm = getLlm();
   if (llm) {
     try {
-      const picks = await llm.pick(input.label, [{ id: need.id, item: need.item, total: `${input.amount} ${unit}`, diet: [], candidates: cands.map(toCandidate) }]);
+      const picks = await llm.pick(input.label, [
+        {
+          id: need.id,
+          item: need.item,
+          total: `${input.amount} ${unit}`,
+          diet: [],
+          candidates: cands.map(toCandidate),
+        },
+      ]);
       const ok = new Set(ranked);
-      const r = picks.picks.find((p) => p.needId === need.id)?.ranked.filter((s) => ok.has(s)) ?? [];
-      if (r.length) ranked = r;
-      else throw new HttpError(404, `no catalogue match for "${input.item}"`);
+      const r =
+        picks.picks
+          .find((p) => p.needId === need.id)
+          ?.ranked.filter((s) => ok.has(s)) ?? [];
+      if (r.length) {
+        ranked = r;
+        llmRanked = true;
+      } else throw new HttpError(404, `no catalogue match for "${input.item}"`);
     } catch (e) {
       if (e instanceof HttpError) throw e; // Claude said nothing fits
     }
   }
-  // ONE price/stock call for the top few; prefer the first deliverable one.
-  const top = ranked.slice(0, 6);
+  // ONE price/stock call for the top few. If none of them can be delivered, look further on our own (one more call):
+  // the rest of Claude's ranking, or other catalogue matches when Claude didn't rank. The buyer never has to ask.
+  let top = ranked.slice(0, 6);
   const sc = await checkStock(top, b.date, b.customer);
-  b.apiCalls += sc.calls;
+  let calls = sc.calls;
   const st = new Map(sc.lines.map((l) => [l.sku, l]));
+  const usable = (s: string) =>
+    !!st.get(s)?.deliverable && st.get(s)!.status === "ok";
+  if (!top.some(usable)) {
+    const more = [
+      ...new Set([
+        ...ranked.slice(6),
+        ...(llmRanked ? [] : cands.map((p) => p.id)),
+      ]),
+    ]
+      .filter((s) => !top.includes(s))
+      .slice(0, 10);
+    if (more.length) {
+      const sc2 = await checkStock(more, b.date, b.customer);
+      calls += sc2.calls;
+      for (const l of sc2.lines) st.set(l.sku, l);
+      top = [...top, ...more];
+    }
+  }
+  b.apiCalls += calls;
+  const pname = (s: string) => niceProduct(s);
+  const first = top[0];
+  const firstWhy =
+    UNAVAILABLE[st.get(first)?.status ?? "not_found"] ?? "unavailable";
+  const ok = top.filter(usable);
+  if (!ok.length) {
+    audit(
+      b.id,
+      "gateway",
+      "add_failed",
+      `${input.label}: ${pname(first)} unavailable (${firstWhy}); no deliverable alternative`,
+      { checked: top, apiCalls: calls },
+    );
+    throw new HttpError(
+      409,
+      `${pname(first)} is unavailable for ${dayLabel(b.date)} (${firstWhy}), and none of the ${top.length - 1} alternatives I checked can be delivered either, so I didn't add anything`,
+    );
+  }
   // Counted items: avoid a 12-bottle case when the buyer asked for 2 bottles, if a smaller deliverable pack exists.
-  const fitsCount = (s: string) => unit !== "pcs" || caseSize(getProduct(s)) <= Math.max(1, input.amount);
+  const caseOf = (s: string) => caseSize(getProduct(s));
+  const fitsCount = (s: string) =>
+    unit !== "pcs" || caseOf(s) <= Math.max(1, input.amount);
   const sku =
-    top.find((s) => st.get(s)?.deliverable && fitsCount(s)) ??
-    top.find((s) => st.get(s)?.deliverable) ??
-    top[0];
+    ok.find(fitsCount) ??
+    (unit === "pcs" ? [...ok].sort((x, y) => caseOf(x) - caseOf(y))[0] : ok[0]);
+  const unavailable = usable(first)
+    ? undefined
+    : { name: pname(first), reason: firstWhy };
 
   const place = placeFor(b, input);
   if (place.created) b.dishes.push(place.created);
   need.dishId = place.dishId;
   const category = b.dishes.find((d) => d.id === place.dishId)!.name;
 
-  const made = makeLine({ sku, needs: [need], ranked: top }, st.get(sku)!, b.people, b.dishes);
+  const made = makeLine(
+    { sku, needs: [need], ranked: top },
+    st.get(sku)!,
+    b.people,
+    b.dishes,
+  );
   if (unit === "pcs") {
     // "2 bottles" / "3 packs": that many items. A case of N (e.g. "12 x Pepsi 1,5 l") covers N of them.
     const n = caseSize(getProduct(sku));
@@ -1503,13 +1808,23 @@ export async function addProduct(
     same.why = `${same.why} + ${input.label}`;
     out = same;
   } else {
-    const n = Math.max(0, ...b.lines.map((l) => Number(l.id.replace(/\D/g, "")) || 0)) + 1;
+    const n =
+      Math.max(0, ...b.lines.map((l) => Number(l.id.replace(/\D/g, "")) || 0)) +
+      1;
     line.id = `l${n}`;
     const iss = issueFor(line.stock, line.qty, b.date);
     if (iss) {
-      const opts = top.filter((s) => s !== sku && st.get(s)).map((s) => optionFor(s, st.get(s)!, _need, line, b.people, b.dishes, [need]));
-      line.issue = { ...iss, options: rankOptions(opts, getProduct(sku)?.contains ?? []) };
-      if (!line.issue.options.length) line.issue.text += " No deliverable alternative found.";
+      const opts = top
+        .filter((s) => s !== sku && st.get(s))
+        .map((s) =>
+          optionFor(s, st.get(s)!, _need, line, b.people, b.dishes, [need]),
+        );
+      line.issue = {
+        ...iss,
+        options: rankOptions(opts, getProduct(sku)?.contains ?? []),
+      };
+      if (!line.issue.options.length)
+        line.issue.text += " No deliverable alternative found.";
     }
     b.lines.push(line);
     const ctx = basketCtx.get(b.id) ?? new Map<string, LineCtx>();
@@ -1522,8 +1837,21 @@ export async function addProduct(
     b.id,
     by,
     "add",
-    `Added ${input.label}: ${out.name}, ${line.qty} × ${out.pack}${place.created ? ` (new category ${category})` : ` (in ${category})`}`,
-    { lineId: out.id, sku, category, createdCategory: !!place.created, apiCalls: sc.calls },
+    `Added ${input.label}: ${out.name}, ${line.qty} × ${out.pack}${place.created ? ` (new category ${category})` : ` (in ${category})`}${unavailable ? `; ${unavailable.name} unavailable (${unavailable.reason})` : ""}`,
+    {
+      lineId: out.id,
+      sku,
+      category,
+      createdCategory: !!place.created,
+      apiCalls: calls,
+      unavailable,
+    },
   );
-  return { basket: b, line: out, category, createdCategory: !!place.created };
+  return {
+    basket: b,
+    line: out,
+    category,
+    createdCategory: !!place.created,
+    unavailable,
+  };
 }
