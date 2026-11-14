@@ -38,10 +38,21 @@ The verified script below records the earlier direct-basket run; the app now add
 | 6 | Mikko approves after a fresh price and stock check. | In ?view=mikko select this request and Approve and send; return to Anna and View order. | Local status placed, fixed snapshot, named approver and complete audit trail. No real sponsor order submission. | Yes, 10:29-10:32 |
 | 7 | An outside agent uses the same gateway and cannot approve itself. | In video/: node record/agent-milk.ts. | Five MCP tools; 1000 one-litre lactose-free milk packs at EUR1560; pending approval; self-approval HTTP403. | Yes, 10:30 |
 
+## Four pillars: where each one shows (spec: TRUST.md)
+
+| Pillar (brief) | Demo moment | Say |
+|---|---|---|
+| **Trust protocol** | Step 7: the outside agent runs `check_stock`, then `verify_receipt`. The real receipt verifies; a copy forged at half price is rejected. | "Every price and stock fact is a signed receipt. Any agent can check it against our public key at /.well-known." |
+| **Guardrails model** | Footer link **Who decides what**: the gateway, buyer and approver columns. Step 5: the limits trigger. Step 7: self-approval gets HTTP 403. | "The rules live in the gateway, not in a prompt. Same rules for the webshop and for any agent." |
+| **Response logic** | Step 4: the issue card shows **Best / Better / Good** with a one-line reason (allergens, on-time %, price, CO₂). Short lines offer "Take the N available". | "Ranked inside Valio's own assortment: safety first, then reliability, price and CO₂." |
+| **Audit trail** | Step 6: **View order**. Switch **Buyer view** / **Valio view**; "Record intact" badge; **Download audit record (JSON)**. | "Every step is hash-chained. Valio and the buyer read the same record, and any change is detected." |
+
+Check before recording: `node video/record/agent-milk.ts` output includes "signature valid" and "forged copy … rejected".
+
 ## Evidence and remaining limits
 
 See [demo-verification](docs/demo-verification.md) for commands, identifiers and screenshots.
-The current UI's sent-to-Valio wording, stock-hold claim and change-deadline copy are prototype assumptions, not sponsor guarantees. The header can show a gluten-free count inferred from planned dishes although that diet was not requested; do not describe that as a verified guest requirement. Sustainability ranking and three consistently ranked alternatives were not established in this run.
+The UI now says an approved order is recorded locally and shows the order cut-off instead of a stock hold (fixed 14 Nov evening). The header can show a gluten-free count inferred from planned dishes although that diet was not requested; do not describe that as a verified guest requirement. Sustainability ranking and three consistently ranked alternatives were not established in this run.
 
 ## Fallback
 
