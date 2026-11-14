@@ -106,3 +106,6 @@ State is in memory: restarting the server clears baskets and orders.
 Every var is listed in `.env.example`. Add new ones there in the same PR.
 
 Frozen metadata (additive): BasketLine.frozen and Option.frozen indicate freezer storage from catalogue freezeTemperature labels, with explicit frozen/deepfrozen/deepfrost/FRO name fallback. Numeric storage codes are not interpreted. Absent fields mean unknown for older clients.
+
+## Additive replacement/recipe review routes (S32)
+POST /api/basket/:id/lines/:lineId/replacements/check refreshes the original SKU and its shortlisted same-use options; returns Basket. POST /api/basket/:id/lines/:lineId/recipe-change prepares a stock-checked single-dish alternative without changing the source basket; returns {id, from, to, before, after, totalBefore, totalAfter}. POST /api/basket/:id/recipe-change/:proposalId/apply applies only that reviewed dish and affected ingredient quantities to the same basket, rejecting stale or locked baskets (409). Recipe proposals are ephemeral; all orders retain existing mandate and approval rules.
