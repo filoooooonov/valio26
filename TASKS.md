@@ -70,3 +70,5 @@ S22/S23 final refinements: menu white against lavender; whole-row selection and3
 - [x] @aleksei-codex S30 Scheduled menus overview and separate create/edit screen: weekly weekdays, purchasing lead/time versus delivery, guest/diet/location details, review threshold, monthly estimates, pause/resume/skip/delete, Repeat this order, saved-menu reuse and gateway previous-order entry. Device-local persistence and manual draft preparation are explicit; unattended scheduling, account sync, campaign pricing and notifications remain unconnected. Desktop/mobile workflows and failure states verified; build and calendar tests pass.
 
 S28/S29 verification: build passes;46fast tests pass with186assertions. Pen C5KNi saved with live desktop/phone previews. Actual issue-photo hook uses exact SKU images when available; b_5gzrni's two unavailable originals have no sponsor image URLs and retain honest icon fallbacks. No new recording or push.
+
+- [~] @aleksei-codex S31 Redesign recurring-order editor as narrow, compact form with inherited-menu summary, clear delivery/purchasing groups, optional cost disclosure and inline date preview. (rubric: user need)
