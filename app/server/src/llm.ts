@@ -202,8 +202,12 @@ Map the text to gateway actions ONLY, using the basket summary:
 - remove_line {lineId}: drop a product from the basket.
 - add_product {product, queries, amount, unit, label, dishId, category}: the buyer names a product to add ("add 2 bottles of Pepsi as a drink", "3 kg butter too"). Use dishId only if the product is genuinely an ingredient or part of that dish; otherwise dishId null and a short new category (drinks go to "Drinks").
 - replan {change}: anything that changes the menu itself (add/replace a dish, a new diet); describe the change. Never use replan to add a single named product.
-Never invent line ids or skus. Use null for fields an action does not use. If the text is unclear or asks for
-something you cannot map, return no actions and a short question.`;
+Never invent line ids or skus. Use null for fields an action does not use.
+Use the conversation so far: short follow-ups ("yes", "1 pack", "the first one", "do it", "make it 3") answer your last
+question or continue the last change, so act on them instead of asking again.
+Counted products ("2 bottles of Pepsi"): just add_product with that count and unit pcs; the gateway rounds up to whole
+cases and tells the chef, so never ask about pack sizes first. If the product is already a line, use set_qty on it.
+Ask a short question (and return no actions) only when you truly cannot tell what to change.`;
 
 // Menu step (CONTRACT S35): request -> course list, and natural-language edits of that list. Language work only.
 export const COURSES = [
@@ -263,7 +267,7 @@ export interface Llm {
     date: string,
   ): Promise<Draft>;
   pick(request: string, needs: PickInput[]): Promise<Picks>;
-  chat?(text: string, basketSummary: string): Promise<ChatPlan>;
+  chat?(text: string, basketSummary: string, history?: string): Promise<ChatPlan>;
   menu?(input: MenuInput): Promise<MenuOut>;
 }
 
@@ -344,7 +348,7 @@ export class ClaudeLlm implements Llm {
     return r.parsed_output;
   }
 
-  async chat(text: string, basketSummary: string): Promise<ChatPlan> {
+  async chat(text: string, basketSummary: string, history = ""): Promise<ChatPlan> {
     const r = await this.client.beta.messages.parse({
       model: MODEL,
       max_tokens: 4000,
@@ -357,7 +361,7 @@ export class ClaudeLlm implements Llm {
           role: "user",
           content: `Basket:
 ${basketSummary}
-
+${history ? `\nConversation so far (oldest first):\n${history}\n` : ""}
 Chef: ${text}`,
         },
       ],

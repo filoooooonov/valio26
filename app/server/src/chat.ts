@@ -1,7 +1,7 @@
 // Chat -> gateway actions (CONTRACT v1.2: POST /api/basket/:id/chat). Claude maps the chef's text to actions
 // ONLY; every action runs through the same handlers and rules as the buttons (rescaleGuests, editLine,
 // buildBasket). Claude never edits prices or the mandate. Without Claude, a small deterministic parser runs.
-import { audit } from "./audit";
+import { audit, events } from "./audit";
 import { getLlm, type ChatPlan } from "./llm";
 import { eur } from "./policy";
 import {
@@ -43,10 +43,28 @@ export function summarize(b: Basket): string {
     return `${head} | OPEN ISSUE: ${l.issue!.text} | options: ${opts || "none"}${l.issue!.kind === "short" ? "; keep" : ""}; remove`;
   });
   return [
+    `Request: ${b.request.split("\n")[0].slice(0, 300)}`,
     `Guests: ${b.people}`,
     `Dishes (id = name): ${b.dishes.map((d) => `${d.id} = ${d.name} × ${d.portions}`).join(", ") || "-"}`,
     ...rows,
   ].join("\n");
+}
+
+/** The last chat turns for this basket (and the basket it was replanned from), oldest first, so follow-ups
+ *  like "yeah 1 pack" are read against the assistant's previous question. Excludes the message being handled. */
+export function chatHistory(basketId: string, max = 10): string {
+  const own = events(basketId);
+  const from = (own.find((e) => e.kind === "replan" && (e.data as { from?: string })?.from)?.data as { from?: string } | undefined)?.from;
+  const all = [...(from ? events(from) : []), ...own];
+  const turns = all
+    .filter((e) => e.kind === "chat" || e.kind === "chat_question")
+    .map((e) =>
+      e.actor === "assistant"
+        ? `Assistant: ${e.summary.replace(/^(Claude|parser):\s*/, "")}`
+        : `Chef: ${e.summary.replace(/^"|"$/g, "")}`,
+    );
+  turns.pop(); // the current message, audited just before this is called
+  return turns.slice(-max).join("\n");
 }
 
 // ---------- deterministic fallback parser ----------
@@ -173,13 +191,15 @@ export async function chat(
   const llm = getLlm();
   try {
     if (!llm?.chat) throw new Error("no LLM");
-    plan = await llm.chat(text, summarize(b));
+    plan = await llm.chat(text, summarize(b), chatHistory(b.id));
     via = "Claude";
   } catch {
     plan = parseFallback(text, b);
   }
   if (!plan.actions.length) {
     const question = plan.question || ASK;
+    // Own kind so the thread (which shows the question live) doesn't render it twice; chatHistory reads it.
+    audit(b.id, "assistant", "chat_question", question);
     return { reply: question, actions: [], basket: recompute(b), question };
   }
 
