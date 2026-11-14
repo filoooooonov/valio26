@@ -141,8 +141,11 @@ export type AuditEvent = {
 };
 
 export type ChatAction = {
-  kind: "set_guests" | "set_qty" | "choose_option" | "remove_line" | "replan";
+  kind: "set_guests" | "set_qty" | "choose_option" | "remove_line" | "add_product" | "replan";
   summary: string;
+  lineId?: string;
+  label?: string;
+  category?: string;
 };
 export type ChatReply = {
   reply: string;

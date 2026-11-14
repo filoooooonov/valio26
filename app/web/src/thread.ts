@@ -30,6 +30,8 @@ export type Item =
       did?: Did[];
       route?: boolean;
       log?: number;
+      // CONTRACT S37: products added from chat, rendered as "Added …" cards with the live basket line.
+      added?: { lineId: string; label: string; category?: string }[];
     }
   | {
       kind: "system";
@@ -320,6 +322,7 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
             key,
             at: e.at,
             text: e.summary.replace(/^[^:]*:\s*/, ""),
+            added: (e.data as { added?: { lineId: string; label: string; category?: string }[] } | undefined)?.added,
           });
           awaitingReply = null;
         } else

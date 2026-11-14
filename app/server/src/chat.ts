@@ -5,6 +5,7 @@ import { audit } from "./audit";
 import { getLlm, type ChatPlan } from "./llm";
 import { eur } from "./policy";
 import {
+  addProduct,
   buildBasket,
   editLine,
   HttpError,
@@ -16,8 +17,11 @@ import {
 import { baskets } from "./store";
 
 export type ChatAction = {
-  kind: "set_guests" | "set_qty" | "choose_option" | "remove_line" | "replan";
+  kind: "set_guests" | "set_qty" | "choose_option" | "remove_line" | "add_product" | "replan";
   summary: string;
+  lineId?: string;
+  label?: string; // add_product: "2 bottles of Pepsi"
+  category?: string; // add_product: where the line went
 };
 export type ChatReply = {
   reply: string;
@@ -40,7 +44,7 @@ export function summarize(b: Basket): string {
   });
   return [
     `Guests: ${b.people}`,
-    `Dishes: ${b.dishes.map((d) => `${d.name} × ${d.portions}`).join(", ") || "-"}`,
+    `Dishes (id = name): ${b.dishes.map((d) => `${d.id} = ${d.name} × ${d.portions}`).join(", ") || "-"}`,
     ...rows,
   ].join("\n");
 }
@@ -86,7 +90,30 @@ export function parseFallback(
     qty: null,
     option: null,
     change: null,
+    product: null,
+    queries: null,
+    amount: null,
+    unit: null,
+    label: null,
+    dishId: null,
+    category: null,
   };
+  const add = t.match(
+    /\b(?:add|include)\s+(?:also\s+)?(\d+(?:[.,]\d+)?)\s*(kg|kilos?|l|litres?|liters?|bottles?|cans?|packs?|packages?|cases?|boxes?|pcs|pieces?)?\s*(?:of\s+)?(.+?)(?:\s+(?:as|for)\s+(?:an?\s+|the\s+)?(.+?))?[.!]?$/i,
+  );
+  if (add) {
+    const amount = Number(add[1].replace(",", "."));
+    const u = (add[2] ?? "").toLowerCase();
+    const unit = /^k/.test(u) ? "kg" : /^l/.test(u) ? "l" : "pcs";
+    const product = add[3].trim();
+    const label = `${add[1]}${add[2] ? " " + add[2] : ""} ${product}`;
+    const hint = add[4]?.trim().replace(/s?$/, "s").replace(/^./, (c) => c.toUpperCase());
+    return {
+      actions: [
+        { ...base, kind: "add_product", product, queries: [product], amount, unit, label, category: hint ?? null },
+      ],
+    };
+  }
   const g = t.match(
     /(\d+)\s*(guests?|people|persons?|pax|portions|hengelle|henkeä)/i,
   );
@@ -192,6 +219,31 @@ export async function chat(
           ? editLine(b.id, line.id, { chooseOption: "remove", by })
           : editLine(b.id, line.id, { qty: 0, by });
         done.push({ kind: a.kind, summary: `Removed ${line.name}` });
+      } else if (a.kind === "add_product") {
+        if (!a.product || !a.amount)
+          throw new HttpError(400, "which product and how many?");
+        const label = a.label ?? `${a.amount} ${a.product}`;
+        const r = await addProduct(
+          b.id,
+          {
+            item: a.product,
+            queries: a.queries ?? [a.product],
+            amount: a.amount,
+            unit: a.unit ?? "pcs",
+            label,
+            dishId: a.dishId,
+            category: a.category,
+          },
+          by,
+        );
+        b = r.basket;
+        done.push({
+          kind: a.kind,
+          lineId: r.line.id,
+          label,
+          category: r.category,
+          summary: `Added ${label}${r.createdCategory ? ` under a new ${r.category} category` : ` to ${r.category}`}`,
+        });
       } else if (a.kind === "replan") {
         if (!a.change)
           throw new HttpError(400, "what should change in the menu?");
@@ -223,6 +275,9 @@ export async function chat(
     {
       actions: done,
       failed,
+      added: done
+        .filter((d) => d.kind === "add_product" && d.lineId)
+        .map((d) => ({ lineId: d.lineId, label: d.label, category: d.category })),
     },
   );
 

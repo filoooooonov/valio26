@@ -76,3 +76,23 @@
 .chat .stock-problem .ans--primary{background:var(--teal);border-color:transparent;color:var(--white);box-shadow:none}
 .chat .stock-problem .ans--primary:not(:disabled):hover{background:var(--teal-deep);border-color:transparent}
 
+
+/* S37 "Added …" card in chat: kit Card + kit ProductTile, layout only. */
+.added-card {
+  padding: var(--s-12) var(--s-16);
+  gap: var(--s-10);
+  border: 1px solid var(--light-blue);
+}
+.added-card .card__head .icon { color: var(--teal); }
+.added-card .card__title { font-size: var(--fs-14); }
+.added-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--s-12);
+}
+.added-row .tile { grid-area: auto; }
+.added-row__text { display: flex; flex-direction: column; min-width: 0; }
+.added-row__name { font-size: var(--fs-14); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.added-row__meta { font-size: var(--fs-13); color: var(--muted); }
+.added-row__price { font-size: var(--fs-14); font-weight: 600; font-variant-numeric: tabular-nums; }

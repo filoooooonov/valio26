@@ -1381,3 +1381,132 @@ export function applyRecipeChange(basketId:string,proposalId:string,by='buyer') 
   audit(b.id,by,'edit',`Recipe changed: ${p.public.from} to ${p.public.to}. Other recipes kept.`,{proposalId});
   return recompute(p.next);
 }
+
+// ---------- add a named product from chat (CONTRACT S37) ----------
+export type AddProductInput = {
+  item: string; // short product noun, e.g. "Pepsi"
+  queries: string[]; // catalogue search terms
+  amount: number; // how many units (pcs) or kg / l
+  unit: "pcs" | "kg" | "l";
+  label: string; // buyer wording, e.g. "2 bottles of Pepsi"
+  dishId?: string | null; // existing dish/category it belongs to, if it fits
+  category?: string | null; // new category name when nothing fits, e.g. "Drinks"
+};
+const DRINK = /\b(pepsi|cola|coke|soda|juice|mehu|water|vesi|lemonade|limonadi|sparkling|tonic|coffee|kahvi|tea|tee|milk|maito|smoothie|drink|juoma|sprite|fanta|energy)\b/i;
+/** Items per sales unit from the catalogue name: "12 x Pepsi 1,5 l" / "6xVilarnau 75cl" -> 12 / 6, else 1. */
+export function caseSize(p?: Product): number {
+  const m = (p?.en || p?.fi || "").match(/^\s*(\d{1,3})\s*[x×]\s*\D/i);
+  return m ? Math.max(1, Number(m[1])) : 1;
+}
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "extras";
+
+/** Where an added product goes: the dish Claude named, else a matching category, else a new one. */
+function placeFor(b: Basket, input: AddProductInput): { dishId: string; created?: Dish } {
+  if (input.dishId && b.dishes.some((d) => d.id === input.dishId)) return { dishId: input.dishId };
+  const name = input.category?.trim() || (DRINK.test(`${input.item} ${input.label}`) ? "Drinks" : "Extras");
+  const existing = b.dishes.find((d) => d.name.toLowerCase() === name.toLowerCase() || d.id === slug(name));
+  if (existing) return { dishId: existing.id };
+  let id = slug(name);
+  while (b.dishes.some((d) => d.id === id)) id += "-2";
+  return { dishId: id, created: { id, name, portions: b.people, basis: "added from chat", diet: [] } };
+}
+
+export async function addProduct(
+  basketId: string,
+  input: AddProductInput,
+  by = "buyer",
+): Promise<{ basket: Basket; line: BasketLine; category: string; createdCategory: boolean }> {
+  const b = baskets.get(basketId);
+  if (!b) throw new HttpError(404, "basket not found");
+  assertEditable(b);
+  if (!input.item?.trim()) throw new HttpError(400, "which product?");
+  if (!(input.amount > 0)) throw new HttpError(400, "how many?");
+  const unit = input.unit === "kg" || input.unit === "l" ? input.unit : "pcs";
+  const need: Need = {
+    id: newId("add"),
+    dishId: null,
+    item: input.item.trim(),
+    queries: (input.queries ?? []).filter(Boolean).slice(0, 3),
+    perPortion: null,
+    perPortionUnit: null,
+    totalQty: input.amount,
+    totalUnit: unit,
+    diet: [],
+  };
+  const cands = candidatesFor(need, []);
+  if (!cands.length) throw new HttpError(404, `no catalogue match for "${input.item}"`);
+  let ranked = cands.map((p) => p.id);
+  const llm = getLlm();
+  if (llm) {
+    try {
+      const picks = await llm.pick(input.label, [{ id: need.id, item: need.item, total: `${input.amount} ${unit}`, diet: [], candidates: cands.map(toCandidate) }]);
+      const ok = new Set(ranked);
+      const r = picks.picks.find((p) => p.needId === need.id)?.ranked.filter((s) => ok.has(s)) ?? [];
+      if (r.length) ranked = r;
+      else throw new HttpError(404, `no catalogue match for "${input.item}"`);
+    } catch (e) {
+      if (e instanceof HttpError) throw e; // Claude said nothing fits
+    }
+  }
+  // ONE price/stock call for the top few; prefer the first deliverable one.
+  const top = ranked.slice(0, 6);
+  const sc = await checkStock(top, b.date, b.customer);
+  b.apiCalls += sc.calls;
+  const st = new Map(sc.lines.map((l) => [l.sku, l]));
+  // Counted items: avoid a 12-bottle case when the buyer asked for 2 bottles, if a smaller deliverable pack exists.
+  const fitsCount = (s: string) => unit !== "pcs" || caseSize(getProduct(s)) <= Math.max(1, input.amount);
+  const sku =
+    top.find((s) => st.get(s)?.deliverable && fitsCount(s)) ??
+    top.find((s) => st.get(s)?.deliverable) ??
+    top[0];
+
+  const place = placeFor(b, input);
+  if (place.created) b.dishes.push(place.created);
+  need.dishId = place.dishId;
+  const category = b.dishes.find((d) => d.id === place.dishId)!.name;
+
+  const made = makeLine({ sku, needs: [need], ranked: top }, st.get(sku)!, b.people, b.dishes);
+  if (unit === "pcs") {
+    // "2 bottles" / "3 packs": that many items. A case of N (e.g. "12 x Pepsi 1,5 l") covers N of them.
+    const n = caseSize(getProduct(sku));
+    made.qty = Math.max(1, Math.ceil(input.amount / n));
+    made.total = Math.round(made.qty * made.stock.price * 100) / 100;
+    made.why =
+      n > 1
+        ? `${input.label} → ${made.qty} case${made.qty > 1 ? "s" : ""} of ${n} (sold by the case${made.qty * n > input.amount ? `, ${made.qty * n - input.amount} extra` : ""})`
+        : `${input.label} → ${made.qty} × ${made.pack}`;
+    made._note = undefined;
+  }
+  const { _need, _note, ...line } = made;
+  const same = b.lines.find((l) => l.sku === sku && l.qty > 0 && !isOpen(l));
+  let out: BasketLine;
+  if (same) {
+    same.qty = r2(same.qty + line.qty);
+    same.total = r2(same.qty * same.stock.price);
+    same.why = `${same.why} + ${input.label}`;
+    out = same;
+  } else {
+    const n = Math.max(0, ...b.lines.map((l) => Number(l.id.replace(/\D/g, "")) || 0)) + 1;
+    line.id = `l${n}`;
+    const iss = issueFor(line.stock, line.qty, b.date);
+    if (iss) {
+      const opts = top.filter((s) => s !== sku && st.get(s)).map((s) => optionFor(s, st.get(s)!, _need, line, b.people, b.dishes, [need]));
+      line.issue = { ...iss, options: rankOptions(opts, getProduct(sku)?.contains ?? []) };
+      if (!line.issue.options.length) line.issue.text += " No deliverable alternative found.";
+    }
+    b.lines.push(line);
+    const ctx = basketCtx.get(b.id) ?? new Map<string, LineCtx>();
+    ctx.set(line.id, { needs: [need], pool: top.filter((s) => s !== sku) });
+    basketCtx.set(b.id, ctx);
+    out = line;
+  }
+  recompute(b);
+  audit(
+    b.id,
+    by,
+    "add",
+    `Added ${input.label}: ${out.name}, ${line.qty} × ${out.pack}${place.created ? ` (new category ${category})` : ` (in ${category})`}`,
+    { lineId: out.id, sku, category, createdCategory: !!place.created, apiCalls: sc.calls },
+  );
+  return { basket: b, line: out, category, createdCategory: !!place.created };
+}

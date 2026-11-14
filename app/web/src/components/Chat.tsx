@@ -26,6 +26,8 @@ import { firstName, orderLabel, PEOPLE, shortName, type Item } from "../thread";
 import type { Phase } from "../App";
 import { AssistantBadge, ThinkingMark } from "./Mark";
 import { ReplacementNotice } from './ReplacementNotice';
+import { useProductImage } from './OrderPanel';
+import { Card, ProductTile } from '../ui';
 import { closePopup } from './popupMotion';
 import "./chat-polish.css";
 
@@ -321,6 +323,19 @@ function Turn({
                 ))}
               </ul>
             )}
+            {"added" in it && it.added?.map((a) => {
+              const line = p.basket?.lines.find((l) => l.id === a.lineId);
+              return (
+                <Card
+                  key={a.lineId}
+                  className="added-card"
+                  icon={<Icon name="circle-check" className="i-16" />}
+                  title={`Added ${a.label}`}
+                >
+                  {line && <AddedRow line={line} category={a.category} />}
+                </Card>
+              );
+            })}
             {"route" in it && it.route && p.basket && (
               <Route approver={p.basket.rules.approver} />
             )}
@@ -435,6 +450,20 @@ function Person({
         <span className="person__role">{role}</span>
       </span>
     </span>
+  );
+}
+
+function AddedRow({ line, category }: { line: BasketLine; category?: string }) {
+  const url = useProductImage(line.sku);
+  return (
+    <div className="added-row">
+      <ProductTile src={url} icon={productIcon(line.name, line.contains ?? [])} />
+      <span className="added-row__text">
+        <span className="added-row__name">{niceName(line.name)}</span>
+        <span className="added-row__meta">{qtyLabel(line.qty, line.pack)}{category ? ` · ${category}` : ""}</span>
+      </span>
+      <span className="added-row__price">{money(line.total)}</span>
+    </div>
   );
 }
 

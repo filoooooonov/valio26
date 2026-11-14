@@ -115,6 +115,7 @@ export const ChatSchema = z.object({
         "set_qty",
         "choose_option",
         "remove_line",
+        "add_product",
         "replan",
       ]),
       people: z
@@ -144,6 +145,44 @@ export const ChatSchema = z.object({
         .describe(
           "replan: the menu change in plain English, e.g. 'add a vegan main'",
         ),
+      product: z
+        .string()
+        .nullable()
+        .describe('add_product: short product noun, e.g. "Pepsi"'),
+      queries: z
+        .array(z.string())
+        .nullable()
+        .describe(
+          "add_product: 1-3 catalogue search terms, English or Finnish, most specific first",
+        ),
+      amount: z
+        .number()
+        .nullable()
+        .describe("add_product: how many (pcs) or how much (kg / l)"),
+      unit: z
+        .enum(["pcs", "kg", "l"])
+        .nullable()
+        .describe(
+          'add_product: "pcs" for counted things (bottles, packs, cans, cases)',
+        ),
+      label: z
+        .string()
+        .nullable()
+        .describe(
+          'add_product: the buyer\'s wording, e.g. "2 bottles of Pepsi"',
+        ),
+      dishId: z
+        .string()
+        .nullable()
+        .describe(
+          "add_product: id of the existing dish/category this product clearly belongs to, else null",
+        ),
+      category: z
+        .string()
+        .nullable()
+        .describe(
+          'add_product: when no existing dish fits, a short new category name, e.g. "Drinks", "Snacks", "Bread"',
+        ),
     }),
   ),
   question: z
@@ -161,7 +200,8 @@ Map the text to gateway actions ONLY, using the basket summary:
 - set_qty {lineId, qty}: set a line's quantity in sales units (packs).
 - choose_option {lineId, option}: decide a line's open issue: an option sku listed for that line, "keep" (take what is in stock) or "remove".
 - remove_line {lineId}: drop a product from the basket.
-- replan {change}: anything that changes the menu itself (add/replace a dish, a new diet); describe the change.
+- add_product {product, queries, amount, unit, label, dishId, category}: the buyer names a product to add ("add 2 bottles of Pepsi as a drink", "3 kg butter too"). Use dishId only if the product is genuinely an ingredient or part of that dish; otherwise dishId null and a short new category (drinks go to "Drinks").
+- replan {change}: anything that changes the menu itself (add/replace a dish, a new diet); describe the change. Never use replan to add a single named product.
 Never invent line ids or skus. Use null for fields an action does not use. If the text is unclear or asks for
 something you cannot map, return no actions and a short question.`;
 
