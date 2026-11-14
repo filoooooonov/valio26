@@ -146,12 +146,12 @@ export function Chat(p: Props) {
   }, [p.order?.id, p.order?.status, p.busy]);
 
   return (
-    <section ref={chatRoot} className={'chat' + (hasMenuReview && menuReviewOpen ? ' chat--menu-reviewing' : '')} aria-label="Aimo assistant" onKeyDown={event => {
+    <section ref={chatRoot} className={'chat' + (hasMenuReview && menuReviewOpen ? ' chat--menu-reviewing' : '')} aria-label="Helmi" onKeyDown={event => {
       if (event.key === 'Escape' && hasMenuReview && menuReviewOpen && !(event.target as HTMLElement).closest('dialog[open]')) { event.preventDefault(); closeMenuReview(); }
     }}>
       <div className="chat__head">
         <AssistantBadge />
-        <h2 className="chat__title">Aimo assistant</h2>
+        <h2 className="chat__title">Helmi</h2>
         <span className="grow" />
         <button className="btn-ghost" onClick={p.onNew}>
           <Icon name="plus" className="i-14" /> New request
