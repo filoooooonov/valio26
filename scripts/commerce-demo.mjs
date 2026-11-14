@@ -43,10 +43,11 @@ try{
     const replay=await call(`/api/v1/purchase-requests/${milk.id}/submit`,{});assert(replay.order.simulated);
   }
 
-  if(fixture)fixture.blocked.add('464073');
+  const unavailableSku=milk.basket.lines[0].sku;
+  if(fixture)fixture.blocked.add(unavailableSku);
   const exception=await call('/api/v1/purchase-requests',{request:'20 litres lactose-free milk',date:'2026-11-16',items:[{query:'lactose-free milk',quantity:20,unit:'l'}]});
-  report('3: unavailable preferred product, policy-governed substitution or intervention',exception);
-  if(synthetic){assert.equal(exception.basket.lines[0].replaced?.sku,'464073');assert.equal(exception.checks.length,0);}
+  report('3: unavailable candidate excluded; remaining quoted products compared',exception);
+  if(synthetic){assert.notEqual(exception.basket.lines[0].sku,unavailableSku);assert.equal(exception.basket.lines[0].comparison.candidates.find(c=>c.line.sku===unavailableSku)?.status,'excluded');assert.equal(exception.checks.length,0);}
   console.log('WHY:',JSON.stringify(exception.decisions,null,2));
   if(!exception.checks.length && !exception.basket.openIssues){const done=await call(`/api/v1/purchase-requests/${exception.id}/submit`,{});report('3: exception resolved within policy',done);}
   const audit=await call(`/api/v1/purchase-requests/${exception.id}/audit`);assert(audit.some(e=>e.kind==='choice'));

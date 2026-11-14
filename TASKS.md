@@ -93,4 +93,4 @@ S28/S29 verification: build passes;46fast tests pass with186assertions. Pen C5KN
 
 - [x] @aleksei-codex S45 Trusted commerce pivot: shared structured direct purchasing, authenticated versioned API, exact approvals, persistent simulation, decision-led demos and evidence; recurrence removed after sponsor clarification; preserve all branding/layouts.
 
-- [ ] @aleksei-codex S46 Single-product comparative quotes: real catalogue shortlist, quantity-aware total-cost ranking, 2 alternatives, source/rejection reasons and server-validated selection. Menus remain compact.
+- [x] @aleksei-codex S46 Single-product comparative quotes: real catalogue shortlist, quantity-aware total-cost ranking, 2 alternatives, source/rejection reasons and server-validated selection. Menus remain compact.

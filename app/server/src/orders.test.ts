@@ -218,6 +218,7 @@ describe("orders", () => {
     const b = await (
       await post("/api/basket", {
         request: "100 L lactose-free milk",
+        items:[{query:"lactose-free milk",quantity:100,unit:"l"},{query:"rice",quantity:1,unit:"kg"}],
         date: "2026-11-20",
         customer: "c0",
       })
@@ -236,6 +237,7 @@ describe("orders", () => {
     const b = await (
       await post("/api/basket", {
         request: "100 L lactose-free milk",
+        items:[{query:"lactose-free milk",quantity:100,unit:"l"},{query:"rice",quantity:1,unit:"kg"}],
         date: "2026-11-20",
         customer: "c1",
       })

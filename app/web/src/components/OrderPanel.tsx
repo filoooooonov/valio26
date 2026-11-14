@@ -1,4 +1,4 @@
-import { TextLink } from "../ui";
+import { Button, Card, Notice, Tag, TextLink } from "../ui";
 import { useEffect, useState, type ReactNode, type CSSProperties } from "react";
 import {
   api,
@@ -50,6 +50,7 @@ export type OrderProps = {
   onToggle: (lineId: string) => void;
   onQty: (lineId: string, qty: number) => void;
   onSwap: (lineId: string) => void;
+  onSelectCandidate?: (lineId:string,sku:string)=>void;
   onGuests: (n: number) => void;
   onReview: () => void;
   onOrder: () => void;
@@ -325,6 +326,38 @@ function Lines({ p, b }: { p: OrderProps; b: Basket }) {
           </div>
         );
       })}
+      {!frozen && b.intent === "DIRECT_PURCHASE" && b.lines.length === 1 && b.lines[0].qty > 0 && b.lines[0].comparison && (()=>{
+        const selected=b.lines[0],comparison=selected.comparison!;
+        const current=comparison.candidates.find(c=>c.line.sku===selected.sku);
+        const alternatives=comparison.candidates.filter(c=>c.line.sku!==selected.sku).slice(0,2);
+        const verified=current?.status === "verified";
+        return <Card title="Compare product options">
+          <p>Compared {comparison.checkedCount} quoted products from {comparison.catalogueMatches} catalogue matches for {n2(comparison.requested.qty)} {comparison.requested.unit.toLowerCase()}. Prices exclude VAT.</p>
+          <Notice tone={verified ? "green" : "amber"} title={selected.sku===comparison.recommendedSku ? verified ? "Recommended for this quantity" : current?.status === "review" ? "Provisional recommendation" : "No validated recommendation" : "Your selected alternative"}>
+            {selected.sku===comparison.recommendedSku ? verified ? "Lowest rounded order total among fully validated candidates." : current?.status === "review" ? "Lowest quoted total; stock needs verification before ordering." : "None of the quoted products passed validation. Review the reasons below; no order can be placed." : "You chose this product; compare its total with the recommendation below."}
+            {current?.unitPrice != null ? ` ${money(current.unitPrice)}/${comparison.requested.unit.toLowerCase()}, ${money(selected.total)} total. Overbuy: ${n2(current.overbuy ?? 0)} ${comparison.requested.unit.toLowerCase()}.` : ""}
+          </Notice>
+          {alternatives.map(candidate=>{
+            const difference=candidate.line.total-selected.total;
+            return <div key={candidate.line.sku}>
+              {candidate.line.sku===comparison.recommendedSku && <Tag tone="teal">Recommended</Tag>}
+              <LineRow l={candidate.line} b={b} p={p} frozen={true} placed={false} comparisonOnly={true}/>
+              <p>{candidate.unitPrice != null ? `${money(candidate.unitPrice)}/${comparison.requested.unit.toLowerCase()} ` : "Price unverified. "}
+                {candidate.unitPrice != null && Math.abs(difference)>=0.005 ? `${money(Math.abs(difference))} ${difference<0 ? "less" : "more"} for this quantity. ` : candidate.unitPrice != null ? "Same total. " : ""}
+                {candidate.overbuy == null ? "Quantity conversion needs review." : `Overbuy: ${n2(candidate.overbuy)} ${comparison.requested.unit.toLowerCase()}.`}</p>
+              <p>{candidate.status === "verified" ? "Price, quantity, restrictions and delivery date verified." : candidate.reasons.map(r=>r.replace(candidate.line.name+": ","")).join(" ")}</p>
+              <Button variant="secondary" size="sm" disabled={!candidate.selectable || !p.onSelectCandidate || p.busy || !!p.busyLine || selected.qty===0} onClick={()=>p.onSelectCandidate?.(selected.id,candidate.line.sku)}>
+                {candidate.status === "excluded" ? "Not orderable" : candidate.status === "review" ? "Select for review" : "Use this product"}
+              </Button>
+            </div>;
+          })}
+          {!alternatives.length && <p>No other matching product could be quoted for comparison.</p>}
+          <details className="line__details"><summary>Why this choice? View all {comparison.checkedCount} compared products</summary>
+            <p>Ranked by verified fulfillment, total cost after pack rounding, overbuy and delivery reliability. Quoted {stamp(comparison.checkedAt)}. {comparison.source === "synthetic_fixture" ? "Synthetic price/stock fixture." : "Sponsor mock pricing and availability."}</p>
+            {comparison.candidates.map(c=><p key={c.line.sku}><strong>{niceName(c.line.name)}</strong>: {c.unitPrice==null ? "no verified price" : money(c.line.total)}. {c.status === "verified" ? "Passed product validation." : c.reasons.join(" ")}</p>)}
+          </details>
+        </Card>;
+      })()}
       {b.assumed.length > 0 && (
         <p className="assumed">
           Not ordered, assumed in your kitchen: {b.assumed.join(", ")}.
@@ -349,6 +382,7 @@ export function LineRow({
   frozen,
   placed,
   revealIndex = 0,
+  comparisonOnly = false,
 }: {
   l: BasketLine;
   b: Basket;
@@ -356,6 +390,7 @@ export function LineRow({
   frozen: boolean;
   placed: boolean;
   revealIndex?: number;
+  comparisonOnly?: boolean;
 }) {
   const open = lineIsOpen(l);
   const off = !open && (l.qty === 0 || l.issue?.decided === "remove");
@@ -418,7 +453,7 @@ export function LineRow({
       onClick={open && !frozen && !busy && !p.busy ? event => { if (!(event.target as Element).closest("button, input, a, summary, details, textarea, select")) p.onSwap(l.id); } : undefined}
       style={{ "--product-delay": `${Math.min(revealIndex * 12, 90)}ms` } as CSSProperties}
     >
-      {!placed && (
+      {!placed && !comparisonOnly && (
         <button
           className="check"
           role="checkbox"

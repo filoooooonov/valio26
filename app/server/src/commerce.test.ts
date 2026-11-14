@@ -31,7 +31,7 @@ beforeEach(()=>{
   setFetcher((async(url:string,init:RequestInit)=>{
     const ids=JSON.parse(String(init.body)).products as string[];
     const pricing=String(url).endsWith('/price');if(pricing)pricesCalled++;
-    const products=ids.map(productId=>pricing?{productId,netPriceFound:customerPrice,catalogPrice:{value:price,valueWithTax:price*1.135},comparisonPrice:{value:price},comparisonUnit:'L',tax:{taxRate:13.5}}:{productId,closingTime:cutoff?'2099-01-01T12:00:00Z':undefined,scheduleLines:delivered?[{availableDate:'2026-11-16',availableAmount:amount,salesUnit:'ST'}]:[]});
+    const products=ids.map(productId=>{const product=getProduct(productId);const pack=product?.content?.unit==='L'?product.content.qty:1;return pricing?{productId,netPriceFound:customerPrice,catalogPrice:{value:price*pack,valueWithTax:price*pack*1.135},comparisonPrice:{value:price},comparisonUnit:'L',tax:{taxRate:13.5}}:{productId,closingTime:cutoff?'2099-01-01T12:00:00Z':undefined,scheduleLines:delivered?[{availableDate:'2026-11-16',availableAmount:amount,salesUnit:'ST'}]:[]};});
     return new Response(JSON.stringify({timeNow:'2026-11-14T12:00:00Z',products}));
   }) as typeof fetch);
 });
@@ -66,8 +66,13 @@ test('credentials bind account, identity and policy on both v1 and legacy paths'
 test('allergen restrictions are hard constraints; empty lists never establish free-from safety',async()=>{
   for (const allergen of ['milk','peanuts']) {
     const r=await request('/api/v1/purchase-requests',{...milk(),forbiddenAllergens:[allergen]});const b=await r.json();
-    expect(b.checks.some((c:any)=>c.code===(allergen==='milk'?'allergen_forbidden':'allergen_unknown'))).toBe(true);
-    expect((await request(`/api/v1/purchase-requests/${b.id}/submit`,{})).status).toBe(409);
+    const product=getProduct(b.basket.lines[0].sku)!;
+    if(b.checks.some((c:any)=>c.code.startsWith('allergen_'))){
+      expect((await request(`/api/v1/purchase-requests/${b.id}/submit`,{})).status).toBe(409);
+    }else expect(product.freeFromAllergen).toContain(allergen==='milk'?'AM':'AP');
+    // An empty declaration must never establish safety, even when another catalogue option has evidence.
+    const free=product.freeFromAllergen;
+    try{product.freeFromAllergen=[];expect(validatePurchase(b.basket).some(c=>c.code==='allergen_unknown'||c.code==='allergen_forbidden')).toBe(true);}finally{product.freeFromAllergen=free;}
   }
 });
 test('unknown stock, missing delivery cutoff and missing customer price cannot be approved',async()=>{

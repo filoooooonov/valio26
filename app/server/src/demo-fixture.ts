@@ -9,8 +9,8 @@ export function installSyntheticFacts() {
     const products=ids.map(productId=>{
       const p=getProduct(productId);
       const unit=p?.unit==='KG'?'KG':p?.size?.unit==='L'?'L':'KG';
-      const size=p?.unit==='KG'?1:p?.size?.qty ?? 1;
-      const price=/milk/i.test(p?.en ?? '')?control.milkPrice:10;
+      const size=p?.unit==='KG'?1:p?.content?.qty ?? p?.size?.qty ?? 1;
+      const price=/milk/i.test(p?.en ?? '')?control.milkPrice*size:10;
       return String(url).endsWith('/price')?{
         productId,netPriceFound:true,catalogPrice:{value:price,valueWithTax:price*1.135},comparisonPrice:{value:price/size},comparisonUnit:unit,tax:{taxRate:13.5},
       }:{productId,logisticModel:'Stock',closingTime:'2099-01-01T00:00:00Z',scheduleLines:control.blocked.has(productId)?[]:[{availableDate:'2026-11-16',availableAmount:100000,salesUnit:p?.unit ?? 'ST'}]};

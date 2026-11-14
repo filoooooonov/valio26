@@ -1,3 +1,4 @@
+import { comparisonShortlist, rankComparedProducts, comparisonReason, COMPARISON_LIMIT, type ProductComparison } from "./comparison";
 import { explainPurchase } from "./explain";
 // Planner: request -> dishes -> needs -> catalogue candidates (server, local) -> LLM picks a SKU per need
 // -> ONE price/stock call for the chosen SKUs -> quantities in sales units -> issues with ranked alternatives
@@ -48,6 +49,7 @@ export type Issue = {
   decidedBy?: string;
 };
 export type BasketLine = {
+  comparison?: ProductComparison;
   excludedQty?: number;
   frozen?: boolean;
   id: string;
@@ -656,6 +658,7 @@ export function rankOptions(opts: Option[], baseContains: string[]): Option[] {
 // ---------- totals + mandate ----------
 export const isOpen = (l: BasketLine) => !!l.issue && !l.issue.decided;
 export function recompute(b: Basket): Basket {
+  for(const line of b.lines)if(line.comparison)refreshComparison(b,line);
   for(const l of b.lines) {const p=packOf(l.stock,getProduct(l.sku)); if(l.requestedAmount?.unit===p.unit) l.overbuy=r2(l.qty*p.qty-l.requestedAmount.qty);}
   const live = b.lines.filter((l) => l.qty > 0 && !isOpen(l));
   b.total = r2(live.reduce((s, l) => s + l.total, 0));
@@ -818,7 +821,10 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
         ...n.diet,
       ]),
     ];
-    cands.set(n.id, candidatesFor(n, diet));
+    if(intent==="DIRECT_PURCHASE" && draft.needs.length===1){
+      const shortlist=comparisonShortlist(n.item,diet);
+      cands.set(n.id,shortlist.ids.map(getProduct).filter((p):p is Product=>!!p));
+    } else cands.set(n.id, candidatesFor(n, diet));
   }
   const nCand = [...cands.values()].reduce((s, c) => s + c.length, 0);
   audit(
@@ -889,7 +895,8 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
   });
 
   // 4. ONE price/stock call for all chosen SKUs
-  const sc = await checkStock([...groups.keys()], req.date, customer, {fresh:true});
+  const comparing=intent === "DIRECT_PURCHASE" && draft.needs.length===1 && groups.size===1;
+  const sc = await checkStock(comparing ? [...cands.values()].flatMap(ps=>ps.map(p=>p.id)) : [...groups.keys()], req.date, customer, {fresh:true});
   const stock = new Map(sc.lines.map((l) => [l.sku, l]));
   let apiCalls = sc.calls;
   audit(
@@ -935,7 +942,7 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
   }
   basketCtx.set(id, ctx);
   const withIssue = lines.filter((x) => x.l.issue);
-  if (withIssue.length) {
+  if (withIssue.length && !comparing) {
     const altSkus = [...new Set([...alt.values()].flat())];
     if (altSkus.length) {
       const sc2 = await checkStock(altSkus, req.date, customer, {fresh:true});
@@ -997,9 +1004,28 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
     mandate: { state: "needs_your_ok", reasons: [] },
     createdAt: new Date().toISOString(),
   };
+  if(comparing){
+    const need=draft.needs[0];
+    const requested=needAmt(need);
+    const candidateLines=(cands.get(need.id) ?? []).map(p=>{
+      const {_need,_note,...line}=makeLine({sku:p.id,needs:[need],ranked:[]},stock.get(p.id)!,people,dishes);
+      line.id="l1";
+      const issue=issueFor(line.stock,line.qty,req.date);if(issue)line.issue={...issue,options:[]};
+      return line;
+    });
+    const candidates=rankComparedProducts(basket,candidateLines,requested);
+    const recommended=candidates[0];
+    if(recommended){
+      const selected=structuredClone(recommended.line);
+      const comparison:ProductComparison={query:need.item,requested,catalogueMatches:comparisonShortlist(need.item,need.diet).catalogueMatches,checkedCount:candidates.length,limit:COMPARISON_LIMIT,checkedAt:sc.checkedAt,source:sc.source ?? "unknown",recommendedSku:selected.sku,ranking:"Verified fulfillment, rounded order total, overbuy, delivery reliability, SKU",candidates};
+      selected.comparison=comparison;basket.lines=[selected];
+      ctx.set(selected.id,{needs:[need],pool:candidates.filter(c=>c.line.sku!==selected.sku).map(c=>c.line.sku)});
+      audit(id,"gateway","comparison",comparisonReason(comparison,selected.sku),structuredClone(comparison));
+    }
+  }
   recompute(basket);
   baskets.set(id, basket);
-  autoSwapSameUse(basket);
+  if(!comparing)autoSwapSameUse(basket);
   for(const decision of explainPurchase(basket).products) audit(id,"gateway","choice",[decision.selection,decision.quantity,decision.price,decision.facts,decision.tradeoffs,...decision.constraints].filter(Boolean).join(" "),decision);
   audit(
     id,
@@ -1037,6 +1063,7 @@ export function autoSwapSameUse(b: Basket): void {
 
 // ---------- edits ----------
 export type LineEdit = {
+  selectCandidate?: string;
   qty?: number;
   chooseOption?: string;
   included?: boolean;
@@ -1078,6 +1105,20 @@ export function editLine(
   const l = b.lines.find((x) => x.id === lineId);
   if (!l) throw new HttpError(404, "line not found");
   const by = e.by || "buyer";
+  if(e.selectCandidate){
+    if(e.qty!=null || e.chooseOption!=null || e.included!=null)throw new HttpError(400,"selectCandidate must be used alone");
+    if(!l.comparison)throw new HttpError(400,"No compared products for this line");
+    refreshComparison(b,l);
+    const c=l.comparison.candidates.find(c=>c.line.sku===e.selectCandidate);
+    if(!c?.selectable)throw new HttpError(400,"Candidate is not a suitable server-quoted option");
+    const comparison=l.comparison;const previous=l.name;
+    Object.assign(l,structuredClone(c.line),{id:l.id,comparison});
+    delete l.replaced;delete l.excludedQty;
+    if(!c.line.issue)delete l.issue;
+    comparison.chosenBy=by;
+    audit(b.id,by,"comparison_choice",`Selected ${l.name} instead of ${previous}. ${comparisonReason(comparison,l.sku)}`,{lineId:l.id,sku:l.sku,comparison:structuredClone(comparison)});
+    recompute(b);return b;
+  }
   if (e.included != null) {
     if (
       typeof e.included !== "boolean" ||
@@ -1101,6 +1142,7 @@ export function editLine(
     if (!(e.qty >= 0)) throw new HttpError(400, "qty must be >= 0");
     if (e.included !== false) delete l.excludedQty;
     const was = l.qty;
+    if(l.comparison && e.included==null && e.qty>0){const pack=packOf(l.stock,getProduct(l.sku));l.comparison.requested={qty:e.qty*pack.qty,unit:pack.unit};l.requestedAmount={...l.comparison.requested};}
     l.qty = e.qty;
     l.total = r2(l.qty * l.stock.price);
     if (
@@ -1901,4 +1943,18 @@ export async function addProduct(
     createdCategory: !!place.created,
     unavailable,
   };
+}
+
+function refreshComparison(b:Basket,line:BasketLine){
+  const comparison=line.comparison;if(!comparison)return;
+  const need:Need={...directDraft([{query:comparison.query,quantity:comparison.requested.qty,unit:comparison.requested.unit.toLowerCase() as "l"|"kg"|"pcs"}]).needs[0],diet:(line.requiredDiet ?? []) as Need["diet"]};
+  const snapshots=comparison.candidates.map(c=>{
+    const stock=c.line.sku===line.sku ? line.stock : c.line.stock;
+    const {_need,_note,...candidate}=makeLine({sku:c.line.sku,needs:[need],ranked:[]},stock,1,[]);
+    candidate.id=line.id;
+    const issue=issueFor(stock,candidate.qty,b.date);if(issue)candidate.issue={...issue,options:[]};
+    return candidate;
+  });
+  comparison.candidates=rankComparedProducts(b,snapshots,comparison.requested);
+  comparison.recommendedSku=comparison.candidates[0]?.line.sku ?? line.sku;
 }

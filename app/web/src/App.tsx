@@ -400,7 +400,7 @@ function Shop() {
 
   async function edit(
     lineId: string,
-    e: { qty?: number; chooseOption?: string; included?: boolean },
+    e: { qty?: number; chooseOption?: string; included?: boolean; selectCandidate?:string },
   ) {
     if (!basket || busy || lineEditInFlight.current || building) return;
     lineEditInFlight.current = true;
@@ -1043,6 +1043,7 @@ function Shop() {
               }
               onOrder={placeOrder}
               onChoose={(lineId, sku) => edit(lineId, { chooseOption: sku })}
+              onSelectCandidate={(lineId,sku)=>edit(lineId,{selectCandidate:sku})}
               onRemind={remind}
               onWithdraw={() =>
                 say({

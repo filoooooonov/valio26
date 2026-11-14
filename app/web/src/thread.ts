@@ -192,6 +192,8 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
         text: `Checked ${skus + altN} products only · ${calls} calls to Valio Aimo`,
       },
     ];
+    const comparison=b.lines.length===1 ? b.lines[0].comparison : undefined;
+    if(comparison)did.push({icon:"scan-search",text:`Compared ${comparison.checkedCount} quoted products for your quantity. See product options for unit prices, total costs and exclusions.`});
     const agentSwaps = b.lines.filter(
       (l) => l.replaced && isAutoSwap(l.issue?.decidedBy),
     );

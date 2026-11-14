@@ -45,6 +45,7 @@ export type Issue = {
   decidedBy?: string;
 };
 export type BasketLine = {
+  comparison?: {query:string;requested:{qty:number;unit:string};catalogueMatches:number;checkedCount:number;limit:number;checkedAt:string;source:string;recommendedSku:string;ranking:string;candidates:{line:BasketLine;unitPrice:number|null;purchased:number|null;overbuy:number|null;status:"verified"|"review"|"excluded";selectable:boolean;reasons:string[]}[]};
   excludedQty?: number;
   frozen?: boolean;
   id: string;
@@ -244,7 +245,7 @@ export const api = {
   edit: (
     id: string,
     lineId: string,
-    e: { qty?: number; chooseOption?: string; included?: boolean },
+    e: { qty?: number; chooseOption?: string; included?: boolean; selectCandidate?:string },
   ) =>
     call<Basket>(`/basket/${id}/lines/${lineId}`, { ...e, by: BUYER }).then(checkedData),
   // v1.2: may 404 on an older gateway; callers fall back.
