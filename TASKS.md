@@ -1,5 +1,7 @@
 # TASKS.md: claim before starting
 
+- [~] @aleksei-codex S39 Keep unchecked cart items visible and add guarded Ctrl+Z undo for cart line edits/removals (rubric: user need, guardrails) - files: app/web/src/App.tsx, components/OrderPanel.tsx, api.ts; app/server/src/app.ts, cartHistory.ts, cartHistory.test.ts; CONTRACT.md.
+
 - [~] @aleksei-codex S38 Remove the three draft composer suggestion buttons and the Order draft eyebrow requested by the user (rubric: demo) - files: app/web/src/components/Chat.tsx, OrderPanel.tsx. Coordinating with S37 file holder.
 
 - [x] @aleksei-codex S36 Removed the loading spinner from product-search progress; progress labels and completed checks retained. Build and69fast tests pass (rubric: demo) - files: app/web/src/components/Chat.tsx.
