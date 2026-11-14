@@ -4,7 +4,9 @@ import { catalogSize, getProduct, search } from "./catalog";
 import { callLog, checkStock, missingLine } from "./valio";
 import { allEvents, events } from "./audit";
 import { decide, listOrders, placeOrder, type Decision } from "./orders";
-import { buildBasket, editLine, HttpError, recompute, type BasketRequest, type LineEdit } from "./plan";
+import { buildBasket, editLine, HttpError, recompute, rescaleGuests, type BasketRequest, type LineEdit } from "./plan";
+import { chat } from "./chat";
+import { productImage } from "./images";
 import { handleMcp } from "./mcp";
 import { getMandate } from "./policy";
 import { baskets, orders } from "./store";
@@ -16,6 +18,9 @@ app.use("/api/*", cors());
 app.get("/api/health", (c) => c.json({ ok: true, service: "valio-gateway", catalog: catalogSize() }));
 
 // Local catalogue only: never touches the Valio API.
+// One EAN lookup on valioaimo.fi per SKU, only when the UI shows that product; cached on disk (misses too).
+app.get("/api/products/:sku/image", async (c) => c.json(await productImage(c.req.param("sku"))));
+
 app.get("/api/products/search", (c) => {
   const q = c.req.query("q") ?? "";
   const limit = Math.min(Number(c.req.query("limit") ?? 20), 100);
@@ -76,6 +81,27 @@ app.post("/api/basket/:id/lines/:lineId", async (c) => {
   try {
     const body = await c.req.json<LineEdit>().catch(() => ({}) as LineEdit);
     return c.json(editLine(c.req.param("id"), c.req.param("lineId"), body));
+  } catch (e) {
+    return fail(c, e);
+  }
+});
+// v1.2: deterministic guests rescale (no LLM) and chat -> gateway actions (Claude maps words, gateway runs them).
+app.post("/api/basket/:id/guests", async (c) => {
+  const body = await c.req.json<{ people?: number; by?: string }>().catch(() => ({}) as { people?: number; by?: string });
+  const people = Number(body.people);
+  if (!Number.isInteger(people) || people < 1 || people > 2000)
+    return c.json({ error: "people must be a whole number from 1 to 2000" }, 400);
+  try {
+    return c.json(await rescaleGuests(c.req.param("id"), people, body.by || "buyer"));
+  } catch (e) {
+    return fail(c, e);
+  }
+});
+app.post("/api/basket/:id/chat", async (c) => {
+  const body = await c.req.json<{ text?: string; by?: string }>().catch(() => ({}) as { text?: string; by?: string });
+  if (!body.text?.trim()) return c.json({ error: "text required" }, 400);
+  try {
+    return c.json(await chat(c.req.param("id"), body.text, body.by || "buyer"));
   } catch (e) {
     return fail(c, e);
   }

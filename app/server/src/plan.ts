@@ -89,6 +89,11 @@ export type Basket = {
 
 type Need = Draft["needs"][number] & { pinned?: string[] };
 
+/** Internal per-basket planning context (not part of the JSON shape): each line's needs (for the guests
+ * rescale) and its alternative pool (for new issues). Keyed by basket id, then line id. */
+type LineCtx = { needs: Need[]; pool: string[] };
+const basketCtx = new Map<string, Map<string, LineCtx>>();
+
 // ---------- allergens, diets, categories ----------
 const ALLERGENS: Record<string, string> = {
   AM: "milk",
@@ -782,22 +787,22 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
   });
 
   // 5. issues: alternatives (other ranked candidates), stock-checked in ONE extra call
+  const chosen = new Set(groups.keys());
+  const alt = new Map<string, string[]>();
+  const ctx = new Map<string, LineCtx>();
+  for (const { l, g } of lines) {
+    const pool = [
+      ...g.ranked.slice(1),
+      ...(g.needs[0].pinned || llmRanked.has(g.needs[0].id)
+        ? [] // Claude already said which candidates genuinely fit
+        : (cands.get(g.needs[0].id) ?? []).map((p) => p.id)),
+    ];
+    alt.set(l.id, [...new Set(pool)].filter((s) => !chosen.has(s)).slice(0, 5));
+    ctx.set(l.id, { needs: g.needs.map((n) => ({ ...n })), pool: alt.get(l.id)! });
+  }
+  basketCtx.set(id, ctx);
   const withIssue = lines.filter((x) => x.l.issue);
   if (withIssue.length) {
-    const chosen = new Set(groups.keys());
-    const alt = new Map<string, string[]>();
-    for (const { l, g } of withIssue) {
-      const pool = [
-        ...g.ranked.slice(1),
-        ...(g.needs[0].pinned || llmRanked.has(g.needs[0].id)
-          ? [] // Claude already said which candidates genuinely fit
-          : (cands.get(g.needs[0].id) ?? []).map((p) => p.id)),
-      ];
-      alt.set(
-        l.id,
-        [...new Set(pool)].filter((s) => !chosen.has(s)).slice(0, 5),
-      );
-    }
     const altSkus = [...new Set([...alt.values()].flat())];
     if (altSkus.length) {
       const sc2 = await checkStock(altSkus, req.date, customer);
@@ -968,5 +973,144 @@ export function editLine(
     `${b.mandate.state}: ${b.mandate.reasons.join(" ")}`,
     { total: b.total },
   );
+  return b;
+}
+
+// ---------- guests rescale (CONTRACT v1.2): deterministic, no LLM ----------
+const r3 = (n: number) => Math.round(n * 1000) / 1000;
+
+/** Rescale every per-portion line to `people`, re-round to whole sales units, ONE stock call for the changed
+ * SKUs (plus the options of open issues). Lines that no longer fit stock get an issue; decided swaps are kept
+ * (the chosen product is rescaled). Removed lines stay removed. */
+export async function rescaleGuests(
+  basketId: string,
+  people: number,
+  by = "buyer",
+): Promise<Basket> {
+  const b = baskets.get(basketId);
+  if (!b) throw new HttpError(404, "basket not found");
+  if (!Number.isInteger(people) || people < 1 || people > 2000)
+    throw new HttpError(400, "people must be a whole number from 1 to 2000");
+  const ctx = basketCtx.get(b.id);
+  if (!ctx) throw new HttpError(409, "this basket has no planning data to rescale");
+  const old = b.people;
+  if (people === old) return recompute(b);
+
+  // 1. dishes that served everyone follow the new count; sub-group dishes (e.g. 3 lactose-free) keep theirs
+  const factor = new Map<string, number>();
+  for (const d of b.dishes) {
+    const next = d.portions === old ? people : d.portions;
+    factor.set(d.id, d.portions ? next / d.portions : 1);
+    d.portions = next;
+  }
+  for (const lc of ctx.values())
+    for (const n of lc.needs) {
+      const f = n.dishId
+        ? (factor.get(n.dishId) ?? 1)
+        : n.perPortion != null && old
+          ? people / old
+          : 1; // a plain product order ("1000 L milk") keeps its amount
+      n.totalQty = r3(n.totalQty * f);
+    }
+  b.people = people;
+
+  // 2. which lines change qty (removed lines stay removed)
+  const plan = b.lines
+    .filter((l) => !(l.issue?.decided === "remove") && ctx.has(l.id))
+    .map((l) => {
+      const needs = ctx.get(l.id)!.needs;
+      const nl = makeLine({ sku: l.sku, needs, ranked: [] }, l.stock, people, b.dishes);
+      return { l, needs, qty: nl.qty };
+    });
+  const changed = plan.filter((x) => x.qty !== x.l.qty || isOpen(x.l));
+  const skus = new Set<string>();
+  for (const { l } of changed) {
+    skus.add(l.sku);
+    if (isOpen(l)) for (const o of l.issue!.options) skus.add(o.sku);
+  }
+  let calls = 0;
+  const st = new Map<string, StockLine>();
+  if (skus.size) {
+    const sc = await checkStock([...skus], b.date, b.customer, { fresh: true }); // new amounts: re-check now
+    calls += sc.calls;
+    for (const x of sc.lines) st.set(x.sku, x);
+    b.checkedAt = sc.checkedAt;
+  }
+
+  // 3. rebuild each line with the new amounts; issues follow the new qty
+  const needAlt: { l: BasketLine; needs: Need[] }[] = [];
+  let nChanged = 0;
+  for (const { l, needs } of plan) {
+    const stock = st.get(l.sku) ?? l.stock;
+    const nl = makeLine({ sku: l.sku, needs, ranked: [] }, stock, people, b.dishes);
+    const wasQty = l.qty;
+    l.stock = stock;
+    l.why = nl.why;
+    l.usedIn = nl.usedIn;
+    if (l.issue?.decided === "keep" && stock.available != null)
+      l.qty = Math.min(nl.qty, stock.available);
+    else l.qty = nl.qty;
+    l.total = r2(l.qty * stock.price);
+    if (l.qty !== wasQty) nChanged++;
+    if (l.issue?.decided === "keep") continue;
+    const iss = issueFor(stock, l.qty, b.date);
+    if (!iss) {
+      if (l.issue && !l.issue.decided) delete l.issue; // fewer guests: the shortage went away
+      continue;
+    }
+    if (isOpen(l)) {
+      // still a problem: rescale its options with the fresh stock
+      const opts = l.issue!.options.map((o) =>
+        optionFor(o.sku, st.get(o.sku) ?? o.stock, nl._need, l, people, b.dishes, needs),
+      );
+      l.issue = { ...iss, options: rankOptions(opts, getProduct(l.sku)?.contains ?? []) };
+      if (!l.issue.options.length) needAlt.push({ l, needs });
+    } else {
+      // new problem (or the swapped-in product no longer fits): a fresh issue, original product kept in `replaced`
+      l.issue = { ...iss, options: [] };
+      needAlt.push({ l, needs });
+    }
+  }
+
+  // 4. alternatives for new problems: one extra call, like the planner
+  if (needAlt.length) {
+    const inBasket = new Set(b.lines.map((l) => l.sku));
+    const alt = new Map(
+      needAlt.map(({ l }) => [l.id, (ctx.get(l.id)?.pool ?? []).filter((s) => !inBasket.has(s))]),
+    );
+    const altSkus = [...new Set([...alt.values()].flat())];
+    if (altSkus.length) {
+      const sc2 = await checkStock(altSkus, b.date, b.customer);
+      calls += sc2.calls;
+      const st2 = new Map(sc2.lines.map((x) => [x.sku, x]));
+      for (const { l, needs } of needAlt) {
+        const need = makeLine({ sku: l.sku, needs, ranked: [] }, l.stock, people, b.dishes)._need;
+        const opts = (alt.get(l.id) ?? []).map((s) =>
+          optionFor(s, st2.get(s)!, need, l, people, b.dishes, needs),
+        );
+        l.issue!.options = rankOptions(opts, getProduct(l.sku)?.contains ?? []);
+      }
+    }
+    for (const { l } of needAlt)
+      if (!l.issue!.options.length) l.issue!.text += " No deliverable alternative found.";
+  }
+  b.apiCalls += calls;
+  recompute(b);
+  audit(
+    b.id,
+    by,
+    "guests",
+    `${old} → ${people} guests, ${nChanged} line${nChanged === 1 ? "" : "s"} changed (${calls} API calls)`,
+    {
+      from: old,
+      to: people,
+      changed: nChanged,
+      newIssues: needAlt.map(({ l }) => `${l.name}: ${l.issue!.text}`),
+      calls,
+    },
+  );
+  audit(b.id, "gateway", "mandate", `${b.mandate.state}: ${b.mandate.reasons.join(" ")}`, {
+    total: b.total,
+  });
   return b;
 }

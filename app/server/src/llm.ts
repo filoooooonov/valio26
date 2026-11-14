@@ -106,6 +106,38 @@ export type PickInput = {
   candidates: Candidate[];
 };
 
+// Chat -> gateway actions (CONTRACT v1.2). Claude only maps words to actions; the gateway runs them.
+export const ChatSchema = z.object({
+  actions: z.array(
+    z.object({
+      kind: z.enum(["set_guests", "set_qty", "choose_option", "remove_line", "replan"]),
+      people: z.number().int().nullable().describe("set_guests: new number of guests"),
+      lineId: z.string().nullable().describe("set_qty / choose_option / remove_line: the line id, e.g. l3"),
+      qty: z.number().nullable().describe("set_qty: new quantity in sales units"),
+      option: z
+        .string()
+        .nullable()
+        .describe('choose_option: an option sku from the open issue of that line, or "keep" or "remove"'),
+      change: z.string().nullable().describe("replan: the menu change in plain English, e.g. 'add a vegan main'"),
+    }),
+  ),
+  question: z
+    .string()
+    .nullable()
+    .describe("a short question back if the text is ambiguous; then actions must be empty"),
+});
+export type ChatPlan = z.infer<typeof ChatSchema>;
+
+const CHAT_SYSTEM = `You are the order assistant inside the Valio Aimo webshop. A chef types a change to the order basket.
+Map the text to gateway actions ONLY, using the basket summary:
+- set_guests {people}: change the number of guests (all portion-based quantities rescale).
+- set_qty {lineId, qty}: set a line's quantity in sales units (packs).
+- choose_option {lineId, option}: decide a line's open issue: an option sku listed for that line, "keep" (take what is in stock) or "remove".
+- remove_line {lineId}: drop a product from the basket.
+- replan {change}: anything that changes the menu itself (add/replace a dish, a new diet); describe the change.
+Never invent line ids or skus. Use null for fields an action does not use. If the text is unclear or asks for
+something you cannot map, return no actions and a short question.`;
+
 export interface Llm {
   draft(
     request: string,
@@ -113,6 +145,7 @@ export interface Llm {
     date: string,
   ): Promise<Draft>;
   pick(request: string, needs: PickInput[]): Promise<Picks>;
+  chat?(text: string, basketSummary: string): Promise<ChatPlan>;
 }
 
 const DRAFT_SYSTEM = `You plan wholesale food orders for professional kitchens in Finland (Valio Aimo webshop).
@@ -186,6 +219,24 @@ export class ClaudeLlm implements Llm {
     });
     if (r.stop_reason === "refusal" || !r.parsed_output)
       throw new Error(`pick LLM gave no answer (${r.stop_reason})`);
+    return r.parsed_output;
+  }
+
+  async chat(text: string, basketSummary: string): Promise<ChatPlan> {
+    const r = await this.client.beta.messages.parse({
+      model: MODEL,
+      max_tokens: 4000,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      output_config: { effort: "low", format: betaZodOutputFormat(ChatSchema) },
+      system: CHAT_SYSTEM,
+      messages: [{ role: "user", content: `Basket:
+${basketSummary}
+
+Chef: ${text}` }],
+    });
+    if (r.stop_reason === "refusal" || !r.parsed_output)
+      throw new Error(`chat LLM gave no answer (${r.stop_reason})`);
     return r.parsed_output;
   }
 }
