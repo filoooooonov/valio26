@@ -8,6 +8,7 @@ import {
   type AuditEvent,
   type Basket,
   type BasketLine,
+  type RecipeProposal,
   type Order,
   type OrderConflict,
 } from "./api";
@@ -20,7 +21,7 @@ import { AlternativeDraftReview } from "./components/AlternativeDraftReview";
 import { MenuEconomics } from "./components/MinunAimo";
 import { SAMPLE_CONTEXT_MARKER } from "./minunAimo";
 import { Header, PhoneTabs } from "./components/Header";
-import { ScheduledMenus, newSchedule } from './components/ScheduledMenus';
+import { ScheduledMenus, ScheduleEditor, newSchedule } from './components/ScheduledMenus';
 import { SCHEDULE_KEY, readSchedules, type Schedule } from './recurring';
 import { Icon } from './icons';
 import { Chat, type LocalItem, type ChatError } from "./components/Chat";
@@ -67,6 +68,7 @@ function Shop() {
   const [screen, setScreen] = useState<'shop' | 'schedules'>(params.get('view') === 'schedules' ? 'schedules' : 'shop');
   const [schedules, setSchedules] = useState(readSchedules);
   const [scheduleEditor, setScheduleEditor] = useState<Schedule | null>(null);
+  const [repeatOpen,setRepeatOpen] = useState(false);
   const [scheduleNotice, setScheduleNotice] = useState('');
   const [scheduleLimit, setScheduleLimit] = useState<number | null>(null);
   const [menu, setMenu] = useState<MenuDraft | null>(null);
@@ -75,9 +77,8 @@ function Shop() {
   const [approvedSummary, setApprovedSummary] = useState<string | null>(null);
   const menuSubmitting = useRef(false);
   const [basket, setBasket] = useState<Basket | null>(null);
-  const [alternativeDraft, setAlternativeDraft] = useState<Basket | null>(null);
+  const [alternativeDraft, setAlternativeDraft] = useState<RecipeProposal | null>(null);
   const [alternativeReviewOpen, setAlternativeReviewOpen] = useState(false);
-  const [replacementRecovery, setReplacementRecovery] = useState<BasketLine[]>([]);
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [order, setOrder] = useState<Order | null>(null);
   const [local, setLocal] = useState<LocalItem[]>([]);
@@ -118,7 +119,7 @@ function Shop() {
 
   const adopt = useCallback(
     async (b: Basket) => {
-      setAlternativeDraft(null); setReplacementRecovery([]);
+      setAlternativeDraft(null);
       setBasket(b);
       setFreshAt(null);
       await refreshAudit(b.id);
@@ -362,30 +363,15 @@ function Shop() {
     }
   }
 
-  async function findAlternatives(lines: BasketLine[], changeMenu = false) {
-    if (!basket || busy || building || !lines.length) return;
-    const source = basket;
-    const names = lines.map(line => niceName(line.name)).join(', ');
-    const ac = new AbortController();
-    abort.current?.abort(); abort.current = ac;
-    setError(null); setAlternativeDraft(null); setAlternativeReviewOpen(false); setReplacementRecovery([]); setBusy(true);
-    say({ kind: 'user', who: BUYER, text: changeMenu ? `Suggest a menu change for ${names}.` : `Find alternatives for ${names}.` });
+  async function suggestRecipe(line: BasketLine) {
+    if (!basket || busy || building) return;
+    setBusy(true); setError(null); setAlternativeDraft(null);
     try {
-      const request = source.request + (changeMenu ? `\n\nThese ingredients cannot be delivered: ${names}. Suggest a suitable alternative ingredient or replace only the affected dish with a complete deliverable dish. Keep the guest count, dietary and allergy requirements, and all unaffected dishes. Explain the proposed menu change in the draft notes. Never silently omit a dish. Return a full revised purchasing draft for the buyer to review before applying it.` : `\n\nFind alternative catalogue products for these unavailable ingredients: ${names}. Keep the approved menu, guest count, diets and all other requested dishes. Look for equivalent ingredients in a different brand or suitable pack size. Do not drop requested ingredients or change the menu to hide an unavailable product. Return a full revised purchasing draft; prices and delivery will be checked by the gateway.`);
-      const next = await api.build(request, source.date, source.people, ac.signal);
-      if (ac.signal.aborted) return;
-      if (next.planner === 'fallback' && source.planner === 'llm') throw new Error('The alternative planner is unavailable.');
-      const newProducts = next.lines.filter(line => !source.lines.some(old => old.sku === line.sku));
-      if ((!newProducts.length && next.openIssues >= source.openIssues) || next.notes.some(note => /no catalogue match/i.test(note))) {
-        setReplacementRecovery(lines);
-        say({ kind: 'assistant', text: changeMenu ? `I could not find a complete deliverable menu change for ${names}. Try a different dish in chat. Your current basket is unchanged.` : `No deliverable replacement found for ${names}. I can suggest a menu change instead. Your current basket is unchanged.` });
-      } else {
-        setAlternativeDraft(next); setAlternativeReviewOpen(true);
-        say({ kind: 'assistant', text: `I prepared an alternative draft for ${names}. Click Review revised draft to open it.` });
-      }
-    } catch (error) {
-      if ((error as Error).name !== 'AbortError') setError({ title: 'Could not find alternatives', text: `${(error as Error).message} Your current basket is unchanged.`, retry: () => findAlternatives(lines, changeMenu) });
-    } finally { if (abort.current === ac) setBusy(false); }
+      const proposal = await api.recipeChange(basket.id,line.id);
+      setAlternativeDraft(proposal); setAlternativeReviewOpen(true);
+    } catch(e) {
+      say({kind:'assistant',text:`Unfortunately, ${niceName(line.name)} is unavailable. ${(e as Error).message} Your menu has not been changed.`});
+    } finally { setBusy(false); }
   }
 
   async function placeOrder() {
@@ -537,7 +523,7 @@ function Shop() {
   function repeatOrder() {
     const dishes = menu?.categories.filter(c => c.selected).map(c => c.title) ?? basket?.dishes.map(d => d.name) ?? [];
     setScheduleEditor(newSchedule({ name: dishes.join(', '), dishes, people: menu?.requirements?.people ?? basket?.people ?? 50, dietary: menu?.requirements?.dietary.join(', ') ?? [...new Set(basket?.dishes.flatMap(d => d.diet) ?? [])].join(', '), estimate: basket?.total ?? null, delivery: menu?.delivery ?? delivery ?? undefined }, delivery));
-    setScheduleNotice(''); navigate('schedules');
+    setScheduleNotice(''); setRepeatOpen(true);
   }
   function prepareSchedule(s: Schedule, date: string) {
     const choice = { ...s.delivery, date };
@@ -573,8 +559,7 @@ function Shop() {
       />
       <main className="workspace">
         <Chat
-          onFindAlternatives={findAlternatives}
-          alternativeProposal={alternativeDraft ? <section className="replacement-notice" aria-label="Alternative draft ready"><p>A revised draft is ready to review.</p><button className="replacement-notice__review" disabled={busy} onClick={() => setAlternativeReviewOpen(true)}>Review revised draft</button></section> : replacementRecovery.length > 0 ? <section className="replacement-notice" aria-label="Replacement suggestions"><p>Try another product or a different dish.</p><div className="replacement-dialog__recovery"><button className="btn btn--outline" disabled={busy} onClick={() => void findAlternatives(replacementRecovery)}>Find another product</button><button className="btn btn--outline" disabled={busy} onClick={() => void findAlternatives(replacementRecovery, true)}>Suggest a menu change</button></div></section> : null}
+          alternativeProposal={alternativeDraft ? <section className="replacement-notice" aria-label="Recipe suggestion"><p>Try {alternativeDraft.to} instead of {alternativeDraft.from}?</p><button className="replacement-notice__review" disabled={busy} onClick={() => setAlternativeReviewOpen(true)}>Review recipe change</button><button className="schedule-text" onClick={() => { setAlternativeDraft(null); say({kind:'assistant',text:'Unfortunately, the item is unavailable. Your menu has not been changed.'}); }}>No thanks</button></section> : null}
           phase={phase}
           menuProposal={menu && !building ? !menu.requirements ? <EventRequirements key={menu.request} initial={detectRequirements(menu.request)} delivery={delivery} defaultDate={requestDeliveryDate(menu.request, DELIVERY)} onConfirm={(requirements, choice) => {
             setDelivery(choice);
@@ -650,6 +635,7 @@ function Shop() {
         />
       </main>
       </>}
+      {repeatOpen && scheduleEditor && <ScheduleEditor initial={scheduleEditor} existing={false} onSave={saveSchedule} onCancel={() => {setRepeatOpen(false);setScheduleEditor(null);}} onDelete={() => {}} notice={scheduleNotice} />}
       {deliveryOpen && <DeliveryPicker value={delivery} defaultDate={menu ? requestDeliveryDate(menu.request, DELIVERY) : basket?.date ?? DELIVERY} onClose={() => setDeliveryOpen(false)} onConfirm={choice => {
         setDelivery(choice);
         setMenu(current => current ? { ...current, delivery: choice } : current);
@@ -657,14 +643,19 @@ function Shop() {
           void build(basket.request + `\nConfirmed delivery update: ${choice.address}; ${choice.date}, ${choice.time}. Recheck the complete draft for this delivery.`, basket.people, undefined, choice);
         }
       }} />}
-      {alternativeReviewOpen && alternativeDraft && <AlternativeDraftReview basket={alternativeDraft} busy={busy} onClose={() => setAlternativeReviewOpen(false)} onUse={async () => {
-        const next = alternativeDraft; setAlternativeReviewOpen(false); setOrder(null); setReviewing(false); await adopt(next);
+      {alternativeReviewOpen && alternativeDraft && <AlternativeDraftReview proposal={alternativeDraft} busy={busy} onClose={() => { setAlternativeReviewOpen(false); setAlternativeDraft(null); say({kind:'assistant',text:'Unfortunately, the item is unavailable. Your menu has not been changed.'}); }} onUse={async () => {
+        if (!basket) return;
+        setBusy(true);
+        try { const next = await api.applyRecipeChange(basket.id,alternativeDraft.id); setAlternativeReviewOpen(false); setOrder(null); setReviewing(false); await adopt(next); }
+        catch(e) { setAlternativeReviewOpen(false); setAlternativeDraft(null); say({kind:'assistant',text:`Could not apply the recipe change: ${(e as Error).message}`}); }
+        finally { setBusy(false); }
       }} />}
       {sheetLine && basket && (
         <SwapSheet
           time={delivery?.time}
-          onFindAlternatives={() => { if (sheetLine) void findAlternatives([sheetLine]); }}
-          onSuggestMenuChange={() => { if (sheetLine) void findAlternatives([sheetLine], true); }}
+          onCheck={async () => { const next = await api.checkReplacements(basket.id,sheetLine.id); await adopt(next); }}
+          onSuggestMenuChange={sheetLine.dishId || sheetLine.usedIn?.length ? () => void suggestRecipe(sheetLine) : undefined}
+          onUnavailable={() => say({kind:'assistant',text:`Unfortunately, ${niceName(sheetLine.name)} is unavailable for this delivery.`})}
           line={sheetLine}
           date={basket.date}
           locked={phase === "waiting" || phase === "placed"}

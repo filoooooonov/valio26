@@ -81,7 +81,7 @@ export function OrderPanel(p: OrderProps) {
         </h1>
         {b && <Controls p={p} b={b} />}
         {(p.phase === "draft" || p.phase === "review") && p.insight}
-        {(b || p.planningMenu) && p.onRepeat && <button className="schedule-text schedule-repeat" onClick={p.onRepeat}><Icon name="repeat" className="i-16" />Repeat this order</button>}
+
       </div>
       <div className="order__lines">
         {!b ? (
@@ -231,6 +231,7 @@ function Controls({ p, b }: { p: OrderProps; b: Basket }) {
           </div>
         )}
         <button className="pill" type="button" onClick={() => setRecipeOpen(true)} aria-haspopup="dialog"><Icon name="utensils" className="i-16" />Recipe</button>
+        {p.onRepeat && <button className="pill" type="button" aria-haspopup="dialog" onClick={p.onRepeat}><Icon name="repeat" className="i-16" />Repeat this order</button>}
         {recipeOpen && <RecipeDialog basket={b} onClose={() => setRecipeOpen(false)} />}
         <span className="grow" />
         {per}

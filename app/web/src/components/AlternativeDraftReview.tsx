@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react';
-import type { Basket } from '../api';
+import type { RecipeProposal } from '../api';
 import { money, niceName, qtyLabel } from '../format';
 import { Icon } from '../icons';
 import './replacement-dialog.css';
 import { useReplacementClose } from './Sheets';
 
-export function AlternativeDraftReview({ basket, busy, onClose, onUse }: {
-  basket: Basket; busy: boolean; onClose: () => void; onUse: () => void;
+export function AlternativeDraftReview({ proposal, busy, onClose, onUse }: {
+  proposal: RecipeProposal; busy: boolean; onClose: () => void; onUse: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -16,18 +16,19 @@ export function AlternativeDraftReview({ basket, busy, onClose, onUse }: {
   }, []);
   const { closing, close } = useReplacementClose(dialog, onClose);
   return <dialog ref={dialog} className={"replacement-dialog" + (closing ? " replacement-dialog--closing" : "")} aria-busy={closing || undefined} aria-labelledby="alternative-draft-heading"
-    onCancel={event => { event.preventDefault(); close(); }}
+    onCancel={event => { event.preventDefault(); if (!busy) close(); }}
     onClick={event => {
-      if (event.target !== event.currentTarget) return;
+      if (busy || event.target !== event.currentTarget) return;
       const box = event.currentTarget.getBoundingClientRect();
       if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) close();
     }}>
-    <header className="replacement-dialog__head"><h2 id="alternative-draft-heading">Review revised draft</h2><button className="round" aria-label="Close revised draft" onClick={() => close()}><Icon name="x" className="i-18" /></button></header>
-    <p className="replacement-dialog__delivery">{money(basket.total)} excl. VAT</p>
-    <p className="replacement-dialog__reason">This replaces the whole draft. Check quantities and any earlier changes.{basket.openIssues > 0 ? ` ${basket.openIssues} items still need a choice.` : ''}</p>
-    {basket.dishes.length > 0 && <p className="replacement-dialog__delivery">Menu: {basket.dishes.map(dish => dish.name).join(', ')}</p>}
-    {basket.notes.length > 0 && <ul>{basket.notes.map((note,index) => <li key={index}>{note}</li>)}</ul>}
-    <div className="alternative-draft-products">{basket.lines.filter(line => line.qty > 0).map(line => <div key={line.id}><span>{niceName(line.name)}{line.issue && !line.issue.decided ? ' — needs a choice' : ''}</span><span>{qtyLabel(line.qty, line.pack)}</span></div>)}</div>
-    <footer className="replacement-dialog__actions"><button className="btn btn--outline" onClick={onClose}>Keep current basket</button><button className="btn replacement-dialog__use" disabled={busy || closing} onClick={() => { if (!busy) close(onUse); }}>Use revised draft</button></footer>
+    <header className="replacement-dialog__head"><h2 id="alternative-draft-heading">Try {proposal.to} instead?</h2><button className="round" aria-label="Close recipe suggestion" disabled={busy} onClick={() => close()}><Icon name="x" className="i-18" /></button></header>
+    <p className="replacement-dialog__reason">Replace {proposal.from} with {proposal.to}. Your other recipes stay as you edited them.</p>
+    <h3>Ingredients to remove or adjust</h3>
+    <div className="alternative-draft-products">{proposal.before.map(line => <div key={line.id}><span>{niceName(line.name)}</span><span>{qtyLabel(line.qty,line.pack)}</span></div>)}</div>
+    <h3>Ingredients for the new recipe</h3>
+    <div className="alternative-draft-products">{proposal.after.map(line => <div key={line.id}><span>{niceName(line.name)}</span><span>{qtyLabel(line.qty,line.pack)} &middot; {money(line.total)}</span></div>)}</div>
+    <p className="replacement-dialog__delivery">Affected ingredients: {money(proposal.totalBefore)} to {money(proposal.totalAfter)}, excl. VAT. Prices and availability checked for your delivery.</p>
+    <footer className="replacement-dialog__actions"><button className="btn btn--outline" disabled={busy || closing} onClick={() => close()}>No thanks</button><button className="btn replacement-dialog__use" disabled={busy || closing} onClick={onUse}>Use {proposal.to}</button></footer>
   </dialog>;
 }

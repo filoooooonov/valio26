@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import { dayLabel, money } from '../format';
 import { Icon } from '../icons';
 import { DAYS, monthlyProjection, occurrences, shiftDate, todayHelsinki, validSchedule, type Schedule } from '../recurring';
-import { DeliveryPicker, DELIVERY_TIMES, RESTAURANT_DELIVERY, type DeliveryChoice } from './DeliveryPicker';
+import { DELIVERY_PLACES, DELIVERY_TIMES, RESTAURANT_DELIVERY, type DeliveryChoice } from './DeliveryPicker';
 import './scheduled-menus.css';
+import { ScheduleDate, ScheduleTime } from './ScheduleDateTime';
 
 export type ScheduleSeed = { name: string; dishes: string[]; people: number; dietary: string; estimate: number | null; delivery?: DeliveryChoice };
 export function newSchedule(seed?: ScheduleSeed, delivery?: DeliveryChoice | null): Schedule {
@@ -37,13 +38,14 @@ export function ScheduledMenus({ schedules, editor, onEdit, onSave, onDelete, on
     })();
     return () => { active = false; };
   }, [source]);
-  if (editor) return <ScheduleEditor key={editor.id} existing={schedules.some(s => s.id === editor.id)} initial={editor} onSave={onSave} onCancel={() => onEdit(null)} onDelete={onDelete} notice={notice} />;
+
   const projections = schedules.map(s => monthlyProjection(s, month));
   const total = projections.reduce((sum, p) => sum + (p.total ?? 0), 0);
   const unknown = projections.some(p => p.count > 0 && p.total === null);
   const upcoming = schedules.flatMap(s => occurrences(s).slice(0, 1).map(date => ({ s, date, purchase: shiftDate(date, -s.leadDays) }))).sort((a,b) => (a.purchase + a.s.purchaseTime).localeCompare(b.purchase + b.s.purchaseTime));
   const visible = schedules.filter(s => filter === 'all' || (filter === 'paused' ? s.paused : !s.paused));
   return <main className="schedules">
+    {editor && <ScheduleEditor key={editor.id} existing={schedules.some(s => s.id === editor.id)} initial={editor} onSave={onSave} onCancel={() => onEdit(null)} onDelete={onDelete} notice={notice} />}
     <header className="schedules__heading"><div><h1>Scheduled menus</h1><p>Your regular menus, ready for the week ahead.</p></div><button className="btn schedule-primary" onClick={() => onEdit(newSchedule(undefined, delivery))}><Icon name="plus" className="i-18" />Create scheduled menu</button></header>
     <p className="schedule-local"><Icon name="circle-alert" className="i-16" />Saved on this device. Automatic purchasing and notifications are not connected. Prepare each draft here for review and approval.</p>
     {notice && <p role="status" className="schedule-notice">{notice}</p>}
@@ -59,7 +61,8 @@ export function ScheduledMenus({ schedules, editor, onEdit, onSave, onDelete, on
   </main>;
 }
 
-function ScheduleEditor({ initial, existing, onSave, onCancel, onDelete, notice }: { initial: Schedule; existing: boolean; onSave: (s: Schedule) => boolean; onCancel: () => void; onDelete: (id: string) => void; notice: string }) {
+export function ScheduleEditor({ initial, existing, onSave, onCancel, onDelete, notice }: { initial: Schedule; existing: boolean; onSave: (s: Schedule) => boolean; onCancel: () => void; onDelete: (id: string) => void; notice: string }) {
+  const dialog = useRef<HTMLDialogElement>(null);
   const [s, set] = useState(initial);
   const [dishes, setDishes] = useState(initial.dishes.join('\n'));
   const [placeOpen, setPlaceOpen] = useState(false);
@@ -68,13 +71,13 @@ function ScheduleEditor({ initial, existing, onSave, onCancel, onDelete, notice 
   const candidate = { ...s, name: s.name.trim(), dishes: dishes.split('\n').map(d => d.trim()).filter(Boolean) };
   const valid = validSchedule(candidate);
   const next = valid ? occurrences({ ...candidate, paused: false })[0] : undefined;
-  useEffect(() => { document.getElementById('schedule-name')?.focus({ preventScroll: true }); }, []);
+  useEffect(() => { const previous = document.activeElement as HTMLElement | null; dialog.current?.showModal(); document.getElementById('schedule-name')?.focus({preventScroll:true}); return () => { dialog.current?.close(); previous?.focus(); }; }, []);
 
-  return <main className="schedules schedule-editor">
+  return <dialog ref={dialog} className="schedule-dialog" aria-labelledby="schedule-editor-title" onCancel={e => { e.preventDefault(); onCancel(); }}><section className="schedules schedule-editor">
     <div className="schedule-editor__shell">
-      <button className="schedule-text schedule-editor__back" onClick={onCancel}><Icon name="chevron-right" className="i-14" />Scheduled menus</button>
+      <button type="button" className="round schedule-editor__close" aria-label="Close schedule" onClick={onCancel}><Icon name="x" className="i-18" /></button>
       <header className="schedule-editor__heading">
-        <h1>{existing ? 'Edit scheduled menu' : 'Create scheduled menu'}</h1>
+        <h1 id="schedule-editor-title">{existing ? 'Edit scheduled menu' : 'Create scheduled menu'}</h1>
         <p>{existing ? 'Adjust your menu and weekly schedule.' : 'Repeat your menu on the days you choose.'}</p>
       </header>
       <form onSubmit={e => { e.preventDefault(); if (valid && onSave(candidate)) onCancel(); }}>
@@ -100,17 +103,18 @@ function ScheduleEditor({ initial, existing, onSave, onCancel, onDelete, notice 
             {!s.weekdays.length && <small role="alert">Choose at least one delivery day.</small>}
           </fieldset>
           <div className="schedule-field-pair">
-            <label>Starting from<input type="date" required value={s.startDate} onChange={e => update({ startDate: e.target.value })} /></label>
-            <label>Delivery time<select value={s.delivery.time} onChange={e => update({ delivery: { ...s.delivery, time: e.target.value } })}>{DELIVERY_TIMES.map(t => <option key={t}>{t}</option>)}</select></label>
+            <ScheduleDate value={s.startDate} onChange={startDate => update({startDate})} />
+            <ScheduleTime label="Delivery time" value={s.delivery.time} options={DELIVERY_TIMES} onChange={time => update({delivery:{...s.delivery,time}})} />
           </div>
-          <div className="schedule-editor__location"><Icon name="truck" className="i-18" /><span><strong>{s.delivery.placeName}</strong><small>{s.delivery.address}</small></span><button type="button" className="schedule-text" onClick={() => setPlaceOpen(true)}>Change<span className="sr-only"> location</span></button></div>
+          <div className="schedule-editor__location"><Icon name="truck" className="i-18" /><span><strong>{s.delivery.placeName}</strong><small>{s.delivery.address}</small></span><button type="button" className="schedule-text" aria-expanded={placeOpen} onClick={() => setPlaceOpen(!placeOpen)}>Change<span className="sr-only"> location</span></button></div>
+          {placeOpen && <fieldset className="schedule-inline-places"><legend>Saved delivery locations</legend>{[s.delivery,...DELIVERY_PLACES.filter(p => p.placeId !== s.delivery.placeId)].map(place => <label key={place.placeId}><input type="radio" name="schedule-place" checked={s.delivery.placeId === place.placeId} onChange={() => {update({delivery:{...s.delivery,...place}});setPlaceOpen(false);}} /><span>{place.placeName}<small>{place.address}</small></span></label>)}</fieldset>}
         </section>
 
         <section className="schedule-editor__section" aria-labelledby="schedule-purchasing-heading">
           <h2 id="schedule-purchasing-heading">Purchasing</h2>
           <div className="schedule-field-pair">
             <label>Prepare draft<select value={s.leadDays} onChange={e => update({ leadDays: Number(e.target.value) })}>{[1,2,3,4,5,6,7].map(d => <option key={d} value={d}>{d} {d === 1 ? 'day' : 'days'} before delivery</option>)}</select></label>
-            <label>At (Helsinki time)<input type="time" required value={s.purchaseTime} onChange={e => update({ purchaseTime: e.target.value })} /></label>
+            <ScheduleTime label="At (Helsinki time)" value={s.purchaseTime} options={Array.from({length:48},(_,i) => String(Math.floor(i/2)).padStart(2,'0')+':'+(i%2 ? '30' : '00'))} onChange={purchaseTime => update({purchaseTime})} />
           </div>
           <details className="schedule-editor__costs"><summary>Cost estimate and review limit<Icon name="chevron-down" className="i-14" /></summary><div className="schedule-field-pair">
             <label>Estimate per delivery (&euro;)<input type="number" min={0} step="0.01" value={s.estimate ?? ''} placeholder="Optional" onChange={e => update({ estimate: e.target.value === '' ? null : Number(e.target.value) })} /></label>
@@ -133,6 +137,6 @@ function ScheduleEditor({ initial, existing, onSave, onCancel, onDelete, notice 
         </footer>
       </form>
     </div>
-    {placeOpen && <DeliveryPicker locationOnly value={s.delivery} defaultDate={todayHelsinki()} onClose={() => setPlaceOpen(false)} onConfirm={choice => { update({ delivery: { ...choice, time: s.delivery.time } }); setPlaceOpen(false); }} />}
-  </main>;
+
+  </section></dialog>;
 }

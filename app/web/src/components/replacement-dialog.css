@@ -75,3 +75,8 @@
 .replacement-dialog__vat { margin-top:var(--s-16); color:var(--muted); font-size:var(--fs-11); }
 .replacement-dialog__actions { margin-top:var(--s-12); padding-top:0; }
 .replacement-dialog__recovery { display:flex; flex-wrap:wrap; gap:var(--s-8); }
+
+.replacement-dialog:has(#alternative-draft-heading) .replacement-dialog__reason{color:var(--text-2);line-height:var(--lh-body)}
+.replacement-dialog:has(#alternative-draft-heading) h3{font-size:var(--fs-14);color:var(--teal);margin:var(--s-24) 0 var(--s-12)}
+.replacement-dialog:has(#alternative-draft-heading) .alternative-draft-products{margin-top:0;margin-bottom:var(--s-16)}
+.replacement-notice:has([aria-label]) .schedule-text{margin-left:var(--s-12)}

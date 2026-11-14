@@ -6,6 +6,7 @@ import { allEvents, events } from "./audit";
 import { decide, listOrders, placeOrder, type Decision } from "./orders";
 import { buildBasket, editLine, HttpError, recompute, rescaleGuests, type BasketRequest, type LineEdit } from "./plan";
 import { chat } from "./chat";
+import { checkReplacements, proposeRecipeChange, applyRecipeChange } from './plan';
 import { productImage } from "./images";
 import { handleMcp } from "./mcp";
 import { getMandate } from "./policy";
@@ -77,6 +78,15 @@ app.get("/api/basket/:id", (c) => {
   return b ? c.json(recompute(b)) : c.json({ error: "basket not found" }, 404);
 });
 app.get("/api/basket/:id/audit", (c) => c.json(events(c.req.param("id"))));
+app.post('/api/basket/:id/lines/:lineId/replacements/check', async c => {
+  try { return c.json(await checkReplacements(c.req.param('id'),c.req.param('lineId'))); } catch(e) { return fail(c,e); }
+});
+app.post('/api/basket/:id/lines/:lineId/recipe-change', async c => {
+  try { return c.json(await proposeRecipeChange(c.req.param('id'),c.req.param('lineId'))); } catch(e) { return fail(c,e); }
+});
+app.post('/api/basket/:id/recipe-change/:proposalId/apply', c => {
+  try { return c.json(applyRecipeChange(c.req.param('id'),c.req.param('proposalId'),'buyer')); } catch(e) { return fail(c,e); }
+});
 app.post("/api/basket/:id/lines/:lineId", async (c) => {
   try {
     const body = await c.req.json<LineEdit>().catch(() => ({}) as LineEdit);

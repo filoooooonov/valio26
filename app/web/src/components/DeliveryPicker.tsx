@@ -11,6 +11,7 @@ const PLACES = [
  { placeId: 'kaleva-punavuori', placeName: 'Restaurant Kaleva, Punavuori', address: 'Punavuori, Helsinki', latitude: 60.1598, longitude: 24.9361 },
 ];
 export const RESTAURANT_DELIVERY = PLACES[1];
+export const DELIVERY_PLACES = PLACES;
 export const DELIVERY_TIMES = ['6\u20138', '8\u201310', '10\u201312', '12\u201314'];
 export function localToday() { const d = new Date(); return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-'); }
 export function DeliveryPicker({ value, defaultDate, onClose, onConfirm, locationOnly = false }: { locationOnly?: boolean; value: DeliveryChoice | null; defaultDate: string; onClose: () => void; onConfirm: (choice: DeliveryChoice) => void }) {

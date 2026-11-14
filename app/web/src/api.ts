@@ -202,7 +202,13 @@ export const APPROVER = "Mikko L.";
 export const isNotFound = (e: unknown) =>
   e instanceof ApiError && e.status === 404;
 
+export type RecipeProposal = {id:string; from:string; to:string; before:BasketLine[]; after:BasketLine[]; totalBefore:number; totalAfter:number};
+const checkedData = <T,>(r:{status:number;data:T}) => { if (r.status >= 400) throw new ApiError(r.status,(r.data as {error?:string}).error ?? 'Request failed',r.data); return r.data; };
+
 export const api = {
+  checkReplacements: (id:string,lineId:string) => call<Basket>(`/basket/${id}/lines/${lineId}/replacements/check`,{}).then(checkedData),
+  recipeChange: (id:string,lineId:string) => call<RecipeProposal>(`/basket/${id}/lines/${lineId}/recipe-change`,{}).then(checkedData),
+  applyRecipeChange: (id:string,proposalId:string) => call<Basket>(`/basket/${id}/recipe-change/${proposalId}/apply`,{}).then(checkedData),
   mandate: (customer: string) =>
     call<Mandate>(`/mandate/${customer}`).then((r) => r.data),
   build: (

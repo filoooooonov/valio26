@@ -58,7 +58,6 @@ type Props = {
   onNew: () => void;
   onChoose: (lineId: string, sku: string) => void;
   onRemoveMany: (lineIds: string[]) => void;
-  onFindAlternatives?: (lines: BasketLine[]) => void;
   onSwitchResend: (lineId: string, sku: string) => void;
   onSeeAll: (lineId: string) => void;
   onGuests: (n: number) => void;
@@ -504,7 +503,7 @@ export function NoSubstitute({ lines, date, busy, onRemove, onFind }: {
     {lines.map(line => <div className="stock-problem__unavailable" key={line.id}>{!single && <strong>{niceName(line.name)}</strong>}<IssueDetail line={line} /></div>)}
     <p className="stock-problem__help">No suitable replacement found.</p>
     <div className="answers stock-problem__actions">
-      <button className="ans ans--primary" disabled={busy} aria-busy={busy || undefined} onClick={onFind}>{busy ? <><Icon name="loader" className="i-14 spin" />Finding alternatives...</> : "Find another"}</button>
+      <button className="ans ans--primary" disabled={busy} aria-busy={busy || undefined} onClick={onFind}>{busy ? <><Icon name="loader" className="i-14 spin" />Checking recipe...</> : "Suggest a different recipe"}</button>
       <button className="stock-problem__text-action" disabled={busy} onClick={onRemove}>{single ? "Don't order it" : "Don't order these items"}</button>
     </div>
   </section>;
