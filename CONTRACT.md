@@ -34,6 +34,24 @@ GET  /api/orders/:id                          -> Order
 GET  /api/orders/:id/audit                    -> AuditEvent[]  (the whole basket + order record)
 GET  /api/mandate/:customer                   -> Mandate
 GET  /api/calls                               -> last 100 Valio API calls { at, endpoint, skus, ms, status }
+# v1.2 (Sat 14 Nov, V2 chat-left demo)
+POST /api/basket/:id/guests { people: number, by? }  -> Basket
+       # deterministic rescale, no LLM: every per-portion line is recomputed for `people` and re-rounded to
+       # whole sales units; ONE stock call for the changed SKUs; lines that no longer fit stock get an issue.
+       # Decided swaps are kept. Non-per-portion lines (e.g. "1 kg bouillon") keep their qty unless they scale.
+POST /api/basket/:id/chat   { text: string, by? }    -> ChatReply
+       # Claude maps the text to gateway actions ONLY (set_guests, set_qty, choose_option, remove_line, replan).
+       # The gateway runs them through the same handlers and rules; Claude never edits prices or the mandate.
+       # "replan" (e.g. "add a vegan main") builds a NEW basket from request + change; reply.basket.id differs.
+GET  /api/products/:sku/image                 -> { url: string | null }
+       # one EAN lookup on valioaimo.fi product search per SKU, only when the UI shows that product; cached on disk
+       # (data/raw/valio/images.cache.json). Mentors OK'd using valioaimo.fi images.
+```
+```ts
+type ChatReply = { reply: string;            // 1-3 plain sentences, what changed and why
+  actions: { kind: "set_guests"|"set_qty"|"choose_option"|"remove_line"|"replan"; summary: string }[];
+  basket: Basket;                            // the basket after the actions (new id if replanned)
+  question?: string };                       // set when the text was ambiguous; no actions taken
 ```
 MCP tools (thin wrapper, same handlers): `search_products`, `check_stock`, `build_basket`, `place_order`, `get_order`.
 
