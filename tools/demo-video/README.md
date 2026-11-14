@@ -35,6 +35,30 @@ node tools/demo-video/make.mjs tools/demo-video/scripts/pitch.md --render-only  
 If you change what happens in the browser (a click, typed text, a URL) and use `--render-only`, the tool refuses and
 names the scenes to re-record. `--captions` burns scene titles into the video as lower thirds.
 
+## What can I click? `--inspect`
+
+Lists every target on a screen as a ready-to-paste step. Each suggestion is checked with the recorder's own matcher, so
+duplicate labels come back with a `#1` or `in "region"` that works.
+
+```powershell
+node tools/demo-video/make.mjs --inspect / "?view=mikko"         # look at pages; clicks nothing, records nothing
+node tools/demo-video/make.mjs tools/demo-video/scripts/pitch.md --inspect --until "Agree on the menu before any lookup"
+```
+
+The second form performs the script's steps up to that scene without recording, then lists what is on the final screen.
+If a step fails along the way, it prints the error and lists that screen instead. Use it to write the next scene.
+Running a script this way has the same side effects as recording it: an order is still an order. In Git Bash, write
+`home` instead of `/`.
+
+```
+◆ http://localhost:5173/
+  fields
+    type "…" into "Message the assistant"
+  buttons
+    click "Catering for 50 on Saturday"
+    click "Send"   · disabled now
+```
+
 ## Script format
 
 ```markdown
@@ -45,7 +69,7 @@ viewport: 1600x900
 camera: auto            # auto = zoom in while typing; manual = only your "zoom on" lines
 ---
 
-# Anna asks for catering                      ← a scene = one cue in voiceover.md
+# You ask for catering                        ← a scene = one cue in voiceover.md
 open /
 type "Ingredients for 50 people on Saturday" into "Message the assistant"
 click "Send"
@@ -53,7 +77,7 @@ wait for "Your menu" up to 90s, cut           ← the waiting time is removed fr
 zoom on "Your menu" x1.3
 hold 2s
 zoom out
-> Say: Nothing is looked up until Anna approves the menu.
+> Say: Nothing is looked up until you approve the menu.
 ```
 
 | Step | Meaning | Re-render only? |

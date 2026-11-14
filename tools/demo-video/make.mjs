@@ -5,6 +5,8 @@
 //   … --until "Scene"      record only up to that scene
 //   … --dry                parse and print the plan
 //   … --captions           burn scene titles as lower thirds
+//   … --inspect            run the script without recording, then list targets on the last screen
+//   make.mjs --inspect / /?view=mikko    list targets on pages directly (touches nothing)
 import { readFileSync, existsSync } from "node:fs";
 import { resolve, basename } from "node:path";
 import { parseScript, describe, ScriptError } from "./lib/script.mjs";
@@ -15,9 +17,21 @@ const value = (f) => {
   const i = args.indexOf(f);
   return i >= 0 ? args[i + 1] : undefined;
 };
-const file = args.find(
+const positional = args.filter(
   (a, i) => !a.startsWith("--") && args[i - 1] !== "--until",
 );
+// --inspect with pages instead of a script: list targets on each page, touching nothing
+if (flag("--inspect") && !positional.some((a) => a.endsWith(".md"))) {
+  const { inspectUrls } = await import("./lib/inspect.mjs");
+  const meta = {
+    app: process.env.APP_URL ?? "http://localhost:5173",
+    width: 1600,
+    height: 900,
+  };
+  await inspectUrls(meta, positional);
+  process.exit(0);
+}
+const file = positional[0];
 if (!file) {
   console.error(
     'Usage: node tools/demo-video/make.mjs <script.md> [--render-only] [--until "Scene"] [--dry] [--captions]',
@@ -43,6 +57,12 @@ try {
   const script = parseScript(readFileSync(path, "utf8"), file);
   if (flag("--dry")) {
     console.log(describe(script));
+    process.exit(0);
+  }
+  if (flag("--inspect")) {
+    // run the script's browser steps (nothing recorded), then list what can be targeted on the final screen
+    const { record } = await import("./lib/recorder.mjs");
+    await record(script, { outDir, until: value("--until"), inspect: true });
     process.exit(0);
   }
   let recordSeconds = 0;

@@ -14,14 +14,14 @@ camera: auto
 # Intro
 card "Catering for 50, prepared in one request" "Valio Aimo · Trusted trade agents"
 hold 2s
-> Say: Anna runs the kitchen at Hotelli Kaleva. On Saturday she's catering for fifty people, and she orders everything from Valio Aimo.
+> Say: You run a hotel kitchen. On Saturday you're catering for fifty people, and you order everything from Valio Aimo.
 
-# Anna asks in the webshop she already uses
+# You ask in the webshop you already use
 open /
 hold 0.5s
 type "Ingredients for a catering event for 50 people on Saturday, one vegan option" into "Message the assistant"
 click "Send"
-> Say: She asks the assistant inside the Aimo webshop in plain words.
+> Say: You ask the assistant inside the Aimo webshop in plain words.
 
 # The assistant only asks what is missing
 wait for "Continue to menu" or "Your menu" up to 60s, cut
@@ -36,7 +36,7 @@ zoom on "Your menu" x1.25, optional
 hold 2.5s
 zoom out
 click "Find products for this menu"
-> Say: First they agree on a menu. Nothing has been priced or looked up yet, and Anna can edit any dish.
+> Say: First you agree on a menu. Nothing has been priced or looked up yet, and you can edit any dish.
 
 # Priced, stock-checked basket
 wait for "Review and confirm" up to 150s, cut
@@ -52,7 +52,7 @@ wait for "Use replacement" or "Keep item", optional
 hold 2s
 click "Use replacement", optional
 hold 1s
-> Say: When a product can't be delivered, the gateway proposes a checked alternative. Anna decides; the agent never swaps silently outside its mandate.
+> Say: When a product can't be delivered, the gateway proposes a checked alternative. You decide; the agent never swaps silently outside its mandate.
 
 # The spending mandate decides who signs
 click "Review and confirm"

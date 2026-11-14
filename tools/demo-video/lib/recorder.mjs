@@ -5,6 +5,8 @@ import { mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import { exec } from "node:child_process";
 import { ScriptError } from "./script.mjs";
+import { createTargets } from "./targets.mjs";
+import { inspectPage } from "./inspect.mjs";
 
 const root = resolve(import.meta.dirname, "../../..");
 const now = () => Date.now() / 1000;
@@ -14,27 +16,16 @@ function rng(seed) {
   return () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32;
 }
 
-const ROLES = [
-  "button",
-  "link",
-  "tab",
-  "checkbox",
-  "radio",
-  "switch",
-  "menuitem",
-  "option",
-  "textbox",
-  "searchbox",
-  "combobox",
-  "heading",
-  "dialog",
-];
-
-export async function record(script, { outDir, until, log = console.log }) {
+export async function record(
+  script,
+  { outDir, until, inspect = false, log = console.log },
+) {
   const { meta } = script;
   const recDir = resolve(outDir, "recording");
-  rmSync(recDir, { recursive: true, force: true });
-  mkdirSync(resolve(recDir, "frames"), { recursive: true });
+  if (!inspect) {
+    rmSync(recDir, { recursive: true, force: true });
+    mkdirSync(resolve(recDir, "frames"), { recursive: true });
+  }
   const app = meta.app.replace(/\/$/, "");
   const r = await fetch(app).catch((e) => ({ ok: false, status: e.message }));
   if (!r.ok)
@@ -100,111 +91,7 @@ export async function record(script, { outDir, until, log = console.log }) {
     pointer = { x, y };
   }
 
-  // ---- target resolution: role/name → label → placeholder → text; exact first, then substring ----
-  async function regionScope(region) {
-    for (const role of [
-      "dialog",
-      "region",
-      "form",
-      "navigation",
-      "complementary",
-      "group",
-      "article",
-    ]) {
-      const l = page
-        .getByRole(role, { name: region })
-        .filter({ visible: true });
-      if (await l.count()) return l.first();
-    }
-    const l = page
-      .locator(
-        "section,article,aside,form,fieldset,li,[role=dialog],[role=region],[role=group]",
-      )
-      .filter({ hasText: region, visible: true });
-    let best = null,
-      area = Infinity;
-    for (let i = 0, n = Math.min(await l.count(), 40); i < n; i++) {
-      const b = await l.nth(i).boundingBox();
-      if (b && b.width * b.height < area) {
-        area = b.width * b.height;
-        best = l.nth(i);
-      }
-    }
-    return best;
-  }
-  // "A" or "B": the first alternative that is on screen wins
-  async function find(t) {
-    let last;
-    for (const text of t.alts ?? [t.text]) {
-      last = await findOne({ ...t, text });
-      if (last.loc || last.ambiguous) return last;
-    }
-    return last;
-  }
-  async function findOne(t) {
-    const scope = t.region ? await regionScope(t.region) : page;
-    if (!scope) return { error: `region "${t.region}" not found` };
-    for (const exact of [true, false]) {
-      const strategies = [
-        ...ROLES.map((role) => scope.getByRole(role, { name: t.text, exact })),
-        scope.getByLabel(t.text, { exact }),
-        scope.getByPlaceholder(t.text, { exact }),
-        scope.getByText(t.text, { exact }),
-      ];
-      for (const s of strategies) {
-        const v = s.filter({ visible: true }),
-          n = await v.count();
-        if (!n) continue;
-        if (t.nth)
-          return n >= t.nth
-            ? { loc: v.nth(t.nth - 1) }
-            : { error: `only ${n} matches, #${t.nth} requested` };
-        if (n > 1)
-          return {
-            error: `${n} visible matches; add #1…#${n} or in "<region>"`,
-            ambiguous: true,
-          };
-        return { loc: v.first() };
-      }
-    }
-    return { error: "no visible match" };
-  }
-  async function similar(text) {
-    const words = text
-      .toLowerCase()
-      .split(/\W+/)
-      .filter((w) => w.length > 2);
-    const names = await page.evaluate(() =>
-      [
-        ...document.querySelectorAll(
-          "button,a,[role=button],input,textarea,select,h1,h2,h3,h4,[role=tab],label,[role=checkbox]",
-        ),
-      ]
-        .filter(
-          (e) =>
-            e.getClientRects().length &&
-            getComputedStyle(e).visibility !== "hidden",
-        )
-        .map((e) =>
-          (
-            e.getAttribute("aria-label") ||
-            e.getAttribute("placeholder") ||
-            e.innerText ||
-            e.value ||
-            ""
-          )
-            .trim()
-            .replace(/\s+/g, " ")
-            .slice(0, 70),
-        )
-        .filter(Boolean),
-    );
-    const uniq = [...new Set(names)];
-    const close = uniq.filter((n) =>
-      words.some((w) => n.toLowerCase().includes(w)),
-    );
-    return (close.length ? close : uniq).slice(0, 12);
-  }
+  const { find, similar } = createTargets(page);
   let where = "";
   async function resolveTarget(t, timeout = 8) {
     const end = Date.now() + timeout * 1000;
@@ -459,11 +346,12 @@ export async function record(script, { outDir, until, log = console.log }) {
 
   const started = now();
   log_.cursor.push({ t: started, visible: true });
-  await cdp.send("Page.startScreencast", {
-    format: "jpeg",
-    quality: 86,
-    everyNthFrame: 1,
-  });
+  if (!inspect)
+    await cdp.send("Page.startScreencast", {
+      format: "jpeg",
+      quality: 86,
+      everyNthFrame: 1,
+    });
   try {
     for (const [si, scene] of script.scenes.entries()) {
       const rec = {
@@ -508,11 +396,20 @@ export async function record(script, { outDir, until, log = console.log }) {
       }
     }
     await sleep(400);
+  } catch (e) {
+    // --inspect: show what is on screen where the script stopped, instead of only the error
+    if (!(inspect && e instanceof ScriptError)) throw e;
+    log(`✖ ${e.message.split("\n")[0]}`);
   } finally {
+    if (inspect)
+      await inspectPage(page, log).catch((e) =>
+        log(`  (inspect failed: ${e.message})`),
+      );
     await cdp.send("Page.stopScreencast").catch(() => {});
     await Promise.all(writes);
     await browser.close();
   }
+  if (inspect) return null;
   if (!frames.length) throw new Error("No frames were captured");
   const data = {
     version: 1,
