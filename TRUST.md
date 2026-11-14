@@ -74,7 +74,7 @@ The gateway handles each line it cannot deliver as asked:
 3. **Price** for the needed quantity.
 4. **CO₂e** per kg for the product group: from Valio's carbon-footprint data.
 
-The top option is labelled **Best** ("Closest safe match"). **Better** and **Good** each come with a one-line reason relative to Best, for example *"€3.20 cheaper than Best, less reliable delivery (85 % on time), lower CO₂."* Only the API calls needed are made: one price/stock call for the chosen products, and one more call for all the alternatives together.
+The top option is labelled **Best** ("Closest safe match", or "Best available" when every option adds an allergen, which is then named). **Better** and **Good** each come with a one-line reason relative to Best, for example *"€3.20 cheaper than Best, less reliable delivery (85 % on time), lower CO₂."* Only the API calls needed are made: one price/stock call for the chosen products, and one more call for all the alternatives together.
 
 ---
 

@@ -653,7 +653,7 @@ export function tierWhy(o: Option, best: Option, index: number, baseContains: st
     ? `${Math.round(onTime * 100)} % on time`
     : "no on-time history";
   if (index === 0)
-    return `Closest safe match: ${[newAllergens, onTimePhrase].join(", ")}.`;
+    return `${extra.length ? "Best available" : "Closest safe match"}: ${[newAllergens, onTimePhrase].join(", ")}.`;
   const d = r2(o.total - best.total);
   const phrases = [d < -0.005
     ? `${eur(-d)} cheaper than Best`
