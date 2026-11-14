@@ -1,5 +1,7 @@
 # TASKS.md: claim before starting
 
+- [~] @aleksei-codex S40 Place product-review boxes in chronological chat order above newer messages; replace visible request wording with order (rubric: demo, user need) - files: app/web/src/components/Chat.tsx, thread.ts and UI copy.
+
 - [x] @aleksei-codex S39 Unchecked cart rows stay visible across reload with saved quantity; explicit removal hides rows. Added Ctrl+Z/Cmd+Z and kit Undo button for up to30 server-owned line edits; stale/locked guards, audit and exact replacement restoration. Phone checkboxes remain usable. Desktop1440/phone390 workflows pass; build and80fast tests pass (rubric: user need, guardrails) - files: app/web/src/App.tsx, components/OrderPanel.tsx, components/order-polish.css, api.ts; app/server/src/app.ts, plan.ts, cartHistory.ts, cartHistory.test.ts; CONTRACT.md.
 
 - [x] @aleksei-codex S38 Removed the three draft composer suggestion buttons and the Order draft eyebrow requested by the user. Desktop/phone checked; build passes (rubric: demo) - files: app/web/src/components/Chat.tsx, OrderPanel.tsx.
