@@ -3,7 +3,7 @@ import { api } from '../api';
 import { dayLabel, money } from '../format';
 import { Icon } from '../icons';
 import { DAYS, monthlyProjection, occurrences, shiftDate, todayHelsinki, validSchedule, type Schedule } from '../recurring';
-import { DeliveryPicker, RESTAURANT_DELIVERY, type DeliveryChoice } from './DeliveryPicker';
+import { DeliveryPicker, DELIVERY_TIMES, RESTAURANT_DELIVERY, type DeliveryChoice } from './DeliveryPicker';
 import './scheduled-menus.css';
 
 export type ScheduleSeed = { name: string; dishes: string[]; people: number; dietary: string; estimate: number | null; delivery?: DeliveryChoice };
@@ -68,14 +68,71 @@ function ScheduleEditor({ initial, existing, onSave, onCancel, onDelete, notice 
   const candidate = { ...s, name: s.name.trim(), dishes: dishes.split('\n').map(d => d.trim()).filter(Boolean) };
   const valid = validSchedule(candidate);
   const next = valid ? occurrences({ ...candidate, paused: false })[0] : undefined;
-  useEffect(() => { document.getElementById('schedule-name')?.focus(); }, []);
-  return <main className="schedules schedule-editor"><button className="schedule-text" onClick={onCancel}>‹ Scheduled menus</button><header className="schedules__heading"><div><h1>{existing ? 'Edit scheduled menu' : 'Create scheduled menu'}</h1><p>Choose your menu once. Set the rhythm for future orders.</p></div></header><p className="schedule-local">Saved on this device. Automatic purchasing is not connected; each draft requires manual preparation and approval.</p>
-    <form onSubmit={e => { e.preventDefault(); if (valid && onSave(candidate)) onCancel(); }}><div className="schedules__layout"><div className="schedule-editor__fields"><section><h2>Your menu</h2><label>Menu name<input id="schedule-name" required maxLength={120} placeholder="e.g. Monday team lunch" value={s.name} onChange={e => update({ name: e.target.value })} /></label><label>Dishes or items<textarea required rows={4} placeholder={'Creamy salmon soup\nRye bread\nBlueberry pie'} value={dishes} onChange={e => setDishes(e.target.value)} /><small>One dish or item per line.</small></label><div className="schedule-field-pair"><label>Guests per delivery<input type="number" min={1} max={10000} required value={s.people || ''} onChange={e => update({ people: Number(e.target.value) })} /></label><label>Dietary needs and allergies<input placeholder="e.g. 3 lactose-free; no nuts" value={s.dietary} onChange={e => update({ dietary: e.target.value })} /></label></div><p className="schedule-muted">Dietary requirements will be reviewed before products are selected.</p></section>
-      <section><h2>Delivery schedule</h2><fieldset><legend>Repeat every week on</legend><div className="schedule-weekdays">{[1,2,3,4,5,6,0].map(d => <label key={d}><input type="checkbox" checked={s.weekdays.includes(d)} onChange={e => update({ weekdays: e.target.checked ? [...s.weekdays,d].sort((a,b) => a-b) : s.weekdays.filter(v => v !== d) })} /><span>{DAYS[d].slice(0,3)}</span></label>)}</div>{!s.weekdays.length && <small role="alert">Choose at least one delivery day.</small>}</fieldset><div className="schedule-field-pair"><label>Start deliveries from<input type="date" required value={s.startDate} onChange={e => update({ startDate: e.target.value })} /></label><label>Delivery time<select value={s.delivery.time} onChange={e => update({ delivery: { ...s.delivery, time: e.target.value } })}>{['6–8','8–10','10–12','12–14'].map(t => <option key={t}>{t}</option>)}</select></label></div><div className="schedule-location"><Icon name="truck" className="i-20" /><span><strong>{s.delivery.placeName}</strong><small>{s.delivery.address}</small></span><button type="button" className="schedule-text" onClick={() => setPlaceOpen(true)}>Change location</button></div></section>
-      <section><h2>Purchasing and approval</h2><div className="schedule-field-pair"><label>Prepare before delivery<select value={s.leadDays} onChange={e => update({ leadDays: Number(e.target.value) })}>{[1,2,3,4,5,6,7].map(d => <option key={d} value={d}>{d} {d === 1 ? 'day' : 'days'} before</option>)}</select></label><label>Purchasing time (Helsinki)<input type="time" required value={s.purchaseTime} onChange={e => update({ purchaseTime: e.target.value })} /></label></div><label>Review threshold per delivery (€)<input type="number" min={1} step="0.01" required value={s.limit || ''} onChange={e => update({ limit: Number(e.target.value) })} /><small>Flag drafts above this amount for your review. Existing account approval rules still apply to every order.</small></label><p className="schedule-approval"><Icon name="circle-check" className="i-18" />Always review prices, product issues and substitutions before ordering.</p></section>
-    </div><aside className="schedule-aside"><section className="schedule-month"><h2>Schedule preview</h2><p>{s.weekdays.length ? s.weekdays.map(d => DAYS[d]).join(', ') : 'Choose delivery days'} · every week</p><div className="schedule-preview-date"><small>Next purchasing run</small><strong>{next ? `${dayLabel(shiftDate(next,-s.leadDays))}, ${s.purchaseTime}` : 'Complete the schedule'}</strong></div><div className="schedule-preview-date"><small>Next delivery</small><strong>{next ? `${dayLabel(next)}, ${s.delivery.time}` : 'No upcoming delivery'}</strong></div><label>Estimate per delivery, excl. VAT (€)<input type="number" min={0} step="0.01" value={s.estimate ?? ''} placeholder="Optional" onChange={e => update({ estimate: e.target.value === '' ? null : Number(e.target.value) })} /></label><small>For monthly planning only. Actual prices and delivery cut-offs are checked when preparing a draft.</small>{s.paused && <p>This schedule is paused. Saving keeps it paused.</p>}</section></aside></div>
-    <footer className="schedule-editor__footer">{confirmDelete ? <div className="schedule-delete"><span>Delete this saved schedule?</span><button type="button" className="schedule-text" onClick={() => onDelete(s.id)}>Delete schedule</button><button type="button" className="schedule-text" onClick={() => setConfirmDelete(false)}>Keep schedule</button></div> : existing && <button type="button" className="schedule-text" onClick={() => setConfirmDelete(true)}>Delete schedule</button>}<span />{notice && <p role="status">{notice}</p>}<button type="button" className="btn btn--outline" onClick={onCancel}>Cancel</button><button className="btn schedule-primary" type="submit" disabled={!valid}>Save schedule</button></footer></form>
+  useEffect(() => { document.getElementById('schedule-name')?.focus({ preventScroll: true }); }, []);
+
+  return <main className="schedules schedule-editor">
+    <div className="schedule-editor__shell">
+      <button className="schedule-text schedule-editor__back" onClick={onCancel}><Icon name="chevron-right" className="i-14" />Scheduled menus</button>
+      <header className="schedule-editor__heading">
+        <h1>{existing ? 'Edit scheduled menu' : 'Create scheduled menu'}</h1>
+        <p>{existing ? 'Adjust your menu and weekly schedule.' : 'Repeat your menu on the days you choose.'}</p>
+      </header>
+      <form onSubmit={e => { e.preventDefault(); if (valid && onSave(candidate)) onCancel(); }}>
+        <section className="schedule-editor__section" aria-labelledby="schedule-menu-heading">
+          <h2 id="schedule-menu-heading">Menu</h2>
+          <div className="schedule-editor__identity">
+            <label>Menu name<input id="schedule-name" required maxLength={120} placeholder="e.g. Monday team lunch" value={s.name} onChange={e => update({ name: e.target.value })} /></label>
+            <label>Guests<input aria-label="Guests per delivery" type="number" min={1} max={10000} required value={s.people || ''} onChange={e => update({ people: Number(e.target.value) })} /></label>
+          </div>
+          <details className="schedule-editor__menu" open={initial.dishes.length ? undefined : true}>
+            <summary><span><strong>{candidate.dishes.length ? candidate.dishes.join(', ') : 'Add dishes or items'}</strong><small>{s.dietary || 'Dietary needs confirmed before ordering'}</small></span><span className="schedule-editor__edit">Edit<Icon name="chevron-down" className="i-14" /></span></summary>
+            <div className="schedule-editor__menu-fields">
+              <label>Dishes or items<textarea required rows={3} placeholder={'Creamy salmon soup\nRye bread'} value={dishes} onChange={e => setDishes(e.target.value)} /><small>One dish or item per line.</small></label>
+              <label>Dietary needs and allergies<input placeholder="e.g. 3 lactose-free; no nuts" value={s.dietary} onChange={e => update({ dietary: e.target.value })} /></label>
+            </div>
+          </details>
+        </section>
+
+        <section className="schedule-editor__section" aria-labelledby="schedule-delivery-heading">
+          <h2 id="schedule-delivery-heading">Delivery</h2>
+          <fieldset className="schedule-editor__days"><legend>Every week on</legend>
+            <div className="schedule-weekdays">{[1,2,3,4,5,6,0].map(d => <label key={d}><input aria-label={DAYS[d]} type="checkbox" checked={s.weekdays.includes(d)} onChange={e => update({ weekdays: e.target.checked ? [...s.weekdays,d].sort((a,b) => a-b) : s.weekdays.filter(v => v !== d) })} /><span>{DAYS[d].slice(0,3)}</span></label>)}</div>
+            {!s.weekdays.length && <small role="alert">Choose at least one delivery day.</small>}
+          </fieldset>
+          <div className="schedule-field-pair">
+            <label>Starting from<input type="date" required value={s.startDate} onChange={e => update({ startDate: e.target.value })} /></label>
+            <label>Delivery time<select value={s.delivery.time} onChange={e => update({ delivery: { ...s.delivery, time: e.target.value } })}>{DELIVERY_TIMES.map(t => <option key={t}>{t}</option>)}</select></label>
+          </div>
+          <div className="schedule-editor__location"><Icon name="truck" className="i-18" /><span><strong>{s.delivery.placeName}</strong><small>{s.delivery.address}</small></span><button type="button" className="schedule-text" onClick={() => setPlaceOpen(true)}>Change<span className="sr-only"> location</span></button></div>
+        </section>
+
+        <section className="schedule-editor__section" aria-labelledby="schedule-purchasing-heading">
+          <h2 id="schedule-purchasing-heading">Purchasing</h2>
+          <div className="schedule-field-pair">
+            <label>Prepare draft<select value={s.leadDays} onChange={e => update({ leadDays: Number(e.target.value) })}>{[1,2,3,4,5,6,7].map(d => <option key={d} value={d}>{d} {d === 1 ? 'day' : 'days'} before delivery</option>)}</select></label>
+            <label>At (Helsinki time)<input type="time" required value={s.purchaseTime} onChange={e => update({ purchaseTime: e.target.value })} /></label>
+          </div>
+          <details className="schedule-editor__costs"><summary>Cost estimate and review limit<Icon name="chevron-down" className="i-14" /></summary><div className="schedule-field-pair">
+            <label>Estimate per delivery (&euro;)<input type="number" min={0} step="0.01" value={s.estimate ?? ''} placeholder="Optional" onChange={e => update({ estimate: e.target.value === '' ? null : Number(e.target.value) })} /></label>
+            <label>Review threshold (&euro;)<input type="number" min={1} step="0.01" required value={s.limit || ''} onChange={e => update({ limit: Number(e.target.value) })} /></label>
+          </div><small>Excl. VAT. The estimate is for planning; drafts above the threshold are flagged. Account approval rules still apply.</small></details>
+        </section>
+
+        <div className="schedule-editor__preview" aria-live="polite">
+          <div><Icon name="calendar" className="i-18" /><span><small>Next purchasing run</small><strong>{next ? `${dayLabel(shiftDate(next,-s.leadDays))}, ${s.purchaseTime}` : 'Choose your schedule'}</strong></span></div>
+          <Icon name="arrow-right" className="i-16" />
+          <div><Icon name="truck" className="i-18" /><span><small>Delivery</small><strong>{next ? `${dayLabel(next)}, ${s.delivery.time}` : 'No upcoming delivery'}</strong></span></div>
+        </div>
+        <p className="schedule-editor__note"><Icon name="shield-check" className="i-16" /><span>Saved on this device. Prepare and approve each draft manually; automatic purchasing is not connected.</span></p>
+        {s.paused && <p className="schedule-editor__note">This schedule is paused. Saving keeps it paused.</p>}
+        {notice && <p role="status" className="schedule-notice">{notice}</p>}
+        <footer className="schedule-editor__actions">
+          <div>{confirmDelete ? <div className="schedule-delete"><button type="button" className="schedule-text" onClick={() => onDelete(s.id)}>Confirm delete</button><button type="button" className="schedule-text" onClick={() => setConfirmDelete(false)}>Keep</button></div> : existing && <button type="button" className="schedule-text" onClick={() => setConfirmDelete(true)}>Delete schedule</button>}</div>
+          <button type="button" className="btn btn--outline" onClick={onCancel}>Cancel</button>
+          <button className="btn schedule-primary" type="submit" disabled={!valid}>{existing ? 'Save changes' : 'Save schedule'}</button>
+        </footer>
+      </form>
+    </div>
     {placeOpen && <DeliveryPicker locationOnly value={s.delivery} defaultDate={todayHelsinki()} onClose={() => setPlaceOpen(false)} onConfirm={choice => { update({ delivery: { ...choice, time: s.delivery.time } }); setPlaceOpen(false); }} />}
   </main>;
 }
-
