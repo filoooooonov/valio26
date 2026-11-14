@@ -19,10 +19,14 @@ Sponsor contracts: `docs/sponsors/valio/openapi.json`, product schema and README
 - Scheduled menus are currently device-local projections and manual draft preparation. Add backend recurring execution with fresh lookup, without claiming an unattended worker exists.
 - Add versioned validated REST/OpenAPI, an external client, focused tests and reproducible demos.
 
+## Sponsor scope correction
+
+After the latest discussion with Valio, scheduled menus are out of the core pivot: they already offer that feature. The existing page remains unchanged. New scheduler routes, worker and UI controls were removed from this change. The demonstration now centers on catering, direct external purchasing and an unavailable-product exception, with explicit reasons for every decision. Making an individual request recurring can remain an optional future extension.
+
 ## Phases
 
 1. P0: structured direct flow, final deterministic validation, scoped API authentication, exact approval revisions and persistent labelled simulation. Run focused tests after changes.
-2. P1: recurring execution with fresh data, substitution evidence, readable audit and policy configuration using existing patterns. Synthetic fixtures must be labelled.
+2. P1: substitution evidence, readable decisions and policy configuration using existing patterns. Synthetic fixtures must be labelled. Recurrence is deferred following sponsor guidance.
 3. Demo documentation, fast suite and frontend build. Keep all styles/assets/tokens unchanged; inspect existing screenshots and capture current UI when practical.
 
 ## Assumptions and risks
@@ -32,3 +36,7 @@ The mock ignores customer IDs; customer-price flags are mock evidence, not a pro
 ## Validation
 
 Test menu bypass, packaging, backend limits, scoped credentials/denied self-approval, allergens and missing data, substitution/escalation, revision changes, duplicate/concurrent submission and recurring price refresh. Run existing fast tests and frontend build.
+
+## Implemented and verified
+
+Shared structured direct routing, scoped bearer/cookie credentials (including legacy REST/MCP protection when configured), deterministic final checks, authoritative package contents/lot rounding, exact revision approvals, serialized submissions, persistent explicitly simulated confirmations, source-labelled decision records and a native collapsed policy editor. Existing menu/chat/cart/brand layouts remain; direct cart controls omit guest/menu prompts. See `docs/TRUSTED_COMMERCE.md` for run commands and the three decision-led scenarios. Browser checks cover 1440px and 390px with no overflow or page errors; global tokens, CSS, logos and assets were not edited.

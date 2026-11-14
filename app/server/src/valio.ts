@@ -24,6 +24,7 @@ export type StockLine = {
   error?: string;
 };
 export type StockCheck = {
+  source?: "sponsor_mock_api" | "synthetic_fixture";
   checkedAt: string;
   date: string;
   calls: number;
@@ -46,9 +47,11 @@ const cache = new Map<string, { at: number; line: StockLine }>();
 const TTL_MS = 120_000;
 
 type Fetch = typeof fetch;
+let factSource: "sponsor_mock_api" | "synthetic_fixture" = "sponsor_mock_api";
 let fetcher: Fetch = (...a) => fetch(...a);
 export const setFetcher = (f: Fetch) => {
   fetcher = f;
+  factSource = "synthetic_fixture";
   cache.clear();
 };
 
@@ -116,6 +119,7 @@ export async function checkStock(
   }
   return {
     checkedAt: new Date().toISOString(),
+    source:factSource,
     date,
     calls,
     skus: want.length,
@@ -156,13 +160,13 @@ export function toLine(
   const available =
     amount == null
       ? 0
-      : amount === UNKNOWN || amount >= PLACEHOLDER
+      : amount >= UNKNOWN
         ? null
         : amount;
   const cutoffPassed = a.closingTime
     ? Date.parse(a.closingTime) < timeNow
     : false;
-  const priced = p && !p.error && p.catalogPrice;
+  const priced = p && !p.error && Number.isFinite(p.catalogPrice?.value) && p.catalogPrice.value > 0;
   return {
     sku: a.productId,
     price: priced ? p.catalogPrice.value : 0,

@@ -1,3 +1,4 @@
+import { readLedger, writeLedger } from "./ledger";
 // Mandate (spend rules) per customer. Enforced HERE, in the gateway, on every order and approval,
 // whoever sends it (webshop UI or an outside agent over MCP). Never in an LLM prompt.
 
@@ -10,12 +11,18 @@ export type Mandate = {
    *  made by the gateway under this rule and logged; every other swap waits for the buyer. */
   autoSwapSameUse: boolean;
   approver: string;
+  forbiddenAllergens: string[];
+  substitutionsPermitted: boolean;
+  allowedCategories: string[];
+  requireApproval: boolean;
+  maxSubstituteIncreasePct: number;
+  allowedDeliveryWeekdays: number[];
 };
 export type MandateState =
   "agent_may_order" | "needs_your_ok" | "needs_approval";
 export type MandateResult = { state: MandateState; reasons: string[] };
 
-const overrides = new Map<string, Partial<Mandate>>();
+const overrides = new Map<string, Partial<Mandate>>(readLedger("policies", []));
 
 export function getMandate(customer: string): Mandate {
   return {
@@ -25,11 +32,17 @@ export function getMandate(customer: string): Mandate {
     swapsNeedOk: true,
     autoSwapSameUse: true,
     approver: "Mikko L.",
+    forbiddenAllergens: [],
+    substitutionsPermitted:true,
+    allowedCategories: [],
+    requireApproval: false,
+    maxSubstituteIncreasePct: 20,
+    allowedDeliveryWeekdays: [],
     ...overrides.get(customer),
   };
 }
 export const setMandate = (customer: string, m: Partial<Mandate>) =>
-  overrides.set(customer, m);
+  { overrides.set(customer, {...overrides.get(customer), ...m}); writeLedger("policies", [...overrides]); }
 
 export const eur = (n: number) =>
   "€" +
@@ -43,6 +56,7 @@ export type MandateInput = {
   openSwaps: { name: string; text: string }[]; // issues still waiting for the buyer's choice
   undecidedBy?: string[]; // swaps decided by someone who is not the buyer (e.g. an agent)
   dailySoFar: number; // placed + pending orders today for this customer
+  substituteIncreases?: {name:string;percent:number}[];
   deliveryLabel?: string; // "Fri 20 Nov"
 };
 
@@ -63,6 +77,8 @@ export function evaluate(m: Mandate, x: MandateInput): MandateResult {
     );
   if (reasons.length) return { state: "needs_your_ok", reasons };
 
+  for(const increase of x.substituteIncreases ?? []) if(increase.percent > m.maxSubstituteIncreasePct) reasons.push(`${increase.name}: substitute price increase ${increase.percent.toFixed(1)}% exceeds the ${m.maxSubstituteIncreasePct}% autonomous allowance.`);
+  if (m.requireApproval) reasons.push("Customer policy requires human financial approval.");
   const over = Math.round((x.total - m.maxOrderEur) * 100) / 100;
   if (over > 0)
     reasons.push(

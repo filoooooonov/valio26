@@ -79,6 +79,8 @@ export type MandateResult = {
   reasons: string[];
 };
 export type Basket = {
+  intent?: "MENU_PLANNING"|"DIRECT_PURCHASE";
+  factSource?: string;
   id: string;
   customer: string;
   request: string;
@@ -109,6 +111,9 @@ export type Change = {
   now: string;
 };
 export type Order = {
+  revision?: string;
+  simulated?: true;
+  confirmationReference?: string;
   id: string;
   basketId: string;
   customer: string;
@@ -212,7 +217,10 @@ const checkedData = <T,>(r:{status:number;data:T}) => { if (r.status >= 400) thr
 export type MenuItem = { title: string; description: string; course: "starter" | "main" | "dessert" | "drinks" | "side" | "snack" | "other" };
 export type MenuReply = { items: MenuItem[]; reply: string; planner: "llm" | "fallback" };
 
+export type PurchasingPolicy = Mandate & {substitutionsPermitted:boolean;autoSwapSameUse:boolean;forbiddenAllergens:string[];allowedCategories:string[];requireApproval:boolean;maxSubstituteIncreasePct:number;allowedDeliveryWeekdays:number[]};
 export const api = {
+  commerceContext:()=>call<{role:string;policy:PurchasingPolicy}>("/commerce-context").then(checkedData),
+  savePolicy:(policy:PurchasingPolicy)=>{const {customer,approver,swapsNeedOk,...settings}=policy;void customer;void approver;void swapsNeedOk;return call<PurchasingPolicy>("/mandate",settings).then(checkedData);},
   undo: (id: string) => call<{ basket: Basket; canUndo: boolean }>(`/basket/${id}/undo`, { by: BUYER }).then(checkedData),
   menu: (body: { request: string; current?: MenuItem[]; instruction?: string }, signal?: AbortSignal) => call<MenuReply>("/menu", body, signal).then(checkedData),
   checkReplacements: (id:string,lineId:string) => call<Basket>(`/basket/${id}/lines/${lineId}/replacements/check`,{}).then(checkedData),
@@ -225,8 +233,9 @@ export const api = {
     date: string,
     people?: number,
     signal?: AbortSignal,
+    delivery?: {placeId:string;address:string;time:string},
   ) =>
-    call<Basket>("/basket", { request, date, people }, signal).then(
+    call<Basket>("/basket", { request, date, people, delivery }, signal).then(
       (r) => r.data,
     ),
   basket: (id: string) => call<Basket>(`/basket/${id}`).then((r) => r.data),
@@ -262,10 +271,11 @@ export const api = {
     call<Order[]>(`/orders${status ? `?status=${status}` : ""}`).then(
       (r) => r.data,
     ),
-  decide: (orderId: string, decision: "approve" | "reject", note?: string) =>
+  decide: (orderId: string, decision: "approve" | "reject", note?: string, revision?: string) =>
     call<Order | OrderConflict>(`/orders/${orderId}/decision`, {
       decision,
       by: APPROVER,
+      revision,
       note: note || undefined,
     }),
   audit: (orderId: string) =>

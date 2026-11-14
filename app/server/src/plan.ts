@@ -1,8 +1,11 @@
+import { explainPurchase } from "./explain";
 // Planner: request -> dishes -> needs -> catalogue candidates (server, local) -> LLM picks a SKU per need
 // -> ONE price/stock call for the chosen SKUs -> quantities in sales units -> issues with ranked alternatives
 // (ONE extra call). The LLM never sees prices/stock and never applies rules; the mandate runs in policy.ts.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { directDraft, parsePurchaseItems, purchasingIntent, type PurchaseItem } from "./intent";
+import { validatePurchase } from "./validation";
 import { audit } from "./audit";
 import { getProduct, search, type Product } from "./catalog";
 import { getLlm, type Candidate, type Draft, type PickInput } from "./llm";
@@ -13,7 +16,7 @@ import {
   type Mandate,
   type MandateResult,
 } from "./policy";
-import { baskets, dailySoFar, newId, orders } from "./store";
+import { baskets, dailySoFar, newId, orders, submitting } from "./store";
 import { checkStock, contentPerUnit, type StockLine } from "./valio";
 
 export type Dish = {
@@ -24,6 +27,7 @@ export type Dish = {
   diet: string[];
 };
 export type Option = {
+  quantityIssue?: string;
   frozen?: boolean;
   sku: string;
   name: string;
@@ -58,12 +62,16 @@ export type BasketLine = {
   stock: StockLine;
   total: number; // EUR excl. VAT
   contains: string[]; // allergen names
+  requiredDiet?: string[];
+  quantityIssue?: string;
+  requestedAmount?: { qty:number; unit:"KG"|"L"|"PCS" };
+  overbuy?: number;
   claims: string[];
   reliability?: number;
   co2?: number;
   image?: string;
   issue?: Issue;
-  replaced?: { sku: string; name: string };
+  replaced?: { sku: string; name: string; originalTotal?:number };
   usedIn?: string[];
 };
 export type Basket = {
@@ -74,6 +82,13 @@ export type Basket = {
   date: string;
   planner: "llm" | "fallback";
   plannerNote?: string;
+  intent?: "MENU_PLANNING" | "DIRECT_PURCHASE";
+  forbiddenAllergens?: string[];
+  requiredDiet?: string[];
+  requestBudgetEur?: number;
+  factSource?: string;
+  delivery?: {placeId:string;address:string;time:string};
+  validationGaps?: string[];
   dishes: Dish[];
   lines: BasketLine[];
   assumed: string[];
@@ -195,21 +210,22 @@ function perPortionText(n: Need): string | null {
 export function packOf(
   st: StockLine,
   p?: Product,
-): Amt & { byWeight: boolean } {
+): Amt & { byWeight: boolean; lot?:number } {
   if (st.salesUnit === "KG" || p?.unit === "KG")
     // base unit KG = catch weight, priced per kg
-    return { qty: 1, unit: "KG", byWeight: true };
+    return { qty: 1, unit: "KG", byWeight: true, lot:Math.max(0.5,p?.lot ?? 0.5) };
+  if(p?.content) return {...p.content,byWeight:false,lot:Math.max(1,p.lot ?? 1)};
   const c = contentPerUnit(st);
   if (c && (c.unit === "KG" || c.unit === "L"))
-    return { qty: r2(c.qty), unit: c.unit, byWeight: false };
-  if (p?.size) return { ...p.size, byWeight: false };
+    return { qty: c.qty, unit: c.unit, byWeight: false, lot:Math.max(1,p?.lot ?? 1) };
+  if (p?.size) return { ...p.size, byWeight: false, lot:Math.max(1,p?.lot ?? 1) };
   return { qty: 1, unit: "PCS", byWeight: false };
 }
 
 /** Sales units to order for `need`, plus the "why" maths. */
 export function salesQty(
   need: Amt,
-  pack: Amt & { byWeight: boolean },
+  pack: Amt & { byWeight: boolean; lot?:number },
 ): { qty: number; text: string; note?: string } {
   let q = need.qty;
   let note: string | undefined;
@@ -226,10 +242,12 @@ export function salesQty(
     }
   }
   if (pack.byWeight) {
-    const qty = Math.max(0.5, Math.ceil(q * 2 - 1e-9) / 2);
+    const lot=pack.lot ?? 0.5;
+    const qty = Math.max(lot, Math.ceil(q / lot - 1e-9) * lot);
     return { qty, text: `${fmtAmt({ qty, unit: "KG" })} (sold by kg)`, note };
   }
-  const qty = Math.max(1, Math.ceil(q / pack.qty - 1e-9));
+  const lot=pack.lot ?? 1;
+  const qty = Math.max(lot, Math.ceil(q / pack.qty / lot - 1e-9) * lot);
   return { qty, text: `${qty} × ${fmtAmt(pack)}`, note };
 }
 
@@ -546,6 +564,10 @@ function makeLine(
     pack: pack.byWeight ? "by kg" : fmtAmt(pack),
     why,
     stock: st,
+    requiredDiet: [...new Set(g.needs.flatMap(n=>[...n.diet,...(dishes.find(d=>d.id===n.dishId)?.diet ?? [])]))],
+    quantityIssue: sq.note ?? (!contentPerUnit(st) && !p?.content && !pack.byWeight && sum.unit !== "PCS" ? "Pack contents are not verified by pricing/comparison data." : undefined),
+    requestedAmount:sum,
+    overbuy:sum.unit===pack.unit ? r2(sq.qty*pack.qty-sum.qty) : undefined,
     total: r2(sq.qty * st.price),
     contains: allergenNames(p?.contains ?? []),
     claims: p?.claims ?? [],
@@ -585,7 +607,7 @@ function optionFor(
   const bits = [
     extra.length
       ? `adds ${allergenNames(extra).join(", ") || extra.join(", ")}`
-      : "no new allergens",
+      : "no additional declared allergens; not a free-from guarantee",
     st.logistic === "Terminal"
       ? `supplier item, available from ${dayLabel(st.availableDate!)}`
       : `in stock, available from ${dayLabel(st.availableDate!)}`,
@@ -601,6 +623,7 @@ function optionFor(
     name: l.name,
     reason: bits.join(" · "),
     delta: r2(l.total - base.total),
+    quantityIssue:l.quantityIssue,
     qty: l.qty,
     pack: l.pack,
     why: l.why,
@@ -633,6 +656,7 @@ export function rankOptions(opts: Option[], baseContains: string[]): Option[] {
 // ---------- totals + mandate ----------
 export const isOpen = (l: BasketLine) => !!l.issue && !l.issue.decided;
 export function recompute(b: Basket): Basket {
+  for(const l of b.lines) {const p=packOf(l.stock,getProduct(l.sku)); if(l.requestedAmount?.unit===p.unit) l.overbuy=r2(l.qty*p.qty-l.requestedAmount.qty);}
   const live = b.lines.filter((l) => l.qty > 0 && !isOpen(l));
   b.total = r2(live.reduce((s, l) => s + l.total, 0));
   b.totalWithVat = r2(
@@ -656,8 +680,11 @@ export function recompute(b: Basket): Basket {
       .filter((l) => l.issue?.decided && l.issue.decidedBy?.startsWith("agent"))
       .map((l) => `${l.issue!.decidedBy} (${l.name})`),
     dailySoFar: dailySoFar(b.customer, b.id),
+    substituteIncreases:b.lines.filter(l=>l.qty>0 && l.replaced).map(l=>({name:l.name,percent:l.replaced!.originalTotal ? 100*(l.total/l.replaced!.originalTotal-1) : Infinity})),
     deliveryLabel: dayLabel(b.date),
   });
+  const checks = validatePurchase(b);
+  if (checks.length) b.mandate = { state: "needs_your_ok", reasons: checks.map(c => c.message) };
   return b;
 }
 
@@ -667,6 +694,9 @@ export type BasketRequest = {
   people?: number;
   date: string;
   customer?: string;
+  items?: PurchaseItem[];
+  delivery?: {placeId:string;address:string;time:string};
+  forbiddenAllergens?: string[];
 };
 
 /** Reject structurally valid LLM plans that silently leave part of the menu unpurchased. */
@@ -707,7 +737,10 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
   });
 
   // 1. dishes + needs
-  const llm = getLlm();
+  const intent = purchasingIntent(req.request, req.items);
+  const items = req.items ?? (intent === "DIRECT_PURCHASE" ? parsePurchaseItems(req.request) : []);
+  if (intent === "DIRECT_PURCHASE" && !items.length) throw new HttpError(400, "Please specify product quantities and units (for example 20 l milk), or provide structured items.");
+  const llm = intent === "DIRECT_PURCHASE" ? null : getLlm();
   let planner: Basket["planner"] = "fallback";
   let plannerNote: string | undefined = llm
     ? undefined
@@ -721,7 +754,7 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
       plannerNote = `Claude planner failed (${(e as Error).message.slice(0, 120)}), used the demo planner instead.`;
       draft = fallbackDraft(req.request, req.people);
     }
-  } else draft = fallbackDraft(req.request, req.people);
+  } else draft = intent === "DIRECT_PURCHASE" ? directDraft(items) : fallbackDraft(req.request, req.people);
   // Validate before catalogue lookup or any price/availability call, including custom Llm implementations.
   if (planner === "llm" && llm) {
     let missing = draftCompletenessIssues(draft);
@@ -794,7 +827,8 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
     "search",
     `Local catalogue: ${nCand} candidates for ${draft.needs.length} ingredients (0 Valio API calls)`,
     {
-      perNeed: Object.fromEntries([...cands].map(([k, v]) => [k, v.length])),
+      perNeed: Object.fromEntries([...cands].map(([k, v]) => [k, v.map(p=>p.id)])),
+      source:"sponsor_catalogue",
     },
   );
 
@@ -855,7 +889,7 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
   });
 
   // 4. ONE price/stock call for all chosen SKUs
-  const sc = await checkStock([...groups.keys()], req.date, customer);
+  const sc = await checkStock([...groups.keys()], req.date, customer, {fresh:true});
   const stock = new Map(sc.lines.map((l) => [l.sku, l]));
   let apiCalls = sc.calls;
   audit(
@@ -867,6 +901,8 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
       calls: sc.calls,
       skus: sc.skus,
       checkedAt: sc.checkedAt,
+      source:sc.source,
+      snapshot:sc.lines.map(s=>({stock:s,catalogue:getProduct(s.sku)})),
     },
   );
   const lines = [...groups.values()].map((g, i) => {
@@ -902,7 +938,7 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
   if (withIssue.length) {
     const altSkus = [...new Set([...alt.values()].flat())];
     if (altSkus.length) {
-      const sc2 = await checkStock(altSkus, req.date, customer);
+      const sc2 = await checkStock(altSkus, req.date, customer, {fresh:true});
       apiCalls += sc2.calls;
       const st2 = new Map(sc2.lines.map((x) => [x.sku, x]));
       for (const { l, g } of withIssue) {
@@ -935,7 +971,14 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
     people,
     date: req.date,
     planner,
-    plannerNote,
+    plannerNote: intent === "DIRECT_PURCHASE" ? "Structured direct purchase; no menu generation." : plannerNote,
+    intent,
+    factSource:sc.source,
+    delivery:req.delivery ? {placeId:req.delivery.placeId,address:req.delivery.address,time:req.delivery.time} : undefined,
+    forbiddenAllergens: [...new Set([...(req.forbiddenAllergens ?? []), ...[...req.request.matchAll(/(?:no|without|exclude|free from)\s+(peanuts?|nuts?|milk|fish|eggs?|soy|sesame)|(?:peanuts?|nuts?|milk|fish|eggs?|soy|sesame)(?= allergy| allerg)/gi)].map(m => (m[1] ?? m[0]).toLowerCase().replace(/^(peanut|nut|egg)s?$/, "$1s"))])],
+    requestBudgetEur: Number(req.request.match(/budget\s*(?:of\s*)?(?:\u20ac|EUR)?\s*(\d+(?:\.\d+)?)/i)?.[1]) || undefined,
+    requiredDiet: intent === "DIRECT_PURCHASE" ? [...new Set(draft.needs.flatMap(n => n.diet))] : [],
+    validationGaps: notes.filter(n => /No catalogue match/i.test(n)),
     dishes,
     lines: lines.map(({ l }) => {
       const { _need, _note, ...rest } = l;
@@ -957,6 +1000,7 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
   recompute(basket);
   baskets.set(id, basket);
   autoSwapSameUse(basket);
+  for(const decision of explainPurchase(basket).products) audit(id,"gateway","choice",[decision.selection,decision.quantity,decision.price,decision.facts,decision.tradeoffs,...decision.constraints].filter(Boolean).join(" "),decision);
   audit(
     id,
     "gateway",
@@ -970,22 +1014,23 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
 // ---------- same-use rule (mandate.autoSwapSameUse) ----------
 export const SAME_USE_BY = "gateway (same-use rule)";
 const FISH_MEAT = /^(18|41(70|71|72|73))/; // fresh fish/meat, frozen fish/meat (same groups as MEAT_FISH)
-/** A swap the gateway may make without asking: same product group (first 3 digits), no allergen the original
- *  didn't have, never fish or meat, and at most +20 % or +€25 on the line. Everything else waits for the buyer. */
-export function isSameUse(orig: BasketLine, o: Option): boolean {
+/** Same product group, no additional declared allergens, verified quantities and current facts,
+ * no fish/meat, within the customer's configured percentage increase. Final safety checks still apply. */
+export function isSameUse(orig: BasketLine, o: Option, maxIncreasePct = 20): boolean {
   const a = getProduct(orig.sku),
     b = getProduct(o.sku);
-  if (!a || !b) return false;
+  if (!a || !b || o.quantityIssue || o.stock.available == null || o.stock.available < o.qty || !o.stock.customerPrice || !o.stock.deliverable || o.stock.cutoffPassed) return false;
   if (FISH_MEAT.test(a.cat) || FISH_MEAT.test(b.cat)) return false;
   if (a.cat.slice(0, 3) !== b.cat.slice(0, 3)) return false;
   if (o.contains.some((c) => !orig.contains.includes(c))) return false;
-  return o.delta <= Math.max(25, 0.2 * Math.max(orig.total, 0));
+  if (b.mayContain.some(c=>!a.contains.includes(c) && !a.mayContain.includes(c))) return false;
+  return o.delta <= maxIncreasePct / 100 * Math.max(orig.total, 0);
 }
 export function autoSwapSameUse(b: Basket): void {
-  if (!b.rules.autoSwapSameUse) return;
+  if (!b.rules.autoSwapSameUse || !b.rules.substitutionsPermitted) return;
   for (const l of b.lines) {
     const o = l.issue && !l.issue.decided ? l.issue.options[0] : undefined;
-    if (o && isSameUse(l, o))
+    if (o && isSameUse(l, o, b.rules.maxSubstituteIncreasePct))
       editLine(b.id, l.id, { chooseOption: o.sku, by: SAME_USE_BY });
   }
 }
@@ -1009,6 +1054,7 @@ export class HttpError extends Error {
 /** A basket is frozen once it has a placed or pending order: the approver must approve exactly what they saw.
  *  Edits are allowed again only after the order is rejected (sent back). */
 export function assertEditable(b: Basket): void {
+  if (submitting.has(b.id)) throw new HttpError(409,"order submission in progress; retry after validation completes");
   const o = [...orders.values()].find(
     (x) => x.basketId === b.id && x.status !== "rejected",
   );
@@ -1092,9 +1138,10 @@ export function editLine(
       const o = l.issue.options.find((x) => x.sku === c);
       if (!o)
         throw new HttpError(400, `option ${c} is not offered for this line`);
-      l.replaced = l.replaced ?? { sku: l.sku, name: l.name }; // re-deciding keeps the original product
+      l.replaced = l.replaced ?? { sku: l.sku, name: l.name, originalTotal:l.total }; // re-deciding keeps the original product
       const p = getProduct(o.sku);
       Object.assign(l, {
+        quantityIssue:o.quantityIssue,
         sku: o.sku,
         name: o.name,
         brand: p?.brand ?? "",

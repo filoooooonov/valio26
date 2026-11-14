@@ -182,7 +182,7 @@ export function StatesView() {
         </Cell>
         <Cell label="Order failed to send">
           <FailedCard
-            text="Mikko approved, but the order didn't reach Valio Aimo. Nothing was ordered; your basket and prices are kept."
+            text="The simulated order could not be confirmed. Nothing was sent to Valio Aimo; retry to recheck prices and stock."
             onRetry={noop}
           />
         </Cell>

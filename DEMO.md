@@ -1,5 +1,7 @@
 # DEMO.md: the exact demo script
 
+**Current trusted-commerce demo:** see [the decision-led scenarios and run commands](docs/TRUSTED_COMMERCE.md). Valio already has scheduled menus, so recurrence is not core to this pivot. Focus on catering, independent direct purchasing, an unavailable-product exception, and why the gateway made each decision. The older recorded takes below are historical evidence. Current simulated orders and audit records persist in `COMMERCE_LEDGER_PATH`; restarting no longer clears them.
+
 The stage demo is three minutes; the pitch video must be at most two minutes.
 
 ## Setup
@@ -7,8 +9,8 @@ The stage demo is three minutes; the pitch video must be at most two minutes.
 1. Install dependencies and provide the existing local .env credentials and data/raw/valio/ sponsor data. Run bun run dev; open http://localhost:5173 and http://localhost:5173/?view=mikko in separate tabs.
 2. The current buyer is Anna at Hotelli Kaleva. Delivery defaults to Friday 20 November 2026; the event is Saturday 21 November. Override delivery with ?date=YYYY-MM-DD only when the sponsor data supports it.
 3. The gateway enforces a EUR500 per-order and EUR1500 daily limit. Same-use swaps can be automatic under the gateway rule; other substitutions require the buyer's choice. An over-limit order requires Mikko L.'s approval.
-4. Repeated takes share today's pending and placed totals. A basket below EUR500 may therefore still require daily-limit approval. Restarting the gateway clears its in-memory baskets/orders; preserve evidence before restarting.
-5. This is a prototype webshop and local order ledger. Valio's sponsor API supplies real price/availability responses but has NO order endpoint. An approved order is recorded locally; it is not transmitted to Valio Aimo. State this aloud despite the existing UI's misleading 'sent to Valio Aimo' wording.
+4. Repeated takes share today's pending and placed totals. A basket below EUR500 may therefore still require daily-limit approval. Use a separate COMMERCE_LEDGER_PATH for independent takes; existing simulated orders and audit persist across restarts.
+5. This is a prototype webshop and local order ledger. Valio's sponsor API supplies real price/availability responses but has NO order endpoint. An approved order is recorded locally; it is not transmitted to Valio Aimo. The UI labels local simulation; state this aloud too.
 
 ## Try it yourself
 
@@ -23,7 +25,7 @@ Open http://localhost:5173. If unavailable, run `bun run dev` from the repositor
 
 Product rows show concise delivery, quantity and total. **Product details** reveals the calculation and product history. Swap controls appear only on problem items. The chat still scrolls while its scrollbar is hidden.
 
-Repeated demos share pending and placed spending, so even a basket below EUR500 may need approval under the EUR1500 daily limit. Orders are local prototype records, not sent to the sponsor. Restarting the gateway clears its in-memory baskets and orders.
+Repeated demos share pending and placed spending, so even a basket below EUR500 may need approval under the EUR1500 daily limit. Orders are local prototype records, not sent to the sponsor. The configured local ledger preserves simulated orders and audit across restarts.
 
 The verified script below records the earlier direct-basket run; the app now adds menu approval before that flow. Per user instruction, the video has not been re-recorded for these UI changes.
 ## Script

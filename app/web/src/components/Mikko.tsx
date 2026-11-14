@@ -1,3 +1,5 @@
+import { Button, Card, Checkbox, Notice, Stepper } from "../ui";
+import type { PurchasingPolicy } from "../api";
 import { useCallback, useEffect, useState } from "react";
 import {
   api,
@@ -18,6 +20,13 @@ export function MikkoView() {
   const [baskets, setBaskets] = useState<Record<string, Basket>>({});
   const [done, setDone] = useState<{ order: Order; failed?: string }[]>([]);
   const [offline, setOffline] = useState(false);
+  const [policy,setPolicy]=useState<PurchasingPolicy|null>(null);
+  const [policyMessage,setPolicyMessage]=useState("");
+  const [savingPolicy,setSavingPolicy]=useState(false);
+  const [policyRole,setPolicyRole]=useState("");
+  useEffect(()=>{api.commerceContext().then(c=>{setPolicy(c.policy);setPolicyRole(c.role);}).catch(()=>undefined);},[]);
+  async function savePolicy(){if(!policy)return;setSavingPolicy(true);setPolicyMessage("");try{setPolicy(await api.savePolicy(policy));setPolicyMessage("Purchasing policy saved on the server.");}catch(e){setPolicyMessage((e as Error).message);}finally{setSavingPolicy(false);}}
+
 
   const load = useCallback(async () => {
     try {
@@ -50,6 +59,23 @@ export function MikkoView() {
         </span>
       </header>
       <main className="mikko__list">
+        {policy && <details><summary>Purchasing policy</summary><Card title="Customer purchasing policy">
+          {policyRole==="local_demo" && <Notice title="Local demonstration">Authentication is disabled. Orders are simulated. Use configured credentials before sharing the gateway.</Notice>}
+          <p>Autonomous limit per order: {money(policy.maxOrderEur)}</p>
+          <Stepper value={money(policy.maxOrderEur)} lessDisabled={savingPolicy || policy.maxOrderEur<=0 || !["admin","local_demo"].includes(policyRole)} moreDisabled={savingPolicy || !["admin","local_demo"].includes(policyRole)} onLess={()=>setPolicy({...policy,maxOrderEur:Math.max(0,policy.maxOrderEur-50)})} onMore={()=>setPolicy({...policy,maxOrderEur:policy.maxOrderEur+50})}/>
+          <p>Daily limit: {money(policy.maxDailyEur)}</p>
+          <Stepper value={money(policy.maxDailyEur)} lessDisabled={savingPolicy || policy.maxDailyEur<=0 || !["admin","local_demo"].includes(policyRole)} moreDisabled={savingPolicy || !["admin","local_demo"].includes(policyRole)} onLess={()=>setPolicy({...policy,maxDailyEur:Math.max(0,policy.maxDailyEur-100)})} onMore={()=>setPolicy({...policy,maxDailyEur:policy.maxDailyEur+100})}/>
+          <p><Checkbox checked={policy.requireApproval} label="Always require human financial approval" disabled={savingPolicy || !["admin","local_demo"].includes(policyRole)} onChange={value=>setPolicy({...policy,requireApproval:value})}/> Always require human financial approval</p>
+          <p><Checkbox checked={policy.substitutionsPermitted} label="Permit substitutions" disabled={savingPolicy || !["admin","local_demo"].includes(policyRole)} onChange={value=>setPolicy({...policy,substitutionsPermitted:value})}/> Permit substitutions</p>
+          <p><Checkbox checked={policy.autoSwapSameUse} label="Allow verified same-use substitutions" disabled={savingPolicy || !["admin","local_demo"].includes(policyRole)} onChange={value=>setPolicy({...policy,autoSwapSameUse:value})}/> Allow verified same-use substitutions</p>
+          <p>Maximum substitute price increase: {policy.maxSubstituteIncreasePct}%</p>
+          <Stepper value={`${policy.maxSubstituteIncreasePct}%`} lessDisabled={savingPolicy || policy.maxSubstituteIncreasePct<=0 || !["admin","local_demo"].includes(policyRole)} moreDisabled={savingPolicy || policy.maxSubstituteIncreasePct>=100 || !["admin","local_demo"].includes(policyRole)} onLess={()=>setPolicy({...policy,maxSubstituteIncreasePct:Math.max(0,policy.maxSubstituteIncreasePct-5)})} onMore={()=>setPolicy({...policy,maxSubstituteIncreasePct:Math.min(100,policy.maxSubstituteIncreasePct+5)})}/>
+          <p>Forbidden allergens (missing safety evidence stops purchasing):</p>
+          {[["AM","Milk"],["AP","Peanuts"],["AN","Nuts"],["AW","Gluten"]].map(([code,label])=><p key={code}><Checkbox checked={policy.forbiddenAllergens.includes(code)} label={`Forbid ${label}`} disabled={savingPolicy || !["admin","local_demo"].includes(policyRole)} onChange={value=>setPolicy({...policy,forbiddenAllergens:value?[...policy.forbiddenAllergens,code]:policy.forbiddenAllergens.filter(a=>a!==code)})}/> {label}</p>)}
+          {["admin","local_demo"].includes(policyRole) && <Button onClick={()=>void savePolicy()} loading={savingPolicy} disabled={savingPolicy}>Save policy</Button>}
+          {policyMessage && <Notice>{policyMessage}</Notice>}
+        </Card></details>}
+
         {offline && (
           <div className="card" role="alert">
             <b className="notice__title">Can't reach Valio Aimo</b>
@@ -108,7 +134,7 @@ function Approval({
     setBusy(d);
     setFailed(null);
     try {
-      const r = await api.decide(order.id, d, note);
+      const r = await api.decide(order.id, d, note, order.revision);
       if (r.status === 409) {
         const c = r.data as OrderConflict;
         setFailed(
@@ -212,7 +238,7 @@ function Approval({
       <p className="muted-12">
         Prices and stock are re-checked when you approve.
         {order.pricesHeldUntil
-          ? ` Held until ${stamp(order.pricesHeldUntil)}.`
+          ? ` Ordering cutoff ${stamp(order.pricesHeldUntil)}; no reservation.`
           : ""}
       </p>
     </article>
@@ -226,7 +252,7 @@ function Outcome({ d, basket, onBack }: { d: { order: Order; failed?: string }; 
       <span className={"disc disc--32 " + (placed ? "disc--green" : "disc--amber")}>
         <Icon name={placed ? "circle-check" : "undo-2"} className="i-16" />
       </span>
-      <h1 className="approval__title">{placed ? "Approved and sent to Valio Aimo" : `Sent back to ${firstName(d.order.by)}`}</h1>
+      <h1 className="approval__title">{placed ? "Approved simulated order" : `Sent back to ${firstName(d.order.by)}`}</h1>
       <dl className="facts">
         <dt>Order</dt>
         <dd>{orderLabel(d.order.id)}</dd>

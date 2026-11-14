@@ -1,3 +1,7 @@
+import { PolicySchema } from "./commerce";
+import { commerceApi } from "./commerce-api";
+import { authenticatedMode, requirePrincipal, scopeBasket, scopeOrder, requireApprover, scopeCustomer, authenticate } from "./auth";
+import { persistStore } from "./store";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { catalogSize, getProduct, search } from "./catalog";
@@ -11,14 +15,48 @@ import { parseMenuInput, suggestMenu } from "./menu";
 import { checkReplacements, proposeRecipeChange, applyRecipeChange } from './plan';
 import { productImage } from "./images";
 import { handleMcp } from "./mcp";
-import { getMandate } from "./policy";
+import { getMandate, setMandate } from "./policy";
 import { baskets, orders } from "./store";
 
 // Agent gateway: order builder API for the webshop + outside agents. Shapes in /CONTRACT.md (v1).
 export const app = new Hono();
-app.use("/api/*", cors());
+app.use("/api/*", cors({ origin: process.env.COMMERCE_BROWSER_ORIGIN ?? "http://localhost:5173", credentials:true }));
+app.use("/api/*", async (c,next) => {
+  if (c.req.path === "/api/v1/openapi.json" || c.req.path === "/api/health" || /\/products\/[^/]+\/image$/.test(c.req.path)) return next();
+  if (authenticatedMode() && !c.req.path.startsWith("/api/v1/")) {
+    try {
+      const p=requirePrincipal(c.req.raw);
+      const basketId=c.req.path.match(/^\/api\/basket\/([^/]+)/)?.[1];
+      const orderId=c.req.path.match(/^\/api\/orders\/([^/]+)/)?.[1];
+      if(basketId)scopeBasket(p,basketId);
+      if(orderId)scopeOrder(p,orderId);
+      const customer=c.req.path.match(/^\/api\/mandate\/([^/]+)/)?.[1] ?? c.req.query("customer");
+      if(customer)scopeCustomer(p,customer);
+      if(c.req.path.endsWith("/decision"))requireApprover(p);
+      if(!["GET","HEAD"].includes(c.req.method)) {
+        const body=await c.req.json().catch(()=>null);
+        if(body && typeof body === "object") {
+          if(body.customer && body.customer!==p.customer)scopeCustomer(p,body.customer);
+          if(c.req.path === "/api/basket" || c.req.path === "/api/stock") body.customer=p.customer;
+          if(/\/(order|decision|chat|undo|lines|guests)(?:\/|$)/.test(c.req.path)) body.by=p.actor;
+          if(c.req.path.endsWith("/decision") && body.decision==="approve" && !/^[a-f0-9]{64}$/.test(body.revision ?? "")) throw new HttpError(400,"approval revision required");
+        }
+      }
+    } catch(e) {return c.json({error:(e as Error).message},(e instanceof HttpError?e.status:401) as any);}
+  }
+  try {await next();} finally {if(!["GET","HEAD"].includes(c.req.method))persistStore();}
+});
+app.route("/api/v1",commerceApi);
 
 app.get("/api/health", (c) => c.json({ ok: true, service: "valio-gateway", catalog: catalogSize() }));
+
+app.get("/api/commerce-context",c=>{const p=authenticate(c.req.raw);return c.json({role:p?.role ?? "local_demo",actor:p?.actor ?? "Local demo",policy:getMandate(p?.customer ?? "123"),simulated:true});});
+app.post("/api/mandate",async c=>{
+  const p=authenticate(c.req.raw);
+  if(authenticatedMode() && p?.role!=="admin")return c.json({error:"Only an administrator may configure policy."},403);
+  try{setMandate(p?.customer ?? "123",PolicySchema.parse(await c.req.json()));return c.json(getMandate(p?.customer ?? "123"));}
+  catch{return c.json({error:"Invalid purchasing policy."},400);}
+});
 
 // Local catalogue only: never touches the Valio API.
 // One EAN lookup on valioaimo.fi per SKU, only when the UI shows that product; cached on disk (misses too).
@@ -151,7 +189,7 @@ app.post("/api/orders/:id/decision", async (c) => {
     return fail(c, e);
   }
 });
-app.get("/api/orders", (c) => c.json(listOrders(c.req.query("status"))));
+app.get("/api/orders", (c) => { const p=authenticate(c.req.raw); return c.json(listOrders(c.req.query("status")).filter(o=>!p || o.customer===p.customer)); });
 app.get("/api/orders/:id", (c) => {
   const o = orders.get(c.req.param("id"));
   return o ? c.json(o) : c.json({ error: "order not found" }, 404);
@@ -161,9 +199,9 @@ app.get("/api/orders/:id/audit", (c) => {
   return o ? c.json(events(o.basketId)) : c.json({ error: "order not found" }, 404);
 });
 app.get("/api/mandate/:customer", (c) => c.json(getMandate(c.req.param("customer"))));
-app.get("/api/mandate", (c) => c.json(getMandate(c.req.query("customer") ?? "123")));
+app.get("/api/mandate", (c) => c.json(getMandate(authenticate(c.req.raw)?.customer ?? c.req.query("customer") ?? "123")));
 // Whole audit trail, newest first (each event carries its basket scope). Per order: /api/orders/:id/audit.
-app.get("/api/audit", (c) => c.json(allEvents(Math.min(Number(c.req.query("limit") ?? 200), 1000))));
+app.get("/api/audit", (c) => c.json(allEvents(Math.min(Number(c.req.query("limit") ?? 200), 1000)).filter(e=>!authenticate(c.req.raw) || baskets.get(e.scope)?.customer===authenticate(c.req.raw)!.customer)));
 
 // MCP (Streamable HTTP, stateless) for outside buyer agents: same handlers + same mandate as the REST API.
 app.all("/mcp", (c) => handleMcp(c.req.raw));

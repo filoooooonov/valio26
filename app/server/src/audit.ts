@@ -1,3 +1,4 @@
+import { readLedger, writeLedger } from "./ledger";
 // Audit trail: one event list per basket (orders log into their basket's list too), so the record reads
 // request -> plan -> catalogue search -> stock check -> swaps -> mandate -> order -> approval, with API call counts.
 
@@ -9,7 +10,7 @@ export type AuditEvent = {
   data?: object;
 };
 
-const byScope = new Map<string, AuditEvent[]>();
+const byScope = new Map<string, AuditEvent[]>(readLedger("audit", []));
 
 export function audit(
   scope: string,
@@ -28,6 +29,7 @@ export function audit(
   const list = byScope.get(scope) ?? [];
   list.push(e);
   byScope.set(scope, list);
+  writeLedger("audit", [...byScope]);
   return e;
 }
 

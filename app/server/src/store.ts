@@ -1,9 +1,10 @@
 // In-memory state for the demo (baskets + orders). Restarting the server clears it.
+import { readLedger, writeLedger } from "./ledger";
 import type { Basket } from "./plan";
 import type { Order } from "./orders";
 
-export const baskets = new Map<string, Basket>();
-export const orders = new Map<string, Order>();
+export const baskets = new Map<string, Basket>(readLedger("baskets", []));
+export const orders = new Map<string, Order>(readLedger("orders", []));
 
 export const newId = (prefix: string) =>
   `${prefix}_${Math.random().toString(36).slice(2, 8)}`;
@@ -30,3 +31,7 @@ export function resetStore() {
   baskets.clear();
   orders.clear();
 }
+
+export function persistStore() { writeLedger("baskets", [...baskets]); writeLedger("orders", [...orders]); }
+
+export const submitting = new Set<string>();

@@ -214,7 +214,7 @@ export function Chat(p: Props) {
         <Composer p={p} />
       </div>
       <p className="foot">
-        Rules are checked by Valio Aimo on every order, not by the assistant.
+        The gateway checks purchasing rules on every order. Orders are simulated.
       </p>
     </section>
   );
@@ -573,7 +573,7 @@ function Waiting({ order }: { order: Order }) {
         </div>
         <p className="notice__text">
           {order.pricesHeldUntil
-            ? `Prices and stock are held until ${stamp(order.pricesHeldUntil)}. `
+            ? `Ordering cutoff: ${stamp(order.pricesHeldUntil)}. Prices and stock are rechecked; nothing is reserved. `
             : ""}
           His answer shows up here as soon as he decides.
         </p>
@@ -625,7 +625,7 @@ export function SentBack(p: {
       )}
       <p className="card__small">
         Nothing is ordered.
-        {p.held ? ` Your prices are still held until ${stamp(p.held)}.` : ""}
+        {p.held ? ` Ordering cutoff: ${stamp(p.held)}; prices will be rechecked.` : ""}
       </p>
       {p.active && (
         <div className="row-8">

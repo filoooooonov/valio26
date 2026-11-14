@@ -1,3 +1,4 @@
+import { purchasingIntent } from "../../server/src/intent";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   api,
@@ -361,6 +362,7 @@ function Shop() {
           DELIVERY,
         people,
         ac.signal,
+        chosenDelivery ?? approved?.delivery ?? delivery ?? undefined,
       );
       if (
         approved &&
@@ -525,7 +527,13 @@ function Shop() {
       }
       return void editMenu(t);
     }
-    if (!basket) return propose(t);
+    if (!basket) {
+      if (purchasingIntent(t) === "DIRECT_PURCHASE") {
+        const requestedDate = requestDeliveryDate(t, delivery?.date ?? DELIVERY);
+        return build(t, undefined, undefined, requestedDate ? { ...(delivery ?? {}), date:requestedDate } as DeliveryChoice : delivery ?? undefined);
+      }
+      return propose(t);
+    }
     if (order?.status === "pending_approval") {
       say({ kind: "user", who: BUYER, text: t });
       say({

@@ -22,12 +22,17 @@ export type Product = {
   origin: string;
   contains: string[];
   mayContain: string[];
+  freeFromAllergen?: string[];
+  lot?: number;
+  units?: { unitId?: string; sizeInBaseUnits?: number; allowedLotSize?: number }[];
   claims: string[];
   labels: string[];
   co2: number | null;
   rel: number | null;
   temp?: number;
   size?: Size | null;
+  content?: Size;
+  baseUnit?:string;
   image?: string | null;
 };
 export type ProductHit = {
@@ -108,6 +113,7 @@ export function loadCatalog(dir = DATA): number {
   products = raw.map((p) => ({
     ...p,
     size: parseSize(p.en || p.fi),
+    content: authoritativeContent(p),
     image: images[p.gtin]?.img ?? null,
   }));
   index = products.map((p) => {
@@ -115,6 +121,23 @@ export function loadCatalog(dir = DATA): number {
     return { p, text, toks: new Set(tokens(text)) };
   });
   return products.length;
+}
+
+/** Sponsor unitConversions volume/net weight; names remain display-only fallback. */
+function authoritativeContent(p:Product):Size|undefined {
+  const raw=p.size as any;
+  if(!raw || !["BASE_UNIT_OR_EACH","CASE"].includes(raw.synkkaPackagingType))return;
+  const volume=raw.volume,weight=raw.netWeight;
+  let qty:number|undefined,unit:Size['unit'];
+  if(volume?.unit==="LTR"){qty=volume.value;unit="L";}
+  else if(weight?.unit==="GRM"){qty=weight.value/1000;unit="KG";}
+  else if(weight?.unit==="KGM"){qty=weight.value;unit="KG";}
+  else return;
+  if(raw.synkkaPackagingType==="BASE_UNIT_OR_EACH" && p.baseUnit==="ST" && p.unit!=="ST") {
+    const multiplier=p.units?.find(u=>u.unitId===p.unit)?.sizeInBaseUnits;
+    if(!multiplier)return;qty! *= multiplier;
+  }
+  return qty && Number.isFinite(qty) && qty>0 ? {qty,unit} : undefined;
 }
 
 export const catalogSize = () => products.length;

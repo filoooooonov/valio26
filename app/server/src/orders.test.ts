@@ -31,7 +31,7 @@ const fakeFetch = (async (url: string, init: any) => {
       unit: "KG",
       deliverable: true,
       cutoff: false,
-      amount: 999999,
+      amount: 100000,
       ...mocks[id],
     };
     if (ep === "price")
@@ -166,11 +166,10 @@ describe("fallback planner", () => {
     expect(b.lines.length).toBe(12);
     expect(b.apiCalls).toBe(2); // price + availability, once, for all chosen SKUs
     const salmon = b.lines.find((l: any) => l.sku === "461814");
-    expect(salmon.why).toBe("50 × 140 g = 7 kg → 7 kg (sold by kg)");
+    expect(salmon.why).toBe("50 × 140 g = 7 kg → 10 kg (sold by kg)");
     expect(b.assumed).toContain("salt");
-    expect(b.mandate.state).toBe(
-      b.total > 500 ? "needs_approval" : "agent_may_order",
-    );
+    // Synthetic blanket KG pricing and sparse fish allergen data are not a verified diet-safe order.
+    expect(b.mandate.state).toBe("needs_your_ok");
     for (const l of b.lines)
       expect(l.total).toBeCloseTo(l.qty * l.stock.price, 2);
   });
@@ -287,15 +286,12 @@ describe("orders", () => {
       ).status,
     ).toBe(403);
     mocks["464073"] = { price: 1.1, cmp: 1.1, unit: "L" }; // price moved since the quote
-    const d = await (
-      await post(`/api/orders/${o.id}/decision`, {
-        decision: "approve",
-        by: "Mikko L.",
-        note: "ok for the event",
-      })
-    ).json();
+    const stale = await post(`/api/orders/${o.id}/decision`, {decision:"approve",by:"Mikko L.",revision:o.revision});
+    expect(stale.status).toBe(409);
+    const updated = await (await app.request(`/api/orders/${o.id}`)).json();
+    const d = await (await post(`/api/orders/${o.id}/decision`,{decision:"approve",by:"Mikko L.",revision:updated.revision,note:"ok for the updated event price"})).json();
     expect(d.status).toBe("placed");
-    expect(d.changes[0]).toMatchObject({
+    expect(updated.changes[0]).toMatchObject({
       kind: "price",
       was: "€1.00",
       now: "€1.10",

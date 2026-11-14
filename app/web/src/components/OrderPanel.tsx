@@ -1,3 +1,4 @@
+import { TextLink } from "../ui";
 import { useEffect, useState, type ReactNode, type CSSProperties } from "react";
 import {
   api,
@@ -80,7 +81,7 @@ export function OrderPanel(p: OrderProps) {
           {eyebrow}
         </div>}
         <h1 className="order__title">
-          {b ? `Catering for ${b.people} · ${dayLabel(p.event)}` : "Your order"}
+          {b ? b.intent === "DIRECT_PURCHASE" ? `Your purchase · ${dayLabel(b.date)}` : `Catering for ${b.people} · ${dayLabel(p.event)}` : "Your order"}
         </h1>
         {b && <Controls p={p} b={b} />}
         {(p.phase === "draft" || p.phase === "review") && p.insight}
@@ -159,6 +160,7 @@ function EmptyOrder({
 
 function Controls({ p, b }: { p: OrderProps; b: Basket }) {
   const [recipeOpen, setRecipeOpen] = useState(false);
+  if (b.intent === "DIRECT_PURCHASE") return <div className="controls"><Fact icon="truck" label="Requested delivery" value={`${dayLabel(b.date)}, ${p.deliveryTime ?? SLOT}`} /><Fact icon="shield-check" label="Purchasing authority" value={b.mandate.state === "agent_may_order" ? "Within policy" : "Review required"} /></div>;
   const perGuest =
     (b.openIssues ? b.totalIfAccepted : b.total) / Math.max(1, b.people);
   const per = (
@@ -590,7 +592,7 @@ function Footer({ p, b }: { p: OrderProps; b: Basket }) {
     (l) => l.qty > 0 && l.issue?.decided !== "remove",
   ).length;
   const active = b.lines.filter(l => l.qty > 0 && l.issue?.decided !== "remove");
-  const allDeliverable = (p.phase === "draft" || p.phase === "review") && active.length > 0 && b.openIssues === 0 && active.every(l => !lineIsOpen(l) && l.stock.deliverable && !l.stock.cutoffPassed && (l.stock.available == null || l.qty <= l.stock.available));
+  const allDeliverable = (p.phase === "draft" || p.phase === "review") && active.length > 0 && b.openIssues === 0 && b.mandate.state !== "needs_your_ok" && active.every(l => !lineIsOpen(l) && l.stock.deliverable && !l.stock.cutoffPassed && (l.stock.available == null || l.qty <= l.stock.available));
   const open = b.lines.filter(lineIsOpen);
   const ordering = p.busy;
   let cta: ReactNode;
@@ -604,6 +606,10 @@ function Footer({ p, b }: { p: OrderProps; b: Basket }) {
       <span className="grow" /><span className="cta__total">{money(b.total)}</span>
     </button>;
     note = 'Subtotal excludes ' + open.length + ' unresolved ' + (open.length === 1 ? 'product.' : 'products.');
+  } else if (p.phase === "draft" && b.mandate.state === "needs_your_ok") {
+    cta = <button className="cta cta--issues" disabled><span className="cta__label">Purchasing needs review</span></button>;
+    note = b.mandate.reasons.slice(0,2).join(" ");
+    alt = <TextLink onClick={p.onView}>View purchasing decisions</TextLink>;
   } else if (p.phase === "draft") {
     cta = <button className="cta cta--lime" disabled={ordering} onClick={p.onReview}>
       <span className="cta__label">Review and confirm<span className="desk-only"> {count} products</span></span>
@@ -646,7 +652,8 @@ function Footer({ p, b }: { p: OrderProps; b: Basket }) {
           ? `Over your ${whole(max)} limit`
           : `Over your ${whole(b.rules.maxDailyEur)} daily limit with today's orders`
         : `Inside your ${whole(max)} limit`;
-    note = `${why}${held ? ` · prices held until ${held}` : ""} · excl. VAT (${money(b.totalWithVat)} with VAT)`;
+    note = `${why}${held ? ` · ordering cutoff ${held}` : ""} · excl. VAT (${money(b.totalWithVat)} with VAT)`;
+    if (st === "needs_your_ok") {note = b.mandate.reasons.slice(0,2).join(" ");alt=<TextLink onClick={p.onView}>View purchasing decisions</TextLink>;}
     const c = cheaperSwap(b);
     if (st === "needs_approval" && b.total > max && c && c.total <= max)
       alt = (
@@ -665,7 +672,7 @@ function Footer({ p, b }: { p: OrderProps; b: Basket }) {
         <span className="cta__label">Remind {firstName(b.rules.approver)}</span>
       </button>
     );
-    note = `Nothing is ordered until ${firstName(b.rules.approver)} approves${held ? ` · prices and stock held until ${held}` : ""} · excl. VAT`;
+    note = `Nothing is ordered until ${firstName(b.rules.approver)} approves${held ? ` · ordering cutoff ${held}` : ""} · excl. VAT`;
     alt = (
       <>
         Need to change something?{" "}
@@ -697,7 +704,7 @@ function Footer({ p, b }: { p: OrderProps; b: Basket }) {
   return (
     <div className="order__foot">
       {cta}
-      {allDeliverable && <p className="order-delivery"><Icon name="truck" className="i-16" /> All products will arrive on {dayLabel(b.date)}, {p.deliveryTime ?? SLOT}.</p>}
+      {allDeliverable && <p className="order-delivery"><Icon name="truck" className="i-16" /> Availability checked for {dayLabel(b.date)}. Delivery time is a requested sample slot.</p>}
       <p className="foot-note">{note}</p>
       {alt && <p className="foot-alt">{alt}</p>}
     </div>

@@ -37,3 +37,7 @@ Thumbs.db
 artifacts/demo-video/
 video/out/
 video/public/
+
+# Local simulated purchasing ledger (account and audit data)
+app/server/data/commerce/
+data/commerce/

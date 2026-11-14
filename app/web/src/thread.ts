@@ -174,7 +174,7 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
     );
     const lf = b.dishes.find((d) => d.diet.length && d.name.includes("("));
     const people = b.people;
-    const text =
+    const text = b.intent === "DIRECT_PURCHASE" ? `I prepared your product request without a menu. Pricing and availability were checked for account ${b.customer} and delivery on ${weekdayLong(b.date)}. Orders are simulated.` :
       `I planned ${base.size} ${base.size === 1 ? "dish" : "dishes"} for ${people}` +
       (lf ? `, with a ${lf.diet.join(", ")} version for ${lf.portions}` : "") +
       `. Prices are your Hotelli Kaleva prices; stock is for ${weekdayLong(b.date)}'s delivery.`;
@@ -211,9 +211,9 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
     else
       did.push({
         icon: "circle-check",
-        text: `Everything arrives ${weekday(b.date)} as asked`,
+        text: b.mandate.state === "needs_your_ok" ? "Some purchasing facts need review; see the decision record" : `Availability checked for ${weekday(b.date)}; rechecked before ordering`,
       });
-    if (pd.planner === "fallback")
+    if (pd.planner === "fallback" && b.intent !== "DIRECT_PURCHASE")
       did.push({
         icon: "circle-alert",
         text: "Planner offline, so I used the standard menu",

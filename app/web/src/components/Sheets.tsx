@@ -1,3 +1,4 @@
+import { Notice } from "../ui";
 ﻿import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { AuditEvent, Basket, BasketLine, Order } from "../api";
 import "./replacement-dialog.css";
@@ -162,7 +163,11 @@ export function SwapSheet({ line, date, locked, onClose, onChoose, onCheck, onUn
 
 const KIND: Record<string, string> = {
   request: "Order",
-  plan: "Menu plan",
+  plan: "Purchasing plan",
+  choice: "Why this product",
+  identity: "Requester",
+  validation: "Validation evidence",
+  recurring: "Scheduled execution",
   search: "Catalogue search",
   pick: "Products picked",
   stock: "Price and stock",
@@ -228,6 +233,7 @@ export function LogSheet({
         {money(order?.total ?? basket.total)} excl. VAT ·{" "}
         {order?.status.replace("_", " ") ?? "draft"}
       </p>
+      <Notice title="Simulated order service">No order is sent to Valio Aimo. {basket.factSource === "synthetic_fixture" ? "Prices and availability use an explicit synthetic fixture." : "Prices and availability come from the sponsor mock API."} Catalogue attributes are sponsor data; delivery addresses are user supplied. {order?.confirmationReference ? `Confirmation: ${order.confirmationReference}.` : ""}</Notice>
       <table className="log">
         <tbody>
           {lines.map((l) => (
@@ -239,7 +245,13 @@ export function LogSheet({
           ))}
         </tbody>
       </table>
-      <h3 className="log__h">Audit trail</h3>
+      <h3 className="log__h">Why the agent made these choices</h3>
+      <Notice tone={basket.mandate.state === "agent_may_order" ? "green" : "amber"} title="Purchasing authority">{basket.mandate.reasons.slice(0,2).join(" ")}</Notice>
+      <ol className="trail">{events.filter(e=>e.kind==="choice").map((e,i)=>{
+        const d=e.data as {name?:string;selection?:string;quantity?:string;tradeoffs?:string};
+        return <li key={i}><span className="trail__actor">{d.name ?? "Product decision"}</span><span className="trail__text">{[d.selection,d.quantity,d.tradeoffs].filter(Boolean).join(" ")}</span></li>;
+      })}</ol>
+      <details><summary>Full audit trail and verification evidence</summary>
       <ol className="trail">
         {events.map((e, i) => (
           <li key={i}>
@@ -248,7 +260,7 @@ export function LogSheet({
             <span className="trail__text">{logText(e)}</span>
           </li>
         ))}
-      </ol>
+      </ol></details>
     </Modal>
   );
 }
