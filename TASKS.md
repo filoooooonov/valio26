@@ -5,7 +5,7 @@ merged. Keep tasks to 2h or less, and split anything bigger.
 
 Format: `- [ ] T<n> <task> (rubric: <line>) — files: <paths>`
 
-## Now: Sat 14 Nov, solo build (aleksei + agents; ayaan away)
+## Now: Sat 14 Nov, solo build (aleksei + agents)
 Rubric: demo 30 · user need 20 · guardrails 20 · exceptions 15 · openness 15. Design: **W3 cart-first** (`docs/design/night/W3/`, reviews + open fixes in MORNING.md §2b). Shapes: CONTRACT.md v1 (server has additive v1.1 routes). Night results: MORNING.md.
 
 **Checkpoint A (target ~17:00):** request → basket → resolve swap → approve → order, live.

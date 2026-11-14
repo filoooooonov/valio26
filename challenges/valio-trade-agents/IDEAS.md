@@ -1,6 +1,6 @@
 # Ideas: Valio Aimo
 
-Team fit: aleksei handles the frontend, so the approval console and live audit log are what judges see. Ayaan handles the backend: the gateway, policy engine and substitution ranking.
+Team fit: solo build (aleksei + agents). The approval console and live audit log are what judges see; the gateway, policy engine and substitution ranking sit behind them.
 
 1. **Signed offers + policy mandates ("trust protocol")**
    The gateway returns offers signed with provenance (stock snapshot time, origin, certs). Each buyer agent carries a

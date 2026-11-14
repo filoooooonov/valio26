@@ -18,13 +18,13 @@ Lock in challenge **`$ARGUMENTS`**. Target: done in under 10 minutes. Ask the hu
    and add it to `enabledMcpjsonServers` in `.claude/settings.json`. Add the same server to `.codex/config.toml`.
 4. **Env:** append every key from QUICKSTART.md to `.env.example` with a comment on where to get it. Use no real values.
 5. **Scaffold:** pick the stack from `challenges/$ARGUMENTS/IDEAS.md`, or the "Stack" line in QUICKSTART.md:
-   - Create `app/server/` (owner ayaan) and `app/web/` (owner aleksei), each with a hello-world that runs.
+   - Create `app/server/` and `app/web/` (both owned by aleksei), each with a hello-world that runs.
    - In root `package.json`, add `dev:app` (starts everything), `test:app`, and a `test:fast` that finishes in under 10s.
    - Run `bun run dev` and `node scripts/test.mjs --fast` to prove they work.
    - Hacking must have started (Fri 19:30 or later) before you write app code. If it hasn't, stop after step 4 and tell the human.
 6. **CONTRACT.md:** write the first API shapes for the chosen idea (health endpoint plus the 2–3 core calls).
 7. **TASKS.md:** seed a **first-6-hours plan** with about 6 tasks per person, each 2h or less, each tied to a rubric line and listing its files.
-   aleksei gets frontend, demo and pitch. ayaan gets backend, ML and data. Put the SPIKE.md experiment first.
+   aleksei owns everything; agents do frontend, backend and data. Put the SPIKE.md experiment first.
 8. **DEMO.md:** draft the 5–7 step demo script from the chosen idea.
 9. **DECISIONS.md:** add `<time> · <who> · Locked $ARGUMENTS — <why, 1 line from DECIDE.md>`.
 10. Commit (`lock-in: $ARGUMENTS`), push, then `send_message(all, "Locked $ARGUMENTS. Pull now. Tasks in TASKS.md.")`,

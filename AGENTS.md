@@ -10,7 +10,7 @@ Claude Code agents get hooks that block claimed files and show their inbox autom
    work or `send_message` the holder with `kind: "help"`.
 3. **After finishing / before handing back to your human:** `read_inbox`, `release_files()`,
    `post_status(idle, ...)`, and run `node scripts/test.mjs --fast`.
-4. Your agent id is `ayaan-codex` (or `ayaan-codex-<worktree>`). Teammates may message you there.
+4. Your agent id is `aleksei-codex` (or `aleksei-codex-<worktree>`). Teammates may message you there.
 
 ## Setup
 The MCP server is configured in `.codex/config.toml`. If your Codex version doesn't load project

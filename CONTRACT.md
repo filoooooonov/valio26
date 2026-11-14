@@ -1,10 +1,10 @@
 # CONTRACT.md: interfaces between our parts
 
-Changes need a PR approved by the other owner. Keep the shapes exact; agents code against this file.
+Change it in its own commit, before the code that depends on it. Keep the shapes exact; agents code against this file.
 
 ## Owners
 - `app/web/` (aleksei) consumes the API below (console: approvals + audit log).
-- `app/server/` (ayaan) implements it, plus the same core calls as **MCP tools** for buyer agents.
+- `app/server/` (aleksei) implements it, plus the same core calls as **MCP tools** for buyer agents.
 - Base: `http://localhost:8787` (console uses `/api` via the Vite proxy). All bodies are JSON. Money is EUR, numbers not strings.
 
 ## Principles

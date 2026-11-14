@@ -30,7 +30,7 @@ aleksei is asleep. Work autonomously from this file. Don't ask questions: decide
 - Server: `app/server` (Bun + Hono). Already built: `catalog.ts` (local search, diets) and `valio.ts` (price/availability for shortlisted SKUs, cached, call log). Shapes: `CONTRACT.md` v1. You may update CONTRACT.md on this branch.
 - LLM: use the Claude API (read the `claude-api` skill first). Check whether `ANTHROPIC_API_KEY` is set **without printing it** (`bun --env-file=.env -e "console.log(process.env.ANTHROPIC_API_KEY ? 'set' : 'missing')"`). If it's missing, build the LLM path anyway, plus a clearly labelled deterministic fallback planner (recipe templates) so the demo runs.
 - Tests: `node scripts/test.mjs --fast` must stay under 10 s and green. Run the app and verify it in the browser (gstack `/browse`, never the claude-in-chrome tools). Never claim something works without running it.
-- Don't message Valio, Ayaan or the team board. Don't change settings, permissions or CLAUDE.md. Don't read or print `.env`.
+- Don't message Valio or the team board. Don't change settings, permissions or CLAUDE.md. Don't read or print `.env`.
 
 ## Output locations
 - Design screenshots: `docs/design/night/<direction>/*.png` (pen `Export`).
