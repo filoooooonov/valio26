@@ -11,7 +11,7 @@ import {
   timeLabel,
   weekday,
 } from "../format";
-import { shortName } from "../thread";
+import { orderLabel, shortName } from "../thread";
 
 function Modal({
   title,
@@ -194,16 +194,54 @@ export function SwapSheet({
       </div>
       <button
         className="cta-block"
-        disabled={locked || !pick || (pick === current && !lineIsOpen(line))}
-        onClick={() => pick && onChoose(pick)}
+        disabled={locked || !pick}
+        onClick={() =>
+          pick === current && !lineIsOpen(line)
+            ? onClose()
+            : pick && onChoose(pick)
+        }
       >
         {pick === "remove"
           ? "Don't order it"
-          : `Use ${shortName(rows.find((r) => r.sku === pick)?.name ?? "this").toLowerCase()}`}
+          : `Use ${shortName(rows.find((r) => r.sku === pick)?.name ?? "this")}`}
       </button>
     </Modal>
   );
 }
+
+const KIND: Record<string, string> = {
+  request: "Request",
+  plan: "Menu plan",
+  search: "Catalogue search",
+  pick: "Products picked",
+  stock: "Price and stock",
+  alternatives: "Alternatives",
+  swap: "Swap",
+  edit: "Quantity",
+  mandate: "Rules check",
+  recheck: "Re-check",
+  order: "Order",
+  decision: "Decision",
+  guests: "Guests",
+  chat: "Chat",
+  replan: "New plan",
+};
+const STATE: Record<string, string> = {
+  needs_your_ok: "Waiting for your choice:",
+  needs_approval: "Needs approval:",
+  agent_may_order: "Inside your limits:",
+};
+const logText = (e: AuditEvent) =>
+  `${e.actor === "assistant" || e.actor === "gateway" ? "" : e.actor + ": "}${e.summary}`
+    .replace(
+      /^(needs_your_ok|needs_approval|agent_may_order):/,
+      (m) => STATE[m.slice(0, -1)],
+    )
+    .replace(/^Claude:\s*/, "")
+    .replace(
+      /(?<![a-z])o_([a-z0-9]+)/g,
+      (_m, id: string) => "AIM-" + id.toUpperCase(),
+    );
 
 // "View order" / "Full technical log": the order lines plus every audit event the gateway recorded.
 export function LogSheet({
@@ -230,7 +268,7 @@ export function LogSheet({
       }));
   return (
     <Modal
-      title={order ? `Order ${order.id}` : "Order record"}
+      title={order ? `Order ${orderLabel(order.id)}` : "Order record"}
       onClose={onClose}
       wide
     >
@@ -255,8 +293,8 @@ export function LogSheet({
         {events.map((e, i) => (
           <li key={i}>
             <span className="trail__time">{timeLabel(e.at)}</span>
-            <span className="trail__actor">{e.actor}</span>
-            <span className="trail__text">{e.summary}</span>
+            <span className="trail__actor">{KIND[e.kind] ?? e.kind}</span>
+            <span className="trail__text">{logText(e)}</span>
           </li>
         ))}
       </ol>

@@ -1,5 +1,11 @@
 // Lucide icons used by the pen frames (library=lucide), inlined: 24px grid, stroke = currentColor.
 const I = {
+  croissant: '<path d="M10.2 18H4.774a1.5 1.5 0 0 1-1.352-.97 11 11 0 0 1 .132-6.487M18 10.2V4.774a1.5 1.5 0 0 0-.97-1.352 11 11 0 0 0-6.486.132M18 5a4 3 0 0 1 4 3 2 2 0 0 1-2 2 10 10 0 0 0-5.139 1.42M5 18a3 4 0 0 0 3 4 2 2 0 0 0 2-2 10 10 0 0 1 1.42-5.14M8.709 2.554a10 10 0 0 0-6.155 6.155 1.5 1.5 0 0 0 .676 1.626l9.807 5.42a2 2 0 0 0 2.718-2.718l-5.42-9.807a1.5 1.5 0 0 0-1.626-.676"/>',
+  candy: '<path d="M10 7v10.9M14 6.1V17M16 7V3a1 1 0 0 1 1.707-.707 2.5 2.5 0 0 0 2.152.717 1 1 0 0 1 1.131 1.131 2.5 2.5 0 0 0 .717 2.152A1 1 0 0 1 21 8h-4M16.536 7.465a5 5 0 0 0-7.072 0l-2 2a5 5 0 0 0 0 7.07 5 5 0 0 0 7.072 0l2-2a5 5 0 0 0 0-7.07M8 17v4a1 1 0 0 1-1.707.707 2.5 2.5 0 0 0-2.152-.717 1 1 0 0 1-1.131-1.131 2.5 2.5 0 0 0-.717-2.152A1 1 0 0 1 3 16h4"/>',
+  'cup-soda': '<path d="m6 8 1.75 12.28a2 2 0 0 0 2 1.72h4.54a2 2 0 0 0 2-1.72L18 8M5 8h14M7 15a6.47 6.47 0 0 1 5 0 6.47 6.47 0 0 0 5 0m-5-7 1-6h2"/>',
+  apple: '<path d="M12 6.528V3a1 1 0 0 1 1-1h0M18.237 21A15 15 0 0 0 22 11a6 6 0 0 0-10-4.472A6 6 0 0 0 2 11a15.1 15.1 0 0 0 3.763 10 3 3 0 0 0 3.648.648 5.5 5.5 0 0 1 5.178 0A3 3 0 0 0 18.237 21"/>',
+  utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+  snowflake: '<path d="M12 2v20M3.34 7l17.32 10M3.34 17 20.66 7"/><path d="m8 4 4 4 4-4M8 20l4-4 4 4M3 11l5-2-1-5M21 13l-5 2 1 5M3 13l5 2-1 5M21 11l-5-2 1-5"/>',
   plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
   minus: '<path d="M5 12h14"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
@@ -115,9 +121,14 @@ export function productIcon(name: string, contains: string[] = []): IconName {
 }
 export function dishIcon(name: string): IconName {
   const n = name.toLowerCase();
+  if (/croissant/.test(n)) return "croissant";
+  if (/chips|crisps|candy|candies|sweets|snacks/.test(n)) return "candy";
+  if (/drinks|soda|juice|water/.test(n)) return "cup-soda";
+  if (/fruits?|apple|banana|orange/.test(n)) return "apple";
   if (/soup|keitto/.test(n)) return "soup";
   if (/bread|sandwich|leipä/.test(n)) return "wheat";
   if (/pie|cake|dessert|piirakka/.test(n)) return "cherry";
   if (/fish|salmon/.test(n)) return "fish";
-  return "leaf";
+  if (/salad|vegetables|vegan|vegetarian/.test(n)) return "leaf";
+  return "utensils";
 }

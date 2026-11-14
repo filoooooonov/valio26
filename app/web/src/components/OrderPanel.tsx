@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode, type CSSProperties } from "react";
 import {
   api,
   isNotFound,
@@ -24,13 +24,16 @@ import {
   timeLabel,
   weekday,
 } from "../format";
-import { firstName, isAutoSwap, PEOPLE, shortName } from "../thread";
+import { cleanIssue, firstName, isAutoSwap, orderLabel, PEOPLE, plain, shortName } from "../thread";
 import type { Phase } from "../App";
 import { cheaperSwap } from "./Chat";
 import { Segmented } from "./Header";
 import { AssistantGlyph } from "./Mark";
+import "./order-polish.css";
 
-type Props = {
+export type OrderProps = {
+  insight?: ReactNode;
+  planningMenu?: boolean;
   phase: Phase;
   basket: Basket | null;
   order: Order | null;
@@ -54,15 +57,16 @@ type Props = {
   onHero: () => void;
 };
 
-export function OrderPanel(p: Props) {
+export function OrderPanel(p: OrderProps) {
   const b = p.basket;
+  if (p.phase === "placed" && p.order && b) return <OrderDone p={p} b={b} order={p.order} />;
   const eyebrow =
     p.phase === "review"
       ? "Review and confirm · step 2 of 3"
       : p.phase === "waiting"
         ? `Sent for approval · waiting for ${firstName(b?.rules.approver ?? "Mikko")}`
         : p.phase === "placed"
-          ? `Order placed · ${p.order?.id ?? ""}`
+          ? `Order placed · ${p.order ? orderLabel(p.order.id) : ""}`
           : "Order draft · built from your request";
   return (
     <section className="order" aria-label="Order">
@@ -75,12 +79,13 @@ export function OrderPanel(p: Props) {
           {b ? `Catering for ${b.people} · ${dayLabel(p.event)}` : "Your order"}
         </h1>
         {b && <Controls p={p} b={b} />}
+        {(p.phase === "draft" || p.phase === "review") && p.insight}
       </div>
       <div className="order__lines">
         {!b ? (
-          <EmptyOrder thinking={p.phase === "thinking"} onHero={p.onHero} />
+          <EmptyOrder planningMenu={p.planningMenu} thinking={p.phase === "thinking"} onHero={p.onHero} />
         ) : (
-          <Lines p={p} b={b} />
+          <Lines key={b.id} p={p} b={b} />
         )}
       </div>
       {b && <Footer p={p} b={b} />}
@@ -88,13 +93,38 @@ export function OrderPanel(p: Props) {
   );
 }
 
+function OrderDone({ p, b, order }: { p: OrderProps; b: Basket; order: Order }) {
+  const actor = order.decidedBy ?? order.by;
+  return <section className="order order--done" aria-label="Order confirmation">
+    <div className="order__lines order-done">
+      <div className="order-done__mark"><Icon name="circle-check" className="i-22" /></div>
+      <p className="order-done__eyebrow">Order {orderLabel(order.id)}</p>
+      <h1>Order complete</h1>
+      <p>Your order and its fixed-price record are saved in the prototype gateway.</p>
+      <dl className="order-done__facts">
+        <div><dt>Total, excl. VAT</dt><dd>{money(order.total)}</dd></div>
+        <div><dt>Requested delivery</dt><dd>{dayLabel(b.date)}, {SLOT}</dd></div>
+        <div><dt>{order.decidedBy ? "Approved by" : "Placed by"}</dt><dd>{PEOPLE[actor]?.name ?? actor}</dd></div>
+        <div><dt>Recorded at</dt><dd>{stamp(order.decidedAt ?? order.createdAt)}</dd></div>
+      </dl>
+      <p className="order-done__prototype">Local prototype order. Nothing has been submitted to Valio Aimo's ordering systems.</p>
+      <button className="btn order-done__view" onClick={p.onView}><Icon name="file-text" className="i-16" /> View order and audit trail</button>
+      <button className="link" onClick={p.onDone}>Back to shop</button>
+      <details className="order-done__products"><summary>View {order.lines.length} products</summary><Lines key={b.id} p={p} b={b} /></details>
+    </div>
+  </section>;
+}
+
 function EmptyOrder({
+  planningMenu,
   thinking,
   onHero,
 }: {
   thinking: boolean;
+  planningMenu?: boolean;
   onHero: () => void;
 }) {
+  if (planningMenu && !thinking) return <div className="order__empty"><p>Agree on your menu in the assistant first. Products, quantities and prices will appear here after you approve it.</p></div>;
   if (thinking)
     return (
       <div className="skeleton" aria-hidden="true">
@@ -122,7 +152,7 @@ function EmptyOrder({
   );
 }
 
-function Controls({ p, b }: { p: Props; b: Basket }) {
+function Controls({ p, b }: { p: OrderProps; b: Basket }) {
   const diet = b.dishes.find((d) => d.diet.length);
   // The diet note is the chef's own words ("3 guests are lactose-free") when the planner folded it into every dish.
   const asked = b.request.match(
@@ -252,7 +282,9 @@ function Fact({
   );
 }
 
-function Lines({ p, b }: { p: Props; b: Basket }) {
+function Lines({ p, b }: { p: OrderProps; b: Basket }) {
+  const [entering, setEntering] = useState(true);
+  useEffect(() => { const timer = setTimeout(() => setEntering(false), 340); return () => clearTimeout(timer); }, []);
   const frozen = p.phase === "waiting" || p.phase === "placed";
   const shown = frozen
     ? b.lines.filter((l) => l.qty > 0 && !lineIsOpen(l))
@@ -270,7 +302,7 @@ function Lines({ p, b }: { p: Props; b: Basket }) {
     },
   ].filter((g) => g.lines.length);
   return (
-    <>
+    <div className={"product-list" + (entering ? " product-list--entering" : "")}>
       {groups.map((g) => {
         const total = g.lines
           .filter((l) => !lineIsOpen(l))
@@ -278,14 +310,16 @@ function Lines({ p, b }: { p: Props; b: Basket }) {
         return (
           <div key={g.dish?.id ?? "other"} className="dish">
             <div className="dish__head">
-              <DishPhoto line={g.lines[0]} name={g.dish?.name ?? "Other"} />
+              <span className="dish__photo dish__photo--icon">
+                <Icon name={dishIcon(g.dish?.name ?? "Other")} className="i-22" />
+              </span>
               <div className="grow">
                 <h3 className="dish__name">
                   {g.dish?.name ?? "Other products"}
                 </h3>
                 {g.dish && (
                   <div className="dish__sub">
-                    {g.dish.portions} portions · {g.dish.basis} ·{" "}
+                    {g.dish.portions} portions ·{" "}
                     {g.lines.length}{" "}
                     {g.lines.length === 1 ? "product" : "products"}
                   </div>
@@ -293,9 +327,10 @@ function Lines({ p, b }: { p: Props; b: Basket }) {
               </div>
               <b className="dish__total">{money(total)}</b>
             </div>
-            {g.lines.map((l) => (
+            {g.lines.map((l, index) => (
               <LineRow
                 key={l.id}
+                revealIndex={index}
                 l={l}
                 b={b}
                 p={p}
@@ -311,20 +346,10 @@ function Lines({ p, b }: { p: Props; b: Basket }) {
           Not ordered, assumed in your kitchen: {b.assumed.join(", ")}.
         </p>
       )}
-    </>
+    </div>
   );
 }
 
-function DishPhoto({ line, name }: { line?: BasketLine; name: string }) {
-  const url = useProductImage(line?.sku);
-  return url ? (
-    <img className="dish__photo" src={url} alt="" />
-  ) : (
-    <span className="dish__photo dish__photo--icon">
-      <Icon name={dishIcon(name)} className="i-22" />
-    </span>
-  );
-}
 
 const reasonShort = (l: BasketLine, date: string) =>
   l.issue?.kind === "cutoff"
@@ -333,24 +358,27 @@ const reasonShort = (l: BasketLine, date: string) =>
       ? `not enough for ${weekday(date)}`
       : `no ${weekday(date)} delivery`;
 
-function LineRow({
+export function LineRow({
   l,
   b,
   p,
   frozen,
   placed,
+  revealIndex = 0,
 }: {
   l: BasketLine;
   b: Basket;
-  p: Props;
+  p: OrderProps;
   frozen: boolean;
   placed: boolean;
+  revealIndex?: number;
 }) {
   const open = lineIsOpen(l);
   const opt: Option | undefined = open ? l.issue!.options[0] : undefined;
   const off = !open && (l.qty === 0 || l.issue?.decided === "remove");
   const sku = opt?.sku ?? l.sku;
   const name = niceName(opt?.name ?? l.name);
+  const frozenItem = (opt ? opt.frozen : l.frozen) ?? /\b(?:frozen|deep[ -]?frozen|deepfrost|FRO)\b/i.test(opt?.name ?? l.name);
   const stock = opt?.stock ?? l.stock;
   const total = opt?.total ?? l.total;
   const qty = opt?.qty ?? l.qty;
@@ -358,10 +386,10 @@ function LineRow({
   const busy = p.busyLine === l.id;
 
   let tag: { text: string; tone: string } | null = null;
-  if (open && opt) tag = { text: "Suggested · answer in chat", tone: "amber" };
+  if (open && opt) tag = { text: "Choose an alternative", tone: "amber" };
   else if (open) tag = { text: "Needs your answer", tone: "amber" };
   else if (l.replaced && isAutoSwap(l.issue?.decidedBy))
-    tag = { text: "Swapped · same use", tone: "blue" };
+    tag = { text: "Swapped", tone: "blue" };
   else if (l.replaced || (l.issue?.decided && l.issue.decided !== "remove"))
     tag = { text: "Chosen by you", tone: "green" };
   else if (off)
@@ -370,15 +398,16 @@ function LineRow({
       tone: "grey",
     };
 
-  const why = opt
-    ? `Instead of your usual ${shortName(l.name).toLowerCase()} (${reasonShort(l, b.date)}) · ${opt.why} · ${sku}`
+  const why0 = opt
+    ? `Instead of your usual ${shortName(l.name)} (${reasonShort(l, b.date)}) · ${opt.why} · ${sku}`
     : l.replaced
-      ? `Instead of ${shortName(l.replaced.name).toLowerCase()} (${reasonShort(l, b.date)}) · ${l.why} · ${sku}`
+      ? `Instead of ${shortName(l.replaced.name)} (${reasonShort(l, b.date)}) · ${l.why} · ${sku}`
       : open
-        ? `${l.issue!.text} · ${sku}`
+        ? `${cleanIssue(l.issue!.text)} · ${sku}`
         : `${l.why} · ${sku}`;
+  const why = plain(why0);
 
-  const st = stockLine(l, stock, b.date, open && !opt);
+  const st = stockLine(l, open ? l.stock : stock, b.date, open);
   const unit = perUnit(stock);
   const sub =
     stock.customerPrice && stock.comparisonPrice ? (
@@ -395,6 +424,9 @@ function LineRow({
         {money(stock.price)} / {pack === "by kg" ? "kg" : "pack"}
       </span>
     );
+  const needsAlternative =
+    !off && (open || !stock.deliverable || stock.cutoffPassed ||
+      (stock.available != null && qty > stock.available));
   const atLimit =
     !open && !off && stock.available != null && qty + 1 > stock.available;
 
@@ -407,6 +439,7 @@ function LineRow({
         (placed ? " line--placed" : "")
       }
       aria-busy={busy || undefined}
+      style={{ "--product-delay": `${Math.min(revealIndex * 12, 90)}ms` } as CSSProperties}
     >
       {!placed && (
         <button
@@ -430,13 +463,24 @@ function LineRow({
       <div className="line__text">
         <div className="line__name">
           <span>{name}</span>
-          {tag && <span className={"tag tag--" + tag.tone}>{tag.text}</span>}
+          {frozenItem && <span className="line__frozen" role="img" aria-label="Frozen" title="Frozen"><Icon name="snowflake" className="i-16" /></span>}
+          {tag && (
+            <span className={"tag tag--" + tag.tone}>
+              {tag.text}
+            </span>
+          )}
         </div>
-        <div className="line__why">{why}</div>
-        <div className={"line__stock line__stock--" + st.tone}>
+        {!off && st.tone !== "green" && <div className={"line__stock line__stock--" + st.tone}>
           <Icon name={st.icon} className="i-14" />
           {st.text}
-        </div>
+        </div>}
+        <details className="line__details">
+          <summary aria-label={`Product details for ${name}`}>Product details</summary>
+          <p className="line__catalogue">{opt?.name ?? l.name}</p>
+          <p className="line__catalogue">SKU {sku}</p>
+          <div className="line__why">{why}</div>
+          {!off && <div className="line__unit">{sub}</div>}
+        </details>
         {atLimit && !frozen && (
           <div className="line__limit">
             That's all Valio has for {weekday(b.date)} ({n2(stock.available!)})
@@ -445,7 +489,6 @@ function LineRow({
       </div>
       <div className="price">
         <b className={off ? "price__off" : ""}>{off ? "—" : money(total)}</b>
-        {!off && sub}
       </div>
       {frozen ? (
         <span className="line__qty">{qtyLabel(qty, pack)}</span>
@@ -482,7 +525,7 @@ function LineRow({
           </button>
         </div>
       )}
-      {!frozen && (
+      {!frozen && needsAlternative && (
         <button
           className={"swapbtn" + (open ? " swapbtn--amber" : "")}
           aria-label={`Alternatives for ${name}`}
@@ -502,13 +545,14 @@ function stockLine(
   date: string,
   broken: boolean,
 ): { tone: string; icon: IconName; text: string } {
-  const day = weekday(date);
-  if (l.issue?.kind === "short" && !l.issue.decided && s.available != null)
+  const day = dayLabel(date);
+  if (l.issue?.kind === "short" && !l.issue.decided && l.stock.available != null)
     return {
       tone: "amber",
       icon: "circle-alert",
-      text: `Only ${n2(s.available)} for ${day} · you need ${n2(l.qty)}`,
+      text: `Only ${n2(l.stock.available)} for ${day} · you need ${n2(l.qty)}`,
     };
+  if (s.available != null && l.qty > s.available) return { tone: "amber", icon: "circle-alert", text: `Only ${n2(s.available)} available; you need ${n2(l.qty)}` };
   if (broken || s.cutoffPassed || !s.deliverable)
     return {
       tone: "red",
@@ -517,7 +561,7 @@ function stockLine(
         ? `Ordering closed for ${day}`
         : `No delivery ${day}${s.availableDate ? ` · from ${dayLabel(s.availableDate)}` : ""}`,
     };
-  return { tone: "green", icon: "circle-check", text: `${day} ${SLOT}` };
+  return { tone: "green", icon: "truck", text: `${day} ${SLOT}` };
 }
 
 // Product photo: GET /api/products/:sku/image only for products on screen; icon tile otherwise.
@@ -572,12 +616,14 @@ function ProductTile({
   );
 }
 
-function Footer({ p, b }: { p: Props; b: Basket }) {
+function Footer({ p, b }: { p: OrderProps; b: Basket }) {
   const max = b.rules.maxOrderEur;
   const held = b.pricesHeldUntil ? stamp(b.pricesHeldUntil) : null;
   const count = b.lines.filter(
     (l) => l.qty > 0 && l.issue?.decided !== "remove",
   ).length;
+  const active = b.lines.filter(l => l.qty > 0 && l.issue?.decided !== "remove");
+  const allDeliverable = (p.phase === "draft" || p.phase === "review") && active.length > 0 && b.openIssues === 0 && active.every(l => !lineIsOpen(l) && l.stock.deliverable && !l.stock.cutoffPassed && (l.stock.available == null || l.qty <= l.stock.available));
   const ordering = p.busy;
   let cta: ReactNode;
   let note = "";
@@ -592,7 +638,7 @@ function Footer({ p, b }: { p: Props; b: Basket }) {
         <span className="cta__total">{money(b.total)}</span>
       </button>
     );
-    const what = open.length === 1 ? `the ${shortName(open[0].name).toLowerCase()}` : `the ${open.length} open lines`;
+    const what = open.length === 1 ? `the ${shortName(open[0].name)}` : `the ${open.length} open lines`;
     note = !open.length
       ? "Nothing is ordered yet. Review it, then send."
       : Math.abs(b.totalIfAccepted - b.total) < 0.005
@@ -641,7 +687,7 @@ function Footer({ p, b }: { p: Props; b: Basket }) {
         <>
           Rather stay under {whole(max)}?{" "}
           <button className="link" onClick={() => p.onChoose(c.lineId, c.sku)}>
-            Switch to {shortName(c.name).toLowerCase()} · {money(c.total)}, no
+            Switch to {shortName(c.name)} · {money(c.total)}, no
             sign-off
           </button>
         </>
@@ -671,7 +717,7 @@ function Footer({ p, b }: { p: Props; b: Basket }) {
         <span className="cta__total">{money(p.order.total)}</span>
       </button>
     );
-    note = `Sent to Valio Aimo ${timeLabel(p.order.decidedAt ?? p.order.createdAt)} · prices fixed · changes possible until ${dayLabel(addDays(b.date, -1))}, 14:00`;
+    note = `Recorded in the prototype gateway ${timeLabel(p.order.decidedAt ?? p.order.createdAt)} · prices fixed · changes possible until ${dayLabel(addDays(b.date, -1))}, 14:00`;
     alt = (
       <>
         Done here?{" "}
@@ -685,6 +731,7 @@ function Footer({ p, b }: { p: Props; b: Basket }) {
   return (
     <div className="order__foot">
       {cta}
+      {allDeliverable && <p className="order-delivery"><Icon name="truck" className="i-16" /> All products will arrive on {dayLabel(b.date)}, {SLOT}.</p>}
       <p className="foot-note">{note}</p>
       {alt && <p className="foot-alt">{alt}</p>}
     </div>

@@ -63,6 +63,15 @@ export const firstName = (who: string) =>
 export const isAutoSwap = (who?: string) =>
   !!who &&
   (who.startsWith("agent") || who.startsWith("gateway") || who === "assistant");
+// User-facing copy: no API-call counts, no repeated "no alternative" sentences, decimal commas.
+export const plain = (s: string) =>
+  s.replace(/\s*\(\d+ (Valio )?API calls?\)/g, "").replace(/(\d)\.(\d)/g, "$1,$2");
+export const cleanIssue = (s: string) =>
+  plain(s.replace(/\s*No deliverable alternative found\.?/i, "").trim().replace(/\.?$/, "."));
+export const orderLabel = (id: string) => "AIM-" + id.replace(/^o_/, "").toUpperCase();
+const OPEN_IN = ["Done: {n} is in.", "{N} it is.", "Switched to {n}.", "Okay, {n} is in the order now."];
+const OPEN_OUT = ["Okay, no {n} this time.", "{N} is off the order.", "Left out: {n}."];
+const fill = (t: string, n: string) => t.replace("{n}", n).replace("{N}", n.charAt(0).toUpperCase() + n.slice(1));
 const quoted = (s: string) => s.match(/"([\s\S]*)"/)?.[1];
 const shortName = (s: string) => {
   const n = niceName(s)
@@ -105,6 +114,8 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
   let awaitingReply: { at: string; text: string } | null = null;
   let lastState: MandateResult["state"] | null = null;
   let firstUser = true;
+  let nReply = -1;
+  let lastRemove: { item: Item; names: string[]; at: string } | null = null;
 
   const flushBuild = (mandate: AuditEvent) => {
     const plan = build.find((e) => e.kind === "plan");
@@ -145,7 +156,7 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
         text:
           agentSwaps.length > 2
             ? `Swapped ${agentSwaps.length} products that can't arrive ${weekday(b.date)} for the same use`
-            : `Swapped ${agentSwaps.map((l) => shortName(l.replaced!.name).toLowerCase()).join(" and ")} for ${weekday(b.date)} · same use`,
+            : `Swapped ${agentSwaps.map((l) => shortName(l.replaced!.name)).join(" and ")} for ${weekday(b.date)} · same use`,
       });
     else if (problems)
       did.push({
@@ -255,18 +266,29 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
           : shortName(e.summary.replace(/^(Removed|Kept)\s+/, ""));
         const text =
           d.decision === "remove"
-            ? `Don't order the ${name.toLowerCase()}`
+            ? `Don't order the ${name}`
             : d.decision === "keep"
-              ? `Take what's available of ${name.toLowerCase()}`
-              : `Use ${name.toLowerCase()}`;
+              ? `Take what's available of ${name}`
+              : `Use ${name}`;
         out.push({ kind: "user", key, at: e.at, who, text });
+        // Several "don't order" answers in one go (the grouped card) read as one message.
+        const ri = lastRemove ? out.indexOf(lastRemove.item) : -1;
+        if (d.decision === "remove" && lastRemove && ri >= 0 && ri >= out.length - 2 && Date.parse(e.at) - Date.parse(lastRemove.at) < 10000) {
+          out.splice(ri + 1); // drop the reply to the previous removal; one reply follows for all
+          lastRemove.names.push(name);
+          const list = lastRemove.names.join(", ");
+          out[ri] = { ...(lastRemove.item as Extract<Item, { kind: "user" }>), text: `Don't order the ${list}` };
+          lastRemove.item = out[ri];
+          awaitingReply = { at: e.at, text: fill(OPEN_OUT[nReply % OPEN_OUT.length], list) };
+          break;
+        }
+        nReply++;
         awaitingReply = {
           at: e.at,
-          text:
-            d.decision === "remove"
-              ? `Done: the ${name.toLowerCase()} is not ordered.`
-              : `Done: ${name.toLowerCase()} is in.`,
+          text: fill((d.decision === "remove" ? OPEN_OUT : OPEN_IN)[nReply % (d.decision === "remove" ? OPEN_OUT.length : OPEN_IN.length)], name),
         };
+        lastRemove = null;
+        if (d.decision === "remove") lastRemove = { item: out[out.length - 1], names: [name], at: e.at };
         break;
       }
       case "edit":
@@ -275,7 +297,7 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
           key,
           at: e.at,
           icon: "repeat",
-          text: `${firstName(e.actor)} changed ${shortName(e.summary.replace(/:.*$/, "")).toLowerCase()}: ${e.summary.replace(/^.*:\s*/, "")} · ${timeLabel(e.at)}`,
+          text: `${firstName(e.actor)} changed ${shortName(e.summary.replace(/:.*$/, ""))}: ${e.summary.replace(/^.*:\s*/, "")} · ${timeLabel(e.at)}`,
         });
         break;
       case "guests":
@@ -284,11 +306,11 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
           key,
           at: e.at,
           icon: "users",
-          text: `${e.summary} · ${timeLabel(e.at)}`,
+          text: `${plain(e.summary)} · ${timeLabel(e.at)}`,
         });
         awaitingReply = {
           at: e.at,
-          text: "Done: amounts recalculated for the new guest count.",
+          text: "Amounts recalculated for the new guest count.",
         };
         break;
       case "chat": {
@@ -328,7 +350,7 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
             at: e.at,
             icon: "circle-alert",
             tone: "amber",
-            text: `${e.summary} · ${timeLabel(e.at)}`,
+            text: `${plain(e.summary)} · ${timeLabel(e.at)}`,
           });
         break;
       }
@@ -408,7 +430,7 @@ function placedTurn(
     kind: "assistant",
     key: "placed-" + at,
     at,
-    text: `Order ${orderId} is with Valio Aimo, and the prices are fixed. See you ${weekdayLong(b.date)} ${SLOT} at the loading dock.`,
+    text: `Order ${orderLabel(orderId)} is with Valio Aimo, and the prices are fixed. See you ${weekdayLong(b.date)} ${SLOT} at the loading dock.`,
     log: calls,
   };
 }

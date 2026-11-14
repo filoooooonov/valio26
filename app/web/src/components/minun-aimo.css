@@ -1,0 +1,14 @@
+.minun-context { border-top: var(--hair-w) solid var(--petrol-15); padding-top: var(--s-12); display: flex; flex-direction: column; gap: var(--s-8); }
+.minun-context__head, .menu-economics__head { display: flex; justify-content: space-between; align-items: start; gap: var(--s-12); flex-wrap: wrap; font-size: var(--fs-13); }
+.minun-sample { display: block; color: var(--text-2); font-size: var(--fs-11); font-weight: var(--w-regular); margin-top: var(--s-3); }
+.minun-toggle { display: flex; align-items: center; gap: var(--s-6); font-size: var(--fs-12); min-height: var(--btn-h); color: var(--teal); }
+.minun-toggle input { accent-color: var(--teal); }
+.minun-context__note, .minun-disclaimer { font-size: var(--fs-12); line-height: var(--lh-body); color: var(--text-2); }
+.minun-context details { font-size: var(--fs-12); }
+.minun-context summary { color: var(--teal); cursor: pointer; padding: var(--s-6) 0; }
+.minun-facts { display: flex; flex-direction: column; gap: var(--s-8); padding: var(--s-8) 0; }
+.minun-facts > span { display: flex; justify-content: space-between; gap: var(--s-12); flex-wrap: wrap; }
+.menu-economics { padding: var(--s-12) var(--s-16); margin-top: var(--s-12); border-radius: var(--r-10); background: var(--light-blue); display: flex; flex-direction: column; gap: var(--s-6); font-size: var(--fs-13); }
+.menu-economics strong { color: var(--teal); }
+.menu-economics__suggestion { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-8); margin-top: var(--s-8); font-size: var(--fs-12); }
+.menu-economics__suggestion p { flex: 1 1 230px; line-height: var(--lh-body); }

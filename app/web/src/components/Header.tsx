@@ -1,17 +1,19 @@
 import { Icon } from "../icons";
-import { addDays, dayLabel, money, SLOT, weekday } from "../format";
+import { dayLabel, money, SLOT, stamp } from "../format";
 import { AimoLogo, AssistantGlyph } from "./Mark";
 
 // Webshop chrome from frame UK3jg: logo · Delivery wholesale · Delivery/Pickup · slot · cart.
 export function Header({
   cartTotal,
   date,
+  orderBy,
   pickup,
   onPickup,
   locked,
 }: {
   cartTotal: number;
   date: string;
+  orderBy: string | null;
   pickup: boolean;
   onPickup: (p: boolean) => void;
   locked: boolean;
@@ -33,7 +35,7 @@ export function Header({
             <Icon name="chevron-down" className="i-14" />
           </div>
           <div className="hdr__slot-sub">
-            Hotelli Kaleva, Kamppi · order by {weekday(addDays(date, -1))} 14:00
+            Hotelli Kaleva, Kamppi{orderBy ? ` · order by ${stamp(orderBy)}` : ""}
           </div>
         </div>
       </div>

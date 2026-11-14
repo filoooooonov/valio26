@@ -1,41 +1,33 @@
-/*
- * Valio Aimo webfonts + base element styles. Colours, sizes and motion live in tokens.css.
- * Fonts are Valio's licensed webfonts, loaded at runtime from valioaimo.fi (served with CORS *).
- * They are NOT committed: National 2 (Klim) and Matter are commercial and this repo becomes MIT.
- */
+/* Geist: self-hosted demo typography. License: public/fonts/Geist-OFL.txt. */
 @import "./tokens.css";
 
 @font-face {
-  font-display: swap;
-  font-family: National;
-  font-style: normal;
-  font-weight: 700;
-  src: url(https://www.valioaimo.fi/wp-content/themes/aimo/dist/3469f3281682a16d1d10.woff2)
-    format("woff2");
-}
-@font-face {
-  font-display: swap;
-  font-family: Matter;
+  font-family: 'Geist';
   font-style: normal;
   font-weight: 400;
-  src: url(https://www.valioaimo.fi/wp-content/themes/aimo/dist/935bdebfee65ae201c7f.woff2)
-    format("woff2");
+  font-display: swap;
+  src: url(/fonts/geist-0.ttf) format('truetype');
 }
 @font-face {
-  font-display: swap;
-  font-family: Matter;
+  font-family: 'Geist';
   font-style: normal;
   font-weight: 500;
-  src: url(https://www.valioaimo.fi/wp-content/themes/aimo/dist/935bdebfee65ae201c7f.woff2)
-    format("woff2");
+  font-display: swap;
+  src: url(/fonts/geist-1.ttf) format('truetype');
 }
 @font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
   font-display: swap;
-  font-family: Matter;
+  src: url(/fonts/geist-2.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Geist';
   font-style: normal;
   font-weight: 700;
-  src: url(https://www.valioaimo.fi/wp-content/themes/aimo/dist/69d4f8cacb3bf995a496.woff2)
-    format("woff2");
+  font-display: swap;
+  src: url(/fonts/geist-3.ttf) format('truetype');
 }
 
 *,

@@ -36,8 +36,8 @@
   --shadow-card: 0 1px 2px #0037470f;
 
   /* type: pen font variables */
-  --font-display: "National", helvetica, arial, sans-serif;
-  --font-body: "Matter", helvetica, arial, sans-serif;
+  --font-display: "Geist", helvetica, arial, sans-serif;
+  --font-body: "Geist", helvetica, arial, sans-serif;
   --fs-11: 0.6875rem;
   --fs-12: 0.75rem;
   --fs-13: 0.8125rem;
@@ -94,6 +94,7 @@
   --bubble-w: 420px;
   --sheet-w: 520px;
   --mikko-w: 420px;
+  --states-col: 380px;
   --icon-xs: 13px;
   --icon-sm: 14px;
   --icon-md: 16px;

@@ -1,0 +1,8 @@
+﻿.aimo-thinking{color:var(--teal);overflow:visible}
+.aimo-thinking--small{width:var(--s-24);height:var(--s-24)}
+.aimo-thinking__pen{stroke-dasharray:1 1.5;stroke-dashoffset:1.25;animation:aimo-pen-loop 4200ms cubic-bezier(.45,0,.55,1) infinite;will-change:stroke-dashoffset}
+.aimo-thinking__reveal{opacity:1}
+/* One normalized mask travels forward, briefly rests, then returns along the same curve. */
+@keyframes aimo-pen-loop{0%,5%{stroke-dashoffset:1.25}45%,55%{stroke-dashoffset:0}95%,100%{stroke-dashoffset:1.25}}
+@media(prefers-reduced-motion:reduce){.aimo-thinking__pen{animation:none;stroke-dashoffset:0}}
+

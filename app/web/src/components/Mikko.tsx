@@ -8,7 +8,7 @@ import {
 } from "../api";
 import { Icon } from "../icons";
 import { addDays, dayLabel, money, SLOT, stamp, timeLabel, whole } from "../format";
-import { firstName, PEOPLE } from "../thread";
+import { firstName, orderLabel, PEOPLE } from "../thread";
 import { AimoLogo } from "./Mark";
 
 // Mikko's view (?view=mikko): the approver's phone card from the states board. Lists pending orders and
@@ -57,7 +57,7 @@ export function MikkoView() {
           </div>
         )}
         {done.map((d) => (
-          <Outcome key={d.order.id + (d.failed ?? "")} d={d} />
+          <Outcome key={d.order.id + (d.failed ?? "")} d={d} basket={baskets[d.order.basketId]} onBack={() => setDone((x) => x.filter((y) => y !== d))} />
         ))}
         {orders && orders.length === 0 && !done.length && (
           <p className="mikko__empty">Nothing waits for your approval.</p>
@@ -130,7 +130,7 @@ function Approval({
   return (
     <article className="approval">
       <div className="approval__from">
-        <span className="avatar avatar--teal">AV</span>
+        <span className="avatar avatar--teal">{order.by.startsWith("agent") ? "AI" : "AV"}</span>
         <span>
           <b>{firstName(order.by)} asks you to approve</b>
           <span className="muted-12">
@@ -140,9 +140,9 @@ function Approval({
         </span>
       </div>
       <h1 className="approval__title">
-        {basket
+        {basket?.people
           ? `Catering for ${basket.people} · ${dayLabel(addDays(basket.date, 1))}`
-          : `Order ${order.id}`}
+          : `Order ${orderLabel(order.id)}`}
       </h1>
       <p className="approval__meta">
         {order.lines.length} products
@@ -219,25 +219,38 @@ function Approval({
   );
 }
 
-function Outcome({ d }: { d: { order: Order; failed?: string } }) {
+function Outcome({ d, basket, onBack }: { d: { order: Order; failed?: string }; basket?: Basket; onBack: () => void }) {
   const placed = d.order.status === "placed";
   return (
-    <div className={"notice " + (placed ? "notice--green" : "notice--amber")}>
-      <Icon
-        name={placed ? "circle-check" : "undo-2"}
-        className="i-16 notice__icon"
-      />
-      <div className="grow">
-        <b className="notice__title">
-          {placed
-            ? `Approved · sent to Valio Aimo, ${money(d.order.total)}`
-            : `Sent back to ${firstName(d.order.by)}`}
-        </b>
-        <p className="notice__text">
-          {placed ? "Prices are fixed. " : "Nothing is ordered. "}
-          {d.order.note ? `Your note: "${d.order.note}"` : ""}
-        </p>
-      </div>
-    </div>
+    <article className="approval approval--done">
+      <span className={"disc disc--32 " + (placed ? "disc--green" : "disc--amber")}>
+        <Icon name={placed ? "circle-check" : "undo-2"} className="i-16" />
+      </span>
+      <h1 className="approval__title">{placed ? "Approved and sent to Valio Aimo" : `Sent back to ${firstName(d.order.by)}`}</h1>
+      <dl className="facts">
+        <dt>Order</dt>
+        <dd>{orderLabel(d.order.id)}</dd>
+        <dt>Total excl. VAT</dt>
+        <dd>{money(d.order.total)}</dd>
+        {basket && (
+          <>
+            <dt>Delivery</dt>
+            <dd>
+              {dayLabel(basket.date)}, {SLOT}
+            </dd>
+          </>
+        )}
+        {d.order.note && (
+          <>
+            <dt>Your note</dt>
+            <dd>{d.order.note}</dd>
+          </>
+        )}
+      </dl>
+      <p className="muted-12">{placed ? "Prices are fixed. Anna sees it in her order now." : "Nothing is ordered. Anna sees your note in her chat."}</p>
+      <button className="btn btn--outline btn--lg" onClick={onBack}>
+        Back to approvals
+      </button>
+    </article>
   );
 }

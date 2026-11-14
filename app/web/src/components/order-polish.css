@@ -1,0 +1,31 @@
+/* Product-only polish: quantity refreshes keep their existing mounted rows. */
+.product-list--entering .line { animation: product-arrive 210ms cubic-bezier(.22,1,.36,1) both; animation-delay: var(--product-delay, 0ms); }
+@keyframes product-arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.order .line { align-items: start; }
+.order .line > .check, .order .line > .tile, .order .line > .price, .order .line > .stepper, .order .line > .line__qty, .order .line > .swapbtn { align-self: start; }
+.order .line > .price, .order .line > .line__qty { padding-top: var(--s-8); }
+.line__catalogue { color: var(--text-2); font-size: var(--fs-12); line-height: var(--lh-body); overflow-wrap: anywhere; }
+.order-done { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-16); padding: var(--s-32); }
+.order-done__mark { color: var(--teal); background: var(--light-blue); padding: var(--s-16); border-radius: var(--r-pill); }
+.order-done h1 { font-family: var(--font-display); font-size: var(--fs-40); color: var(--teal); }
+.order-done > p { max-width: 38rem; line-height: var(--lh-body); }
+.order-done__eyebrow { font-size: var(--fs-13); color: var(--text-2); }
+.order-done__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-24); width: 100%; padding: var(--s-20) 0; border-top: var(--hair-w) solid var(--hair); border-bottom: var(--hair-w) solid var(--hair); }
+.order-done__facts dt { font-size: var(--fs-13); color: var(--text-2); margin-bottom: var(--s-6); }
+.order-done__facts dd { margin: 0; font-size: var(--fs-18); font-weight: var(--w-medium); color: var(--teal); }
+.order-done__prototype { color: var(--text-2); font-size: var(--fs-13); }
+.order-done__view { color: var(--white); background: var(--teal); }
+.order-done__products { width: 100%; margin-top: var(--s-16); }
+.order-done__products > summary { color: var(--teal); cursor: pointer; padding: var(--s-12) 0; }
+.order-done__products > summary:focus-visible { outline: var(--ring-w) solid var(--teal); outline-offset: var(--s-3); }
+@media (max-width: 780px) { .order-done { padding: var(--s-20) var(--s-16); } .order-done h1 { font-size: var(--fs-28); } .order-done__facts { gap: var(--s-16); } .order-done__facts dd { font-size: var(--fs-15); } }
+@media (prefers-reduced-motion: reduce) { .product-list--entering .line { animation: none; } }
+
+.line__frozen { display: inline-flex; color: var(--muted); vertical-align: middle; margin-left: var(--s-6); }
+
+/* Keep a quiet divider between dishes, without rules between their products. */
+.order .line { border-bottom: 0; }
+.order .product-list > .dish + .dish { border-top: var(--hair-w) solid var(--hair); padding-top: var(--s-12); }
+
+.order-delivery { display: flex; align-items: center; gap: var(--s-8); color: var(--teal); font-size: var(--fs-13); line-height: var(--lh-body); margin-top: var(--s-8); }
+.order-delivery .icon { flex: none; }

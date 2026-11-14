@@ -25,6 +25,7 @@ export type Dish = {
   diet: string[];
 };
 export type Option = {
+  frozen?: boolean;
   sku: string;
   name: string;
   reason: string;
@@ -44,6 +45,7 @@ export type Issue = {
   decidedBy?: string;
 };
 export type BasketLine = {
+  frozen?: boolean;
   id: string;
   dishId: string | null;
   needIds: string[];

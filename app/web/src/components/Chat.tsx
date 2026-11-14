@@ -1,27 +1,31 @@
-import {
+﻿import {
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
   type RefObject,
+  type ReactNode,
 } from "react";
 import type { Basket, BasketLine, Order } from "../api";
-import { BUYER } from "../api";
-import { Icon, type IconName } from "../icons";
+import { api, BUYER } from "../api";
+import { Icon, productIcon, type IconName } from "../icons";
 import {
   addDays,
+  dayLabel,
+  niceName,
+  qtyLabel,
   lineIsOpen,
   money,
   n2,
   sameDay,
   stamp,
   timeLabel,
-  weekday,
   weekdayLong,
 } from "../format";
-import { firstName, PEOPLE, shortName, type Item } from "../thread";
+import { firstName, orderLabel, PEOPLE, shortName, type Item } from "../thread";
 import type { Phase } from "../App";
-import { AssistantBadge } from "./Mark";
+import { AssistantBadge, ThinkingMark } from "./Mark";
+import "./chat-polish.css";
 
 export type LocalItem =
   | { kind: "user"; key: string; at: string; who: string; text: string }
@@ -31,6 +35,9 @@ export type LocalItem =
 export type ChatError = { title: string; text: string; retry: () => void };
 
 type Props = {
+  alternativeProposal?: ReactNode;
+  menuProposal?: ReactNode;
+  planningMenu?: boolean;
   phase: Phase;
   basket: Basket | null;
   thread: Item[];
@@ -47,6 +54,9 @@ type Props = {
   onStop: () => void;
   onNew: () => void;
   onChoose: (lineId: string, sku: string) => void;
+  onRemoveMany: (lineIds: string[]) => void;
+  onFindAlternatives?: (lines: BasketLine[]) => void;
+  onSwitchResend: (lineId: string, sku: string) => void;
   onSeeAll: (lineId: string) => void;
   onGuests: (n: number) => void;
   onRefreshPrices: () => void;
@@ -68,13 +78,50 @@ export function Chat(p: Props) {
     p.basket && (p.phase === "draft" || p.phase === "review")
       ? p.basket.lines.filter(lineIsOpen)
       : [];
+  // Lines with real options get one card each; lines with no substitute are one decision together.
+  const noSub = open.filter(
+    (l) => !l.issue!.options.length && l.issue!.kind !== "short",
+  );
+  const withOpts = open.filter((l) => !noSub.includes(l));
+  const cards = withOpts.length + (noSub.length ? 1 : 0);
   const firstAt = items.find((i) => i.kind === "user")?.at;
 
-  // Keep the newest turn in view (the thread only grows; nothing above is rewritten).
-  useLayoutEffect(() => {
+  const pinned = useRef(true);
+  const following = useRef(false);
+  const [hasNewMessages, setHasNewMessages] = useState(false);
+  const latestOwn = [...items].reverse().find(i => i.kind === "user")?.key;
+  const lastOwn = useRef(latestOwn);
+  const tail = [items.map(i => i.key).join(","), open.length, p.phase,
+    p.order?.status, !!p.error, p.stale, !!p.building, !!p.menuProposal, p.busy].join("|");
+  const jumpToLatest = () => {
     const el = scroller.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [items.length, open.length, p.phase, p.error, p.stale, !!p.building]);
+    if (!el) return;
+    pinned.current = true;
+    following.current = true;
+    setHasNewMessages(false);
+    el.scrollTo({ top: el.scrollHeight, behavior: !window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "smooth" : "instant" });
+  };
+  useLayoutEffect(() => {
+    const ownMessage = latestOwn !== lastOwn.current;
+    lastOwn.current = latestOwn;
+    if (pinned.current || ownMessage) jumpToLatest();
+    else setHasNewMessages(true);
+  }, [tail, latestOwn]); // Existing keyed turns retain their DOM and entry motion.
+
+  const previousOrder = useRef({ id: p.order?.id, status: p.order?.status });
+  const announced = useRef(new Set<string>());
+  const observedProgress = useRef(false);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
+  useEffect(() => {
+    const previous = previousOrder.current;
+    if (p.busy || p.order?.status === "pending_approval") observedProgress.current = true;
+    if (p.order?.status === "placed" && observedProgress.current && (previous.id !== p.order.id || previous.status !== "placed") && !announced.current.has(p.order.id)) {
+      announced.current.add(p.order.id);
+      observedProgress.current = false;
+      setSuccessToast(p.order.id);
+    } else if (p.order?.status !== "placed") setSuccessToast(null);
+    previousOrder.current = { id: p.order?.id, status: p.order?.status };
+  }, [p.order?.id, p.order?.status, p.busy]);
 
   return (
     <section className="chat" aria-label="Aimo assistant">
@@ -87,8 +134,14 @@ export function Chat(p: Props) {
         </button>
       </div>
 
-      <div className="thread" ref={scroller} aria-live="polite">
-        {p.phase === "empty" && !p.error && (
+      <div className="thread" ref={scroller} aria-live="polite" aria-relevant="additions" onWheel={() => { following.current = false; }} onTouchStart={() => { following.current = false; }} onPointerDown={() => { following.current = false; }} onScroll={() => {
+        const el = scroller.current;
+        if (!el) return;
+        const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+        if (!following.current || nearBottom) pinned.current = nearBottom;
+        if (nearBottom) { following.current = false; setHasNewMessages(false); }
+      }}>
+        {p.phase === "empty" && !p.error && !p.planningMenu && (
           <Intro onHero={p.onHero} onSend={p.onSend} onAttach={p.onAttach} />
         )}
         {p.building && !p.basket && (
@@ -102,25 +155,48 @@ export function Chat(p: Props) {
         {items.map((it) => (
           <Turn key={it.key} it={it} p={p} firstAt={firstAt} />
         ))}
-        {open.map((l, i) => (
+        {p.menuProposal}
+        {withOpts.map((l, i) => (
           <Question
             key={l.id}
             line={l}
             index={i}
-            count={open.length}
+            count={cards}
             basket={p.basket!}
-            p={p}
+            busy={p.busy}
+            onChoose={p.onChoose}
+            onSeeAll={p.onSeeAll}
           />
         ))}
+        {noSub.length > 0 && (
+          <NoSubstitute
+            lines={noSub}
+            index={withOpts.length}
+            count={cards}
+            date={p.basket!.date}
+            busy={p.busy}
+            onRemove={() => p.onRemoveMany(noSub.map((l) => l.id))}
+            onFind={() => p.onFindAlternatives ? p.onFindAlternatives(noSub) :
+              p.onSend(
+                `Find another ${noSub.map((l) => shortName(l.name)).join(", ")} that can arrive ${weekdayLong(p.basket!.date)}`,
+              )
+            }
+          />
+        )}
+        {p.alternativeProposal}
         {p.phase === "waiting" && p.order && <Waiting order={p.order} />}
         {p.stale && p.basket && (
-          <Stale basket={p.basket} onRefresh={p.onRefreshPrices} />
+          <Stale checkedAt={p.basket.checkedAt} onRefresh={p.onRefreshPrices} />
         )}
         {p.building && <Thinking since={p.building.since} />}
         {p.error && <ErrorCard e={p.error} onDismiss={p.onDismissError} />}
+        {p.busy && !p.building && <div className="chat-pending" role="status"><ThinkingMark small /><span>Updating your request...</span></div>}
+        {p.order?.status === "placed" && <ConfirmedOrder order={p.order} onLog={p.onLog} />}
       </div>
 
-      <Suggestions p={p} />
+      {hasNewMessages && <button className="chat-latest" onClick={() => jumpToLatest()} aria-label="Jump to latest message">Latest messages <Icon name="arrow-right" className="i-14" /></button>}
+      {successToast === p.order?.id && p.order?.status === "placed" && <div className="chat-success-toast" role="status" aria-live="polite"><Icon name="circle-check" className="i-22" /><div><b>Order confirmed</b><span>{orderLabel(p.order.id)} is recorded in this demo gateway.</span></div><button className="round round--plain" aria-label="Dismiss order confirmation" onClick={() => setSuccessToast(null)}><Icon name="x" className="i-16" /></button></div>}
+      {!p.planningMenu && <Suggestions p={p} />}
       <Composer p={p} />
       <p className="foot">
         Rules are checked by Valio Aimo on every order, not by the assistant.
@@ -129,7 +205,16 @@ export function Chat(p: Props) {
   );
 }
 
-function Intro({
+function ConfirmedOrder({ order, onLog }: { order: Order; onLog: () => void }) {
+  return <section className="chat-confirmed" aria-label="Confirmed order">
+    <div className="chat-confirmed__heading"><Icon name="circle-check" className="i-22" /><h3>Order confirmed</h3></div>
+    <p>{orderLabel(order.id)} <span aria-hidden="true"> / </span> <strong>{money(order.total)}</strong> excl. VAT</p>
+    <p className="chat-confirmed__note">Prices are fixed. Your order and approval are recorded in this demo gateway.</p>
+    <button className="chat-confirmed__link" onClick={onLog}>View order and audit trail <Icon name="arrow-right" className="i-14" /></button>
+  </section>;
+}
+
+export function Intro({
   onHero,
   onSend,
   onAttach,
@@ -180,14 +265,13 @@ function UserBubble({
   long?: boolean;
   firstAt?: string;
 }) {
-  const name = firstName(who);
   const when =
     long || (firstAt && !sameDay(at, firstAt)) ? stamp(at) : timeLabel(at);
   return (
     <div className="user enter">
       <div className={"bubble" + (long ? " bubble--long" : "")}>
         <div className="bubble__meta">
-          {name} · {when}
+          {firstName(who)} · {when}
         </div>
         <div className="bubble__text">{text}</div>
       </div>
@@ -236,8 +320,7 @@ function Turn({
             )}
             {"log" in it && it.log != null && (
               <button className="loglink" onClick={p.onLog}>
-                <Icon name="list" className="i-14" /> Full technical log ·{" "}
-                {it.log} API calls
+                <Icon name="list" className="i-14" /> Full technical log
               </button>
             )}
           </div>
@@ -255,43 +338,56 @@ function Turn({
           {it.text}
         </div>
       );
-    case "sentBack":
+    case "sentBack": {
+      const active =
+        p.order?.id === it.orderId &&
+        p.order.status === "rejected" &&
+        p.phase !== "waiting";
       return (
         <SentBack
           by={it.by}
           at={it.at}
           note={it.note}
-          active={
-            p.order?.id === it.orderId &&
-            p.order.status === "rejected" &&
-            p.phase !== "waiting"
-          }
+          active={active}
           held={p.order?.pricesHeldUntil ?? p.basket?.pricesHeldUntil ?? null}
+          match={active && p.basket ? noteOption(it.note, p.basket) : null}
           onResend={p.onResend}
+          onSwitch={p.onSwitchResend}
           onReply={() => p.composerRef.current?.focus()}
         />
       );
+    }
     case "failed":
-      return (
-        <div className="card enter">
-          <div className="card__head">
-            <span className="disc disc--red">
-              <Icon name="circle-x" className="i-16" />
-            </span>
-            <h3 className="card__title">Valio Aimo didn't confirm</h3>
-          </div>
-          <p className="card__text">{it.text}</p>
-          <div className="row-8">
-            <button className="btn btn--teal" onClick={p.onRetryOrder}>
-              <Icon name="rotate-cw" className="i-16" /> Try again
-            </button>
-            <a className="btn btn--outline" href="tel:+358102000">
-              Contact customer service
-            </a>
-          </div>
-        </div>
-      );
+      return <FailedCard text={it.text} onRetry={p.onRetryOrder} />;
   }
+}
+
+export function FailedCard({
+  text,
+  onRetry,
+}: {
+  text: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="card enter">
+      <div className="card__head">
+        <span className="disc disc--red">
+          <Icon name="circle-x" className="i-16" />
+        </span>
+        <h3 className="card__title">Valio Aimo didn't confirm</h3>
+      </div>
+      <p className="card__text">{text}</p>
+      <div className="row-8">
+        <button className="btn btn--teal" onClick={onRetry}>
+          <Icon name="rotate-cw" className="i-16" /> Try again
+        </button>
+        <a className="btn btn--outline" href="tel:+358102000">
+          Contact customer service
+        </a>
+      </div>
+    </div>
+  );
 }
 
 export function Route({ approver }: { approver: string }) {
@@ -336,86 +432,75 @@ function Person({
   );
 }
 
-// One question card per open line: the chef's call, answered with the line's real options.
-function Question({
-  line,
-  index,
-  count,
-  basket,
-  p,
-}: {
-  line: BasketLine;
-  index: number;
-  count: number;
-  basket: Basket;
-  p: Props;
+const replacementImages = new Map<string, Promise<string | null>>();
+function ReplacementPhoto({ sku, name, contains }: { sku: string; name: string; contains?: string[] }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    setUrl(null);
+    let request = replacementImages.get(sku);
+    if (!request) { request = api.image(sku).catch(() => null); replacementImages.set(sku, request); }
+    request.then(image => { if (active) setUrl(image); });
+    return () => { active = false; };
+  }, [sku]);
+  return <span className="stock-replacement__photo">{url ? <img src={url} alt="" loading="lazy" onError={() => setUrl(null)} /> : <Icon name={productIcon(name, contains ?? [])} className="i-22" />}</span>;
+}
+function IssueDetail({ line }: { line: BasketLine }) {
+  const detail = line.issue?.kind === "short" && line.stock.available != null
+    ? `Only ${n2(line.stock.available)} available; you need ${n2(line.qty)}.`
+    : line.issue?.kind === "cutoff" ? "The order cut-off has passed."
+    : line.stock.availableDate ? `Next available ${dayLabel(line.stock.availableDate)}.`
+    : "Unavailable for this delivery.";
+  return <p className="stock-problem__reason">{detail}</p>;
+}
+export function Question({ line, basket, busy, onChoose, onSeeAll }: {
+  line: BasketLine; index: number; count: number; basket: Basket; busy: boolean;
+  onChoose: (lineId: string, sku: string) => void; onSeeAll: (lineId: string) => void;
 }) {
   const issue = line.issue!;
-  const opts = issue.options;
-  const name = shortName(line.name).toLowerCase();
-  const day = weekday(basket.date);
-  const head =
-    count === 1
-      ? `One question: the ${name}`
-      : `Question ${index + 1} of ${count}: the ${name}`;
   const short = issue.kind === "short" && line.stock.available != null;
-  let text = issue.text.replace(/\.$/, "") + ".";
-  if (opts[0])
-    text += ` ${shortName(opts[0].name)} keeps the dish as planned (${money(opts[0].total)}).`;
-  if (opts[1])
-    text += ` ${shortName(opts[1].name)} is ${money(opts[1].total)}.`;
-  if (!opts.length && !/no deliverable alternative/i.test(issue.text))
-    text += ` I found nothing that arrives ${weekdayLong(basket.date)} for the same use.`;
-  const busy = p.busy;
-  return (
-    <div className="question enter" data-question={line.id}>
-      <div className="question__head">
-        <Icon name="circle-alert" className="i-16" />
-        {head}
-      </div>
-      {short && (
-        <div className="question__sub">
-          Only {n2(line.stock.available!)} for {day} · you need {n2(line.qty)}
+  return <section className="question stock-problem enter" data-question={line.id} aria-label={`Delivery issue: ${niceName(line.name)}`}>
+    <h3 className="question__head"><Icon name="circle-alert" className="i-16" /><span>{niceName(line.name)} {short ? "is short for delivery" : "can't arrive on time"}</span></h3>
+    <span className="stock-problem__date"><Icon name="truck" className="i-14" />For delivery {dayLabel(basket.date)}</span>
+    <IssueDetail line={line} />
+    {issue.options.length > 0 && <p className="stock-replacement__intro">Replace it with</p>}
+    {issue.options.slice(0, 2).map(o => {
+      const available = o.stock.deliverable && !o.stock.cutoffPassed;
+      const delta = Number.isFinite(line.total) && Number.isFinite(o.total) ? Math.round((o.total - line.total) * 100) / 100 : null;
+      return <div className="stock-replacement" key={o.sku}>
+        <ReplacementPhoto sku={o.sku} name={o.name} contains={o.contains} />
+        <div className="stock-replacement__body">
+          <strong className="stock-replacement__name">{niceName(o.name)}{o.frozen && <span className="stock-replacement__frozen" aria-label="Frozen" title="Frozen"><Icon name="snowflake" className="i-14" /></span>}</strong>
+          <div className="stock-replacement__facts"><span>{qtyLabel(o.qty, o.pack)}</span><span>{money(o.total)}</span></div>
+          {delta != null && <span className={"stock-replacement__difference" + (delta < 0 ? " stock-replacement__difference--less" : "")}>{Math.abs(delta) < 0.005 ? "Same price" : `${money(Math.abs(delta))} ${delta < 0 ? "cheaper" : "more"}`}</span>}
+          <span className={"stock-replacement__delivery" + (!available ? " stock-replacement__delivery--late" : "")}><Icon name="truck" className="i-14" />{available ? "Arrives in time" : o.stock.availableDate ? `Available ${dayLabel(o.stock.availableDate)}` : "Not available in time"}</span>
+          <button className="ans ans--primary stock-replacement__choose" disabled={busy || !available} onClick={() => onChoose(line.id, o.sku)} aria-label={`Use ${niceName(o.name)} instead of ${niceName(line.name)}`}>Use replacement</button>
         </div>
-      )}
-      <p className="question__text">{text}</p>
-      <div className="answers">
-        {opts.slice(0, 2).map((o, i) => (
-          <button
-            key={o.sku}
-            className={"ans" + (i === 0 ? " ans--primary" : "")}
-            disabled={busy}
-            onClick={() => p.onChoose(line.id, o.sku)}
-          >
-            {i === 0 && short ? <Icon name="check" className="i-14" /> : null}
-            Use {shortName(o.name).toLowerCase()}
-          </button>
-        ))}
-        {short && (
-          <button
-            className={"ans" + (opts.length ? "" : " ans--primary")}
-            disabled={busy}
-            onClick={() => p.onChoose(line.id, "keep")}
-          >
-            Take the {n2(line.stock.available!)} available
-          </button>
-        )}
-        {opts.length > 2 ? (
-          <button className="ans" onClick={() => p.onSeeAll(line.id)}>
-            See all {opts.length}
-          </button>
-        ) : (
-          <button
-            className={"ans" + (opts.length || short ? "" : " ans--primary")}
-            disabled={busy}
-            onClick={() => p.onChoose(line.id, "remove")}
-          >
-            Don't order it
-          </button>
-        )}
-      </div>
+      </div>;
+    })}
+    {issue.options.length > 0 && <p className="stock-problem__vat">Prices excl. VAT</p>}
+    <div className="answers stock-problem__actions">
+      {short && <button className="stock-problem__text-action" disabled={busy} onClick={() => onChoose(line.id, "keep")}>Take the {n2(line.stock.available!)} available</button>}
+      {issue.options.length > 2 && <button className="stock-problem__text-action" disabled={busy} onClick={() => onSeeAll(line.id)}>See all {issue.options.length} replacements</button>}
+      <button className="stock-problem__text-action" disabled={busy} onClick={() => onChoose(line.id, "remove")}>Don't order it</button>
     </div>
-  );
+  </section>;
+}
+export function NoSubstitute({ lines, date, busy, onRemove, onFind }: {
+  lines: BasketLine[]; index: number; count: number; date: string; busy: boolean;
+  onRemove: () => void; onFind: () => void;
+}) {
+  const single = lines.length === 1;
+  return <section className="question stock-problem enter" data-question={lines[0].id} aria-label="Items without a suitable replacement">
+    <h3 className="question__head"><Icon name="circle-alert" className="i-16" /><span>{single ? niceName(lines[0].name) + " can't arrive on time" : "These items can't arrive on time"}</span></h3>
+    <span className="stock-problem__date"><Icon name="truck" className="i-14" />For delivery {dayLabel(date)}</span>
+    {lines.map(line => <div className="stock-problem__unavailable" key={line.id}>{!single && <strong>{niceName(line.name)}</strong>}<IssueDetail line={line} /></div>)}
+    <p className="stock-problem__help">No suitable replacement found.</p>
+    <div className="answers stock-problem__actions">
+      <button className="ans ans--primary" disabled={busy} aria-busy={busy || undefined} onClick={onFind}>{busy ? <><Icon name="loader" className="i-14 spin" />Finding alternatives...</> : "Find another"}</button>
+      <button className="stock-problem__text-action" disabled={busy} onClick={onRemove}>{single ? "Don't order it" : "Don't order these items"}</button>
+    </div>
+  </section>;
 }
 
 function Waiting({ order }: { order: Order }) {
@@ -455,13 +540,28 @@ function Waiting({ order }: { order: Order }) {
   );
 }
 
-function SentBack(p: {
+// An option in the basket that Mikko's note names ("Use the trout…"), so the card can offer exactly that.
+function noteOption(note: string, b: Basket) {
+  const words = note.toLowerCase().match(/[a-zåäö]{4,}/g) ?? [];
+  for (const l of b.lines)
+    for (const o of l.issue?.options ?? []) {
+      if (o.sku === l.sku) continue;
+      const n = o.name.toLowerCase();
+      if (words.some((w) => n.includes(w)))
+        return { lineId: l.id, sku: o.sku, name: o.name };
+    }
+  return null;
+}
+
+export function SentBack(p: {
   by: string;
   at: string;
   note: string;
   active: boolean;
   held: string | null;
+  match: { lineId: string; sku: string; name: string } | null;
   onResend: () => void;
+  onSwitch: (lineId: string, sku: string) => void;
   onReply: () => void;
 }) {
   const m = PEOPLE[p.by]?.name ?? p.by;
@@ -487,9 +587,18 @@ function SentBack(p: {
       </p>
       {p.active && (
         <div className="row-8">
-          <button className="btn btn--lime" onClick={p.onResend}>
-            Change and resend
-          </button>
+          {p.match ? (
+            <button
+              className="btn btn--lime"
+              onClick={() => p.onSwitch(p.match!.lineId, p.match!.sku)}
+            >
+              Switch to {shortName(p.match.name).split(",")[0]} and resend
+            </button>
+          ) : (
+            <button className="btn btn--lime" onClick={p.onResend}>
+              Change and resend
+            </button>
+          )}
           <button className="btn btn--outline" onClick={p.onReply}>
             Reply
           </button>
@@ -499,14 +608,14 @@ function SentBack(p: {
   );
 }
 
-function Stale({
-  basket,
+export function Stale({
+  checkedAt,
   onRefresh,
 }: {
-  basket: Basket;
+  checkedAt: string;
   onRefresh: () => void;
 }) {
-  const min = Math.round((Date.now() - Date.parse(basket.checkedAt)) / 60000);
+  const min = Math.round((Date.now() - Date.parse(checkedAt)) / 60000);
   return (
     <div className="notice enter">
       <span className="disc disc--amber">
@@ -528,30 +637,50 @@ function Stale({
 
 // The planner is one ~20 s gateway call; these are its real stages in order (CONTRACT.md "Planner pipeline").
 // Only the labels tick on a clock; nothing on screen is data until the gateway answers.
-const STEPS: [string, string, number][] = [
-  ["Planning the dishes", "amounts per guest for each ingredient", 0],
-  ["Searching the catalogue", "local copy, no calls to Valio", 12],
-  ["Picking products", "your usual brands first", 13],
-  ["Checking price and stock", "one live call for the shortlist only", 17],
-  ["Looking for alternatives", "only for lines that can't arrive", 19],
+const STEPS: [string, string, string, number][] = [
+  [
+    "Planning the dishes",
+    "Planned the dishes",
+    "amounts per guest for each ingredient",
+    0,
+  ],
+  [
+    "Searching the catalogue",
+    "Searched the catalogue",
+    "local copy, no calls to Valio",
+    12,
+  ],
+  ["Picking products", "Picked products", "your usual brands first", 13],
+  [
+    "Checking price and stock",
+    "Checked price and stock",
+    "one live call for the shortlist only",
+    17,
+  ],
+  [
+    "Looking for alternatives",
+    "Looked for alternatives",
+    "only for lines that can't arrive",
+    19,
+  ],
 ];
-function Thinking({ since }: { since: number }) {
-  const [s, setS] = useState(0);
+export function Thinking({ since }: { since: number }) {
+  const [s, setS] = useState((Date.now() - since) / 1000);
   useEffect(() => {
     const t = setInterval(() => setS((Date.now() - since) / 1000), 250);
     return () => clearInterval(t);
   }, [since]);
-  const cur = STEPS.filter((x) => s >= x[2]).length - 1;
-  const next = STEPS[cur + 1]?.[2] ?? 24;
-  const frac = Math.min(1, (s - STEPS[cur][2]) / (next - STEPS[cur][2]));
+  const cur = STEPS.filter((x) => s >= x[3]).length - 1;
+  const next = STEPS[cur + 1]?.[3] ?? 24;
+  const frac = Math.min(1, (s - STEPS[cur][3]) / (next - STEPS[cur][3]));
   return (
     <div className="turn enter" role="status">
-      <AssistantBadge />
+      <ThinkingMark />
       <ol className="steps">
-        {STEPS.map(([t, sub], i) =>
+        {STEPS.map(([now, done, sub], i) =>
           i > cur ? null : (
             <li
-              key={t}
+              key={now}
               className={i < cur ? "step step--done" : "step step--now"}
             >
               <span className="step__dot">
@@ -561,11 +690,7 @@ function Thinking({ since }: { since: number }) {
                 />
               </span>
               <span className="grow">
-                <b className="step__title">
-                  {i < cur
-                    ? t.replace("Checking", "Checked").replace("ing ", "ed ")
-                    : t + "…"}
-                </b>
+                <b className="step__title">{i < cur ? done : now + "…"}</b>
                 {i === cur && <span className="step__sub">{sub}</span>}
                 {i === cur && (
                   <span className="bar">
@@ -585,7 +710,13 @@ function Thinking({ since }: { since: number }) {
   );
 }
 
-function ErrorCard({ e, onDismiss }: { e: ChatError; onDismiss: () => void }) {
+export function ErrorCard({
+  e,
+  onDismiss,
+}: {
+  e: ChatError;
+  onDismiss: () => void;
+}) {
   return (
     <div className="turn enter" role="alert">
       <span className="disc disc--red disc--32">
@@ -629,7 +760,7 @@ function Suggestions({ p }: { p: Props }) {
     const cheaper = cheaperSwap(b);
     if (cheaper)
       chips.push({
-        label: `Switch to ${shortName(cheaper.name).toLowerCase()}`,
+        label: `Switch to ${shortName(cheaper.name)}`,
         run: () => p.onChoose(cheaper.lineId, cheaper.sku),
       });
     chips.push({
@@ -681,7 +812,8 @@ export function cheaperSwap(b: Basket) {
 }
 
 function Composer({ p }: { p: Props }) {
-  const placeholder =
+  const held = p.basket?.pricesHeldUntil;
+  const placeholder = p.planningMenu && !p.building ? "Change the menu, e.g. add fruit..." :
     p.phase === "empty" || p.phase === "thinking"
       ? p.building
         ? "Building your order…"
@@ -689,7 +821,9 @@ function Composer({ p }: { p: Props }) {
       : p.phase === "waiting"
         ? "Ask for a change (this withdraws the request)…"
         : p.phase === "placed"
-          ? `Ask for a change (possible until ${weekday(addDays(p.basket!.date, -1))} 14:00)…`
+          ? held
+            ? `Ask for a change (possible until ${stamp(held)})…`
+            : "Ask for a change…"
           : "Ask for a change, or describe another order…";
   return (
     <form
@@ -758,3 +892,7 @@ function Composer({ p }: { p: Props }) {
     </form>
   );
 }
+
+
+
+
