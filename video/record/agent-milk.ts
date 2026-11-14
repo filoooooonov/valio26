@@ -35,6 +35,21 @@ for (const l of basket.lines.filter((l: any) => l.qty > 0).slice(0, 3))
   say("out", `${l.name} · ${l.qty} × ${l.pack} · ${eur(l.total)} · ${l.stock.deliverable ? "deliverable " + date : "NOT deliverable"}`);
 say("out", `total ${eur(basket.total)} at your contract prices${basket.apiCalls ? ` · ${basket.apiCalls} Valio calls` : ""}`);
 
+// Trust: the agent does not take the gateway's word for price/stock; it verifies the signed offer receipt.
+const first = basket.lines.find((l: any) => l.qty > 0);
+if (first) {
+  say("cmd", `check_stock { skus: ["${first.sku}"], date: "${date}" }`);
+  const sc = await call(client, "check_stock", { skus: [first.sku], date });
+  const receipt = sc.receipts?.[0];
+  if (receipt) {
+    const v = await call(client, "verify_receipt", { receipt });
+    say(v.valid ? "ok" : "err", `receipt ${receipt.kid}: ${v.valid ? "signature valid" : "INVALID"} · ${eur(receipt.claims.price ?? 0)} · source ${receipt.claims.source} · fresh until ${new Date(receipt.claims.validUntil).toTimeString().slice(0, 5)}`);
+    const forged = { ...receipt, claims: { ...receipt.claims, price: Math.round((receipt.claims.price ?? 0) * 0.5 * 100) / 100 } };
+    const f = await call(client, "verify_receipt", { receipt: forged });
+    say(f.valid ? "warn" : "err", `forged copy at ${eur(forged.claims.price ?? 0)}: ${f.valid ? "accepted (unexpected)" : "rejected · " + f.reason}`);
+  } else say("warn", "no receipt returned");
+}
+
 say("cmd", `place_order { basketId: "${basket.id}", by: "${AGENT}" }`);
 const res0 = await call(client, "place_order", { basketId: basket.id, by: AGENT });
 const order = res0.order ?? res0;
