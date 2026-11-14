@@ -9,6 +9,7 @@ import { getProduct, loadCatalog } from "./catalog";
 import { parseFallback } from "./chat";
 import { setImageCacheFile, setImageFetcher } from "./images";
 import { setLlm, type Llm } from "./llm";
+import { setMandate } from "./policy";
 import { eur } from "./policy";
 import { resetStore } from "./store";
 import { setFetcher } from "./valio";
@@ -134,6 +135,7 @@ describe("guests rescale", () => {
     const b = await newBasket();
     const l = b.lines.find((x: any) => x.why.includes("150 g"));
     mocks[l.sku] = { amount: l.qty }; // exactly enough for 50
+    setMandate(b.customer, { autoSwapSameUse: false }); // test the shortage itself, not the same-use rule
     const g = await (
       await post(`/api/basket/${b.id}/guests`, { people: 80 })
     ).json();
