@@ -480,7 +480,12 @@ export function Dialog({
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const d = ref.current;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (d && !d.open) d.showModal();
+    return () => {
+      if (d?.open) d.close();
+      if (previous?.isConnected) previous.focus({ preventScroll: true });
+    };
   }, []);
   const close = () => closePopup(ref.current, onClose);
   return (

@@ -1,10 +1,80 @@
-.schedule-date-control,.schedule-time-control{position:relative;display:flex;flex-direction:column;gap:var(--s-6);font-size:var(--fs-12);min-width:0}
-.schedule-picker-trigger{display:flex;align-items:center;justify-content:space-between;gap:var(--s-8);min-height:var(--hit);border:var(--hair-w) solid var(--petrol-15);border-radius:var(--r-6);background:var(--white);color:var(--teal);padding:var(--s-8) var(--s-12);font-size:var(--fs-13)}
-.schedule-calendar{margin-top:var(--s-8);padding:var(--s-8);border:var(--hair-w) solid var(--petrol-15);border-radius:var(--r-10);background:var(--white)}
-.schedule-calendar header{display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-13);color:var(--teal)}.schedule-calendar__previous{transform:rotate(180deg)}
-.schedule-calendar__grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:var(--s-2)}.schedule-calendar__grid small{text-align:center;padding:var(--s-8) 0}
-.schedule-calendar__grid button,.schedule-time-options button{min-height:var(--hit);border:0;border-radius:var(--r-6);background:var(--surface);color:var(--teal);font-size:var(--fs-12)}
-.schedule-calendar__grid button[aria-pressed=true],.schedule-time-options button[aria-pressed=true]{background:var(--plum);color:var(--white)}.schedule-calendar__grid button[data-outside]{opacity:.45}
-.schedule-time-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-6);padding:var(--s-8) 0;max-height:240px;overflow:auto;overscroll-behavior:contain}
-.schedule-time-options button:hover,.schedule-calendar__grid button:enabled:hover{box-shadow:inset 0 0 0 var(--ring-w) var(--blueberry)}
-@media(max-width:600px){.schedule-editor .schedule-field-pair:has(.schedule-calendar){grid-template-columns:1fr}.schedule-calendar__grid button{min-width:0}}
+﻿.schedule-date-control,
+.schedule-time-control {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+  font-size: var(--fs-13);
+  min-width: 0;
+}
+.schedule-picker-trigger {
+  width: 100%;
+}
+.schedule-calendar {
+  margin-top: var(--s-8);
+  padding: var(--s-12);
+  border: var(--hair-w) solid var(--petrol-15);
+  border-radius: var(--r-10);
+  background: var(--white);
+}
+.schedule-calendar header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-8);
+  font-size: var(--fs-13);
+  color: var(--teal);
+}
+.schedule-calendar__previous {
+  transform: rotate(180deg);
+}
+.schedule-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+.schedule-calendar__grid small {
+  text-align: center;
+  padding: var(--s-8) 0;
+}
+.schedule-calendar__grid button {
+  min-width: 0;
+  min-height: var(--hit);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-6);
+  background: var(--surface);
+  color: var(--teal);
+  font-size: var(--fs-12);
+  cursor: pointer;
+}
+.schedule-calendar__grid button[aria-pressed="true"] {
+  background: var(--teal);
+  color: var(--white);
+}
+.schedule-calendar__grid button[data-outside] {
+  opacity: 0.45;
+}
+.schedule-calendar__grid button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.schedule-calendar__grid button:enabled:hover {
+  box-shadow: inset 0 0 0 var(--ring-w) var(--petrol-15);
+}
+.schedule-calendar__grid button:focus-visible {
+  outline: var(--ring-w) solid var(--teal);
+  outline-offset: var(--s-2);
+}
+.schedule-time-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-6);
+  padding: var(--s-8) 0;
+  max-height: calc(6 * var(--s-40));
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.schedule-editor .schedule-field-pair:has(.schedule-calendar) {
+  grid-template-columns: minmax(0, 1fr);
+}

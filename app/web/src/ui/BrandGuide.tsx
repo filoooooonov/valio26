@@ -1124,7 +1124,7 @@ export function BrandGuide() {
         <Section
           id="overlay"
           title="Dialog"
-          lead="The one modal. Native dialog: focus trap, Escape and backdrop click close it, with the shared enter and exit motion. Do not build sheets or popovers by hand."
+          lead="The one modal. Native dialog: focus trap, Escape and backdrop click close it, with the shared enter and exit motion. Closing returns focus to the control that opened it. Do not build sheets or popovers by hand."
         >
           <div className="brand__panel">
             <div className="brand__states">

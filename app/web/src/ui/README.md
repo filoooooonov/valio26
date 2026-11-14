@@ -59,13 +59,15 @@ the file (the file owner on the team board does it).
 
 | Where | Today | Use |
 |---|---|---|
-| `ScheduledMenus.tsx` `.btn.schedule-primary`, `MenuProposal.tsx` `.menu-proposal__approve` / `.menu-edit-dialog__save`, `Sheets.tsx` `.replacement-dialog__use`, `OrderPanel.tsx` `.order-done__view` | one-off button styles | `Button` |
+| `MenuProposal.tsx` `.menu-proposal__approve` / `.menu-edit-dialog__save`, `Sheets.tsx` `.replacement-dialog__use`, `OrderPanel.tsx` `.order-done__view` | one-off button styles | `Button` |
 | `.cta-block` (full-width teal) | second primary button style | `Button` (primary, lg) |
 | `.loglink` | link with icon | `TextLink` |
 | `.ans` / `.ans--primary` (chat answers), `.opt`, `.swapbtn`, `.tool`, `.send` | chat-only button styles | keep for now; new answers use `Button`/`Chip` |
-| 6 separate `<dialog>` setups (AlternativeDraftReview, DeliveryPicker, RecipeDialog, SwapSheet, menu edit, schedule editor) and legacy `.scrim/.sheet` | each wires showModal, Escape and close motion itself | `Dialog` |
+| Separate `<dialog>` setups (AlternativeDraftReview, DeliveryPicker, RecipeDialog, SwapSheet, menu edit) and legacy `.scrim/.sheet` | each wires showModal, Escape and close motion itself | `Dialog` |
 | `.btn--lg` defined twice in `app.css` (l. 1278 and l. 1801) | conflicting padding | one rule |
 | `.cta--issues` colour scoped to `.order` in `order-polish.css` | the issues CTA is grey outside the cart | move into the Cta styles |
 | Attention colour | decided 14 Nov: bright `--issue-yellow` (ink icons) for every attention marker and fill; `--amber-bg` (#fff4de) retired | `StatusDisc tone="amber"`, `Notice tone="amber"` |
 | Unused tokens `--amber-bg`, `--brand-dark`, `--lime-light`, `--red`, `--line` | defined, never used | don't use; remove later |
 | Type: self-hosted Geist | the official Aimo webfonts are National 2 Compressed + Matter | open decision for aleksei |
+
+Scheduled menus migrated (S44): overview and editor use the shared Button, TextLink, Card, Tag, Notice, Segmented, Checkbox and Dialog components. Date/time actions use kit buttons; the existing calendar remains inside ScheduleDateTime. Page styles set layout and token-based content typography without restyling kit components. Teal carries actions, selection and estimates; lime is reserved for saving the schedule. No lavender product or price surfaces. The shared Dialog returns focus to its opener when closed.

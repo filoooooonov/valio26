@@ -2,7 +2,7 @@
 
 - [x] @aleksei-codex S43 Removed cart Undo and Repeat this order buttons; keyboard undo retained. Build and89fast tests pass (rubric: demo) - files: app/web/src/components/OrderPanel.tsx.
 
-- [~] @aleksei-codex S44 Redesign Scheduled menus overview and editor with the current brand kit; preserve schedule behavior and device-local persistence (rubric: demo, user need) - files: app/web/src/components/ScheduledMenus.tsx, scheduled-menus.css, ScheduleDateTime.tsx, schedule-date-time.css, ui/README.md.
+- [x] @aleksei-codex S44 Redesigned Scheduled menus with white kit cards, teal actions/estimates, clearer preparation/delivery dates and shared Dialog editor with lime Save. Kit Checkbox/Segmented controls, date/time actions and focus return; schedule behavior/device-local persistence preserved. Desktop1440/phone390/360 create/edit/reload/pause/resume/filter/skip/delete/reuse/prepare, error states and reduced-motion checks pass; build and89fast tests pass. User requested push and main integration (rubric: demo, user need) - files: app/web/src/components/ScheduledMenus.tsx, scheduled-menus.css, ScheduleDateTime.tsx, schedule-date-time.css, ui/README.md, ui/index.tsx, ui/BrandGuide.tsx.
 
 - [x] @aleksei-codex S40 Product-review cards keep their first position in the chat timeline above newer user/reply messages; later issues get separate turns and partial resolution/undo preserves positions. Replaced visible request wording with order. Desktop1440/phone390 chronology and review popup checked; build and88fast tests pass (rubric: demo, user need) - files: app/web/src/components/Chat.tsx, thread.ts and UI copy; app/server/src/product-review-order.test.ts.
 
