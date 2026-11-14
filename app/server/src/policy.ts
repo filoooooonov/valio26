@@ -6,7 +6,7 @@ export type Mandate = {
   maxOrderEur: number;
   maxDailyEur: number;
   swapsNeedOk: true;
-  /** Like-for-like swaps (same product group, no new allergens, not fish/meat, at most +20 % or +€15) are
+  /** Like-for-like swaps (same product group, no new allergens, not fish/meat, at most +20 % or +€25) are
    *  made by the gateway under this rule and logged; every other swap waits for the buyer. */
   autoSwapSameUse: boolean;
   approver: string;

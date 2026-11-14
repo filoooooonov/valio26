@@ -797,7 +797,7 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
         ? [] // Claude already said which candidates genuinely fit
         : (cands.get(g.needs[0].id) ?? []).map((p) => p.id)),
     ];
-    alt.set(l.id, [...new Set(pool)].filter((s) => !chosen.has(s)).slice(0, 5));
+    alt.set(l.id, [...new Set(pool)].filter((s) => !chosen.has(s)).slice(0, 10));
     ctx.set(l.id, { needs: g.needs.map((n) => ({ ...n })), pool: alt.get(l.id)! });
   }
   basketCtx.set(id, ctx);
@@ -872,16 +872,16 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
 
 // ---------- same-use rule (mandate.autoSwapSameUse) ----------
 export const SAME_USE_BY = "gateway (same-use rule)";
-const FISH_MEAT = /^(18|41)/;
+const FISH_MEAT = /^(18|41(70|71|72|73))/; // fresh fish/meat, frozen fish/meat (same groups as MEAT_FISH)
 /** A swap the gateway may make without asking: same product group (first 3 digits), no allergen the original
- *  didn't have, never fish or meat, and at most +20 % or +€15 on the line. Everything else waits for the buyer. */
+ *  didn't have, never fish or meat, and at most +20 % or +€25 on the line. Everything else waits for the buyer. */
 export function isSameUse(orig: BasketLine, o: Option): boolean {
   const a = getProduct(orig.sku), b = getProduct(o.sku);
   if (!a || !b) return false;
   if (FISH_MEAT.test(a.cat) || FISH_MEAT.test(b.cat)) return false;
   if (a.cat.slice(0, 3) !== b.cat.slice(0, 3)) return false;
   if (o.contains.some((c) => !orig.contains.includes(c))) return false;
-  return o.delta <= Math.max(15, 0.2 * Math.max(orig.total, 0));
+  return o.delta <= Math.max(25, 0.2 * Math.max(orig.total, 0));
 }
 export function autoSwapSameUse(b: Basket): void {
   if (!b.rules.autoSwapSameUse) return;
