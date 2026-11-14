@@ -4,6 +4,7 @@ import { addCategory } from '../menu';
 import { MinunAimoContext } from './MinunAimo';
 import { Icon } from '../icons';
 import { closePopup } from './popupMotion';
+import { dayLabel } from '../format';
 import './menu-proposal.css';
 
 function MenuEditor({ item, onSave, onCancel }: { item: MenuCategory; onSave: (next: MenuCategory) => void; onCancel: () => void }) {
@@ -48,6 +49,7 @@ export function MenuProposal({ menu, busy, onChange, onApprove, compact = false 
   return <section ref={section} className={'menu-proposal menu-proposal--refined' + (compact ? ' menu-proposal--popup' : '')} aria-labelledby={compact ? undefined : 'menu-heading'} aria-label={compact ? 'Menu choices' : undefined}>
     {!compact && <header className="menu-proposal__head"><div><h3 id="menu-heading">Your menu</h3><p>Select what to include. Open Edit to change a name or note.</p></div><span className="menu-proposal__count">{selected} selected</span></header>}
     <div className="menu-proposal__body">
+    {menu.requirements && <p className="event-requirements__hint">{menu.requirements.people} guests · {menu.requirements.dietary.length ? menu.requirements.dietary.join(', ') : 'No dietary restrictions'}{menu.delivery ? ` · ${dayLabel(menu.delivery.date)}, ${menu.delivery.time} · ${menu.delivery.placeName}` : ''}</p>}
     <fieldset disabled={busy}><legend className="sr-only">Dishes and items to include</legend>
       {menu.categories.map(item => <MenuRow key={item.id} item={item} busy={busy} onChange={next => onChange({ ...menu, categories: menu.categories.map(current => current.id === next.id ? next : current) })} />)}
     </fieldset>

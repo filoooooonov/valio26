@@ -49,6 +49,10 @@ Play [the recorded demo](artifacts/demo-video/final.mp4): 50.70 seconds, 1920 x 
 
 ## Sample Minun Aimo context
 
+Before menu review, missing guest count and dietary requirements appear in the anchored event-details popup. Use the guest counter and dietary/allergy checkboxes (or explicitly choose no restrictions); budget and additional notes are optional. Delivery is selected in the navbar or via the event popup: choose one of the labelled sample places, inspect the interactive map, and confirm date/time. Already supplied guest/diet details and a navbar-selected delivery are reused. No product lookup runs until menu approval. Confirmed people, dietary needs, notes, budget and delivery context are passed to planning; the selected date is sent to stock checking.
+
+Delivery places and time choices are prototype selections, not live account addresses or reserved sponsor slots. Apple Maps is optional: set a domain-scoped MapKit JS token in `app/web/.env.local` as `VITE_APPLE_MAPS_TOKEN` and restart Vite. See `app/web/.env.example`. Without the token, OpenStreetMap remains interactive and a selected place has an Open in Apple Maps link. No live Apple token is included or verified.
+
 Start a new request, review the menu, and enable **Use sample profile** under **Plan with your menu margins**. The optional profile details show synthetic Restaurant Kaleva data: EUR12.50 net selling price per guest, EUR4.60 historical ingredient cost, a30% food-cost target (EUR3.75 per guest), and illustrative monthly operating EBITDA. No Minun Aimo account or reports API is connected.
 
 Approve with **Find products for this menu**. The order shows actual gateway-priced basket cost per guest against the sample target. Where a backend-checked cheaper alternative exists, **Review product option** opens the normal substitution review. Menu/diet changes remain buyer choices. Provisional totals and already-included savings are labelled. No saving is presented as a verified EBITDA increase.

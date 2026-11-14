@@ -37,6 +37,7 @@ export type LocalItem =
 export type ChatError = { title: string; text: string; retry: () => void };
 
 type Props = {
+  menuReviewTitle?: string;
   alternativeProposal?: ReactNode;
   menuProposal?: ReactNode;
   planningMenu?: boolean;
@@ -83,7 +84,7 @@ export function Chat(p: Props) {
   useLayoutEffect(() => {
     setMenuReviewOpen(hasMenuReview);
     if (hasMenuReview) requestAnimationFrame(() => reviewPanel.current?.focus({ preventScroll: true }));
-  }, [hasMenuReview]);
+  }, [hasMenuReview, p.menuReviewTitle]);
   useLayoutEffect(() => {
     const root = chatRoot.current, dock = composerDock.current;
     if (!root || !dock || !hasMenuReview) return;
@@ -195,9 +196,9 @@ export function Chat(p: Props) {
       {!p.planningMenu && <Suggestions p={p} />}
       <div className="chat-composer-dock" ref={composerDock}>
         {hasMenuReview && <>
-          <button ref={reviewTrigger} type="button" className="chat-menu-trigger" aria-expanded={menuReviewOpen} aria-controls="menu-review-popup" onClick={() => setMenuReviewOpen(open => !open)}><Icon name="list" className="i-16" />Review menu<Icon name="chevron-down" className="i-14" /></button>
-          <div id="menu-review-popup" ref={reviewPanel} className="chat-menu-review" role="dialog" aria-modal="false" aria-labelledby="menu-review-heading" tabIndex={-1} hidden={!menuReviewOpen}>
-            <div className="chat-menu-review__head"><h3 id="menu-review-heading">Review your menu</h3><button type="button" className="round round--plain" aria-label="Close menu review" onClick={closeMenuReview}><Icon name="x" className="i-18" /></button></div>
+          <button ref={reviewTrigger} type="button" className="chat-menu-trigger" aria-expanded={menuReviewOpen} aria-controls="menu-review-popup" onClick={() => setMenuReviewOpen(open => !open)}><Icon name="list" className="i-16" />{p.menuReviewTitle === 'A few event details' ? 'Review event details' : 'Review menu'}<Icon name="chevron-down" className="i-14" /></button>
+          <div key={p.menuReviewTitle} id="menu-review-popup" ref={reviewPanel} className="chat-menu-review" role="dialog" aria-modal="false" aria-labelledby="menu-review-heading" tabIndex={-1} hidden={!menuReviewOpen}>
+            <div className="chat-menu-review__head"><h3 id="menu-review-heading">{p.menuReviewTitle ?? 'Review your menu'}</h3><button type="button" className="round round--plain" aria-label="Close menu review" onClick={closeMenuReview}><Icon name="x" className="i-18" /></button></div>
             {p.menuProposal}
           </div>
         </>}

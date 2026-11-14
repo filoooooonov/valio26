@@ -18,7 +18,6 @@ import {
   perUnit,
   qtyLabel,
   SLOT,
-  slotLabel,
   stamp,
   timeLabel,
   weekday,
@@ -29,8 +28,10 @@ import { cheaperSwap } from "./Chat";
 import { Segmented } from "./Header";
 import { AssistantGlyph } from "./Mark";
 import "./order-polish.css";
+import { RecipeDialog } from "./RecipeDialog";
 
 export type OrderProps = {
+  deliveryTime?: string;
   insight?: ReactNode;
   planningMenu?: boolean;
   phase: Phase;
@@ -102,7 +103,7 @@ function OrderDone({ p, b, order }: { p: OrderProps; b: Basket; order: Order }) 
       <p>Your order and its fixed-price record are saved in the prototype gateway.</p>
       <dl className="order-done__facts">
         <div><dt>Total, excl. VAT</dt><dd>{money(order.total)}</dd></div>
-        <div><dt>Requested delivery</dt><dd>{dayLabel(b.date)}, {SLOT}</dd></div>
+        <div><dt>Requested delivery</dt><dd>{dayLabel(b.date)}, {p.deliveryTime ?? SLOT}</dd></div>
         <div><dt>{order.decidedBy ? "Approved by" : "Placed by"}</dt><dd>{PEOPLE[actor]?.name ?? actor}</dd></div>
         <div><dt>Recorded at</dt><dd>{stamp(order.decidedAt ?? order.createdAt)}</dd></div>
       </dl>
@@ -152,16 +153,7 @@ function EmptyOrder({
 }
 
 function Controls({ p, b }: { p: OrderProps; b: Basket }) {
-  const diet = b.dishes.find((d) => d.diet.length);
-  // The diet note is the chef's own words ("3 guests are lactose-free") when the planner folded it into every dish.
-  const asked = b.request.match(
-    /(\d+)\s+(?:guests?|people)\s+(?:are|is)\s+([\w-]+(?:\s+free)?)/i,
-  );
-  const dietLabel = diet
-    ? `${diet.portions} ${diet.diet[0]}`
-    : asked
-      ? `${asked[1]} ${asked[2]}`
-      : "No diet notes";
+  const [recipeOpen, setRecipeOpen] = useState(false);
   const perGuest =
     (b.openIssues ? b.totalIfAccepted : b.total) / Math.max(1, b.people);
   const per = (
@@ -184,7 +176,7 @@ function Controls({ p, b }: { p: OrderProps; b: Basket }) {
         <Fact
           icon="truck"
           label="Delivery"
-          value={`${dayLabel(b.date)}, ${SLOT}`}
+          value={`${dayLabel(b.date)}, ${p.deliveryTime ?? SLOT}`}
         />
         <Fact
           icon="lock"
@@ -201,7 +193,7 @@ function Controls({ p, b }: { p: OrderProps; b: Basket }) {
         <Segmented
           pickup={p.pickup}
           onPickup={p.onPickup}
-          label={`Delivery · ${slotLabel(b.date)}`}
+          label={`Delivery · ${dayLabel(b.date)}, ${p.deliveryTime ?? SLOT}`}
           disabled={locked}
         />
       </div>
@@ -236,22 +228,8 @@ function Controls({ p, b }: { p: OrderProps; b: Basket }) {
             </button>
           </div>
         )}
-        <button
-          className="pill desk-only"
-          disabled={locked}
-          onClick={() => p.onPrefill(`Diet: `)}
-        >
-          <Icon name="leaf" className="i-16" /> {dietLabel}
-          {!locked && <Icon name="chevron-down" className="i-14 pill__chev" />}
-        </button>
-        <button
-          className="pill desk-only"
-          disabled={locked}
-          onClick={() => p.onPrefill(`Move the event to `)}
-        >
-          <Icon name="calendar" className="i-16" /> Event {dayLabel(p.event)}
-          {!locked && <Icon name="chevron-down" className="i-14 pill__chev" />}
-        </button>
+        <button className="pill" type="button" onClick={() => setRecipeOpen(true)} aria-haspopup="dialog"><Icon name="utensils" className="i-16" />Recipe</button>
+        {recipeOpen && <RecipeDialog basket={b} onClose={() => setRecipeOpen(false)} />}
         <span className="grow" />
         {per}
       </div>
@@ -466,7 +444,7 @@ export function LineRow({
           )}
         </div>
         {!off && st.tone !== "green" && <div className={"line__stock line__stock--" + st.tone}>
-          <Icon name={st.icon} className="i-14" />
+          <Icon name={open ? "circle-alert" : st.icon} className="i-14" />
           {st.text}
         </div>}
         {open && !frozen && <button type="button" className="line__resolve" disabled={busy || p.busy} onClick={() => p.onSwap(l.id)}>{l.issue!.options.length ? 'Choose replacement' : 'Review options'}<Icon name="arrow-right" className="i-16" /></button>}
@@ -620,26 +598,25 @@ function Footer({ p, b }: { p: OrderProps; b: Basket }) {
   ).length;
   const active = b.lines.filter(l => l.qty > 0 && l.issue?.decided !== "remove");
   const allDeliverable = (p.phase === "draft" || p.phase === "review") && active.length > 0 && b.openIssues === 0 && active.every(l => !lineIsOpen(l) && l.stock.deliverable && !l.stock.cutoffPassed && (l.stock.available == null || l.qty <= l.stock.available));
+  const open = b.lines.filter(lineIsOpen);
   const ordering = p.busy;
   let cta: ReactNode;
   let note = "";
   let alt: ReactNode = null;
 
-  if (p.phase === "draft") {
-    const open = b.lines.filter(lineIsOpen);
-    cta = (
-      <button className="cta cta--lime" onClick={p.onReview}>
-        <span className="cta__label">Review and confirm<span className="desk-only"> {count} products</span></span>
-        <span className="grow" />
-        <span className="cta__total">{money(b.total)}</span>
-      </button>
-    );
-    const what = open.length === 1 ? `the ${shortName(open[0].name)}` : `the ${open.length} open lines`;
-    note = !open.length
-      ? "Nothing is ordered yet. Review it, then send."
-      : Math.abs(b.totalIfAccepted - b.total) < 0.005
-        ? `${money(b.total)} without ${what}. Answer in the chat; nothing is ordered yet.`
-        : `${money(b.total)} without ${what}. ${open.length === 1 ? "Choose it" : "Answer them"} in the chat and the total becomes ${money(b.totalIfAccepted)}. Nothing is ordered yet.`;
+  if ((p.phase === "draft" || p.phase === "review") && open.length) {
+    cta = <button className="cta cta--issues" disabled={ordering} onClick={p.onReview}>
+      <Icon name="circle-alert" className="i-18" />
+      <span className="cta__label">Resolve {open.length} product {open.length === 1 ? 'issue' : 'issues'}</span>
+      <span className="grow" /><span className="cta__total">{money(b.total)}</span>
+    </button>;
+    note = 'Subtotal excludes ' + open.length + ' unresolved ' + (open.length === 1 ? 'product.' : 'products.');
+  } else if (p.phase === "draft") {
+    cta = <button className="cta cta--lime" disabled={ordering} onClick={p.onReview}>
+      <span className="cta__label">Review and confirm<span className="desk-only"> {count} products</span></span>
+      <span className="grow" /><span className="cta__total">{money(b.total)}</span>
+    </button>;
+    note = 'Prices exclude VAT.';
   } else if (p.phase === "review") {
     const st = b.mandate.state;
     const label =
@@ -727,7 +704,7 @@ function Footer({ p, b }: { p: OrderProps; b: Basket }) {
   return (
     <div className="order__foot">
       {cta}
-      {allDeliverable && <p className="order-delivery"><Icon name="truck" className="i-16" /> All products will arrive on {dayLabel(b.date)}, {SLOT}.</p>}
+      {allDeliverable && <p className="order-delivery"><Icon name="truck" className="i-16" /> All products will arrive on {dayLabel(b.date)}, {p.deliveryTime ?? SLOT}.</p>}
       <p className="foot-note">{note}</p>
       {alt && <p className="foot-alt">{alt}</p>}
     </div>

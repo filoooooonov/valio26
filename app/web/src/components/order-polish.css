@@ -1,4 +1,4 @@
-/* Product-only polish: quantity refreshes keep their existing mounted rows. */
+﻿/* Product-only polish: quantity refreshes keep their existing mounted rows. */
 .product-list--entering .line { animation: product-arrive 210ms cubic-bezier(.22,1,.36,1) both; animation-delay: var(--product-delay, 0ms); }
 @keyframes product-arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 .order .line { align-items: start; }
@@ -37,3 +37,16 @@
 .order .line--open { transition: background var(--dur-hover) var(--ease-out); }
 .order .line--open:has(.line__resolve:not(:disabled)):hover { background: var(--blueberry-light); }
 .line--open .line__missing-name:not(:disabled):hover { text-decoration: underline; text-underline-offset: var(--s-3); }
+
+/* Yellow signals unresolved product issues; dark text and icons carry the meaning. */
+.order .line--open{background:var(--white);outline:0;border-radius:var(--r-12);box-shadow:inset 0 0 0 var(--s-2) var(--issue-yellow)}
+.order .line--open:has(.line__resolve:not(:disabled)):hover{background:var(--issue-bg);outline:0}
+.order .line--open .line__stock{color:var(--ink)}
+.order .line--open .line__stock .icon{background:var(--issue-yellow);color:var(--ink);border-radius:var(--r-pill);box-shadow:0 0 0 var(--s-3) var(--issue-yellow)}
+.order .line--open .line__resolve{color:var(--teal);text-decoration:underline;text-underline-offset:var(--s-3)}
+.order .line--open .tag{color:var(--ink);background:var(--issue-yellow);border:0}
+.order .line--open .check .check__box{border-color:var(--teal);background:var(--white)}
+.order .cta--issues:not(:disabled){background:var(--issue-yellow);color:var(--teal-deep);border:0;box-shadow:none}
+.order .cta--issues:not(:disabled):hover{background:var(--issue-yellow-hover)}
+.order .cta--issues:focus-visible{outline:var(--ring-w) solid var(--teal);outline-offset:var(--s-4)}
+.order .cta--issues:not(:disabled) .cta__total{background:transparent;color:var(--teal-deep)}

@@ -1,3 +1,5 @@
+import type { DeliveryChoice } from "./DeliveryPicker";
+import "./delivery-picker.css";
 import { Icon } from "../icons";
 import { dayLabel, money, SLOT, stamp } from "../format";
 import { AimoLogo, AssistantGlyph } from "./Mark";
@@ -10,6 +12,8 @@ export function Header({
   pickup,
   onPickup,
   locked,
+  delivery,
+  onDelivery,
 }: {
   cartTotal: number;
   date: string;
@@ -17,6 +21,8 @@ export function Header({
   pickup: boolean;
   onPickup: (p: boolean) => void;
   locked: boolean;
+  delivery?: DeliveryChoice | null;
+  onDelivery?: () => void;
 }) {
   return (
     <header className="hdr">
@@ -27,18 +33,18 @@ export function Header({
       <span className="hdr__shop">Delivery wholesale</span>
       <span className="hdr__spacer" />
       <Segmented pickup={pickup} onPickup={onPickup} disabled={locked} />
-      <div className="hdr__slot">
+      <button type="button" className={"hdr__slot" + (onDelivery ? " hdr__slot--interactive" : "")} aria-label="Choose delivery details" disabled={locked || !onDelivery} onClick={onDelivery}>
         <Icon name="truck" className="i-20" />
         <div>
           <div className="hdr__slot-day">
-            {dayLabel(date)}, {SLOT}
+            {delivery ? `${dayLabel(delivery.date)}, ${delivery.time}` : delivery === null ? "Choose delivery" : `${dayLabel(date)}, ${SLOT}`}
             <Icon name="chevron-down" className="i-14" />
           </div>
           <div className="hdr__slot-sub">
-            Hotelli Kaleva, Kamppi{orderBy ? ` · order by ${stamp(orderBy)}` : ""}
+            {delivery ? delivery.placeName : delivery === null ? "Place, date and time" : "Hotelli Kaleva, Kamppi"}{orderBy && delivery !== null ? ` · order by ${stamp(orderBy)}` : ""}
           </div>
         </div>
-      </div>
+      </button>
       <span className="cart-pill" aria-label={`Cart total ${money(cartTotal)}`}>
         <Icon name="shopping-cart" className="i-16" />
         {money(cartTotal)}

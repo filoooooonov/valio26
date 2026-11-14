@@ -25,6 +25,8 @@ export function AlternativeDraftReview({ basket, busy, onClose, onUse }: {
     <header className="replacement-dialog__head"><h2 id="alternative-draft-heading">Review revised draft</h2><button className="round" aria-label="Close revised draft" onClick={() => close()}><Icon name="x" className="i-18" /></button></header>
     <p className="replacement-dialog__delivery">{money(basket.total)} excl. VAT</p>
     <p className="replacement-dialog__reason">This replaces the whole draft. Check quantities and any earlier changes.{basket.openIssues > 0 ? ` ${basket.openIssues} items still need a choice.` : ''}</p>
+    {basket.dishes.length > 0 && <p className="replacement-dialog__delivery">Menu: {basket.dishes.map(dish => dish.name).join(', ')}</p>}
+    {basket.notes.length > 0 && <ul>{basket.notes.map((note,index) => <li key={index}>{note}</li>)}</ul>}
     <div className="alternative-draft-products">{basket.lines.filter(line => line.qty > 0).map(line => <div key={line.id}><span>{niceName(line.name)}{line.issue && !line.issue.decided ? ' — needs a choice' : ''}</span><span>{qtyLabel(line.qty, line.pack)}</span></div>)}</div>
     <footer className="replacement-dialog__actions"><button className="btn btn--outline" onClick={onClose}>Keep current basket</button><button className="btn replacement-dialog__use" disabled={busy || closing} onClick={() => { if (!busy) close(onUse); }}>Use revised draft</button></footer>
   </dialog>;

@@ -13,6 +13,9 @@ import {
 } from "./api";
 import { suggestMenu, editMenuFromChat, menuSummary, displayMenuRequest, plannerRequest, fallbackMatchesMenu, type MenuDraft } from "./menu";
 import { MenuProposal } from "./components/MenuProposal";
+import { EventRequirements } from './components/EventRequirements';
+import { DeliveryPicker, type DeliveryChoice } from './components/DeliveryPicker';
+import { detectRequirements, requestDeliveryDate } from './requirements';
 import { AlternativeDraftReview } from "./components/AlternativeDraftReview";
 import { MenuEconomics } from "./components/MinunAimo";
 import { SAMPLE_CONTEXT_MARKER } from "./minunAimo";
@@ -59,11 +62,14 @@ function setUrl(b?: string, o?: string) {
 
 function Shop() {
   const [menu, setMenu] = useState<MenuDraft | null>(null);
+  const [delivery, setDelivery] = useState<DeliveryChoice | null>(null);
+  const [deliveryOpen, setDeliveryOpen] = useState(false);
   const [approvedSummary, setApprovedSummary] = useState<string | null>(null);
   const menuSubmitting = useRef(false);
   const [basket, setBasket] = useState<Basket | null>(null);
   const [alternativeDraft, setAlternativeDraft] = useState<Basket | null>(null);
   const [alternativeReviewOpen, setAlternativeReviewOpen] = useState(false);
+  const [replacementRecovery, setReplacementRecovery] = useState<BasketLine[]>([]);
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [order, setOrder] = useState<Order | null>(null);
   const [local, setLocal] = useState<LocalItem[]>([]);
@@ -104,7 +110,7 @@ function Shop() {
 
   const adopt = useCallback(
     async (b: Basket) => {
-      setAlternativeDraft(null);
+      setAlternativeDraft(null); setReplacementRecovery([]);
       setBasket(b);
       setFreshAt(null);
       await refreshAudit(b.id);
@@ -176,16 +182,20 @@ function Shop() {
 
   function propose(request: string) {
     if (building || menuSubmitting.current) return;
-    setMenu(suggestMenu(request)); setBasket(null); setOrder(null); setEvents([]); setLocal([]); setApprovedSummary(null); setError(null); setReviewing(false); setTab("assistant"); setDraft("");
+    const known = detectRequirements(request);
+    const chosenDelivery = delivery ? { ...delivery, date: requestDeliveryDate(request, delivery.date) } : null;
+    if (chosenDelivery) setDelivery(chosenDelivery);
+    const requirements = known.people !== null && known.dietary !== null && delivery ? { people: known.people, dietary: known.dietary, notes: '' } : undefined;
+    setMenu({ ...suggestMenu(request), requirements, delivery: chosenDelivery ?? undefined }); setBasket(null); setOrder(null); setEvents([]); setLocal([]); setApprovedSummary(null); setError(null); setReviewing(false); setTab("assistant"); setDraft("");
     say({ kind: "user", who: BUYER, text: request });
   }
   async function approveMenu() {
-    if (!menu || menuSubmitting.current || !menu.categories.some(c => c.selected) || menu.categories.some(c => c.selected && !c.title.trim())) return;
+    if (!menu?.requirements || !menu.delivery || menuSubmitting.current || !menu.categories.some(c => c.selected) || menu.categories.some(c => c.selected && !c.title.trim())) return;
     menuSubmitting.current = true;
     setApprovedSummary(menuSummary(menu));
-    try { await build(plannerRequest(menu), undefined, menu); } finally { menuSubmitting.current = false; }
+    try { await build(plannerRequest(menu), menu.requirements.people, menu); } finally { menuSubmitting.current = false; }
   }
-  async function build(request: string, people?: number, approved?: MenuDraft) {
+  async function build(request: string, people?: number, approved?: MenuDraft, chosenDelivery?: DeliveryChoice) {
     abort.current?.abort();
     const ac = new AbortController();
     abort.current = ac;
@@ -198,7 +208,7 @@ function Shop() {
     try {
       const b = await api.build(
         request,
-        basket?.date ?? DELIVERY,
+        chosenDelivery?.date ?? approved?.delivery?.date ?? basket?.date ?? delivery?.date ?? DELIVERY,
         people,
         ac.signal,
       );
@@ -207,7 +217,7 @@ function Shop() {
       setMenu(null);
     } catch (e) {
       if (approved && (e as Error).message.startsWith("The planner could not match")) setError({ title: "Could not match your approved menu", text: (e as Error).message, retry: () => build(request, people, approved) });
-      else fail(e, () => build(request, people, approved));
+      else fail(e, () => build(request, people, approved, chosenDelivery));
     } finally {
       if (abort.current === ac) setBuilding(null);
     }
@@ -343,28 +353,29 @@ function Shop() {
     }
   }
 
-  async function findAlternatives(lines: BasketLine[]) {
+  async function findAlternatives(lines: BasketLine[], changeMenu = false) {
     if (!basket || busy || building || !lines.length) return;
     const source = basket;
     const names = lines.map(line => niceName(line.name)).join(', ');
     const ac = new AbortController();
     abort.current?.abort(); abort.current = ac;
-    setError(null); setAlternativeDraft(null); setAlternativeReviewOpen(false); setBusy(true);
-    say({ kind: 'user', who: BUYER, text: `Find alternatives for ${names}.` });
+    setError(null); setAlternativeDraft(null); setAlternativeReviewOpen(false); setReplacementRecovery([]); setBusy(true);
+    say({ kind: 'user', who: BUYER, text: changeMenu ? `Suggest a menu change for ${names}.` : `Find alternatives for ${names}.` });
     try {
-      const request = source.request + `\n\nFind alternative catalogue products for these unavailable ingredients: ${names}. Keep the approved menu, guest count, diets and all other requested dishes. Look for equivalent ingredients in a different brand or suitable pack size. Do not drop requested ingredients or change the menu to hide an unavailable product. Return a full revised purchasing draft; prices and delivery will be checked by the gateway.`;
+      const request = source.request + (changeMenu ? `\n\nThese ingredients cannot be delivered: ${names}. Suggest a suitable alternative ingredient or replace only the affected dish with a complete deliverable dish. Keep the guest count, dietary and allergy requirements, and all unaffected dishes. Explain the proposed menu change in the draft notes. Never silently omit a dish. Return a full revised purchasing draft for the buyer to review before applying it.` : `\n\nFind alternative catalogue products for these unavailable ingredients: ${names}. Keep the approved menu, guest count, diets and all other requested dishes. Look for equivalent ingredients in a different brand or suitable pack size. Do not drop requested ingredients or change the menu to hide an unavailable product. Return a full revised purchasing draft; prices and delivery will be checked by the gateway.`);
       const next = await api.build(request, source.date, source.people, ac.signal);
       if (ac.signal.aborted) return;
       if (next.planner === 'fallback' && source.planner === 'llm') throw new Error('The alternative planner is unavailable.');
       const newProducts = next.lines.filter(line => !source.lines.some(old => old.sku === line.sku));
       if ((!newProducts.length && next.openIssues >= source.openIssues) || next.notes.some(note => /no catalogue match/i.test(note))) {
-        say({ kind: 'assistant', text: `I checked again but couldn't find a complete deliverable replacement for ${names}. Your current basket is unchanged. You can leave these items out or describe a different ingredient in the chat.` });
+        setReplacementRecovery(lines);
+        say({ kind: 'assistant', text: changeMenu ? `I could not find a complete deliverable menu change for ${names}. Try a different dish in chat. Your current basket is unchanged.` : `No deliverable replacement found for ${names}. I can suggest a menu change instead. Your current basket is unchanged.` });
       } else {
-        setAlternativeDraft(next);
+        setAlternativeDraft(next); setAlternativeReviewOpen(true);
         say({ kind: 'assistant', text: `I prepared an alternative draft for ${names}. Click Review revised draft to open it.` });
       }
     } catch (error) {
-      if ((error as Error).name !== 'AbortError') setError({ title: 'Could not find alternatives', text: `${(error as Error).message} Your current basket is unchanged.`, retry: () => findAlternatives(lines) });
+      if ((error as Error).name !== 'AbortError') setError({ title: 'Could not find alternatives', text: `${(error as Error).message} Your current basket is unchanged.`, retry: () => findAlternatives(lines, changeMenu) });
     } finally { if (abort.current === ac) setBusy(false); }
   }
 
@@ -501,12 +512,14 @@ function Shop() {
   return (
     <div className="app" data-tab={tab}>
       <Header
+        delivery={delivery}
+        onDelivery={() => setDeliveryOpen(true)}
         cartTotal={cartTotal}
-        date={basket?.date ?? DELIVERY}
+        date={basket?.date ?? delivery?.date ?? DELIVERY}
         orderBy={basket?.pricesHeldUntil ?? null}
         pickup={pickup}
         onPickup={setPickup}
-        locked={phase === "waiting" || phase === "placed"}
+        locked={phase === "waiting" || phase === "placed" || !!building || busy}
       />
       <PhoneTabs
         tab={tab}
@@ -517,9 +530,13 @@ function Shop() {
       <main className="workspace">
         <Chat
           onFindAlternatives={findAlternatives}
-          alternativeProposal={alternativeDraft ? <section className="replacement-notice" aria-label="Alternative draft ready"><p>A revised draft is ready to review.</p><button className="replacement-notice__review" disabled={busy} onClick={() => setAlternativeReviewOpen(true)}>Review revised draft</button></section> : null}
+          alternativeProposal={alternativeDraft ? <section className="replacement-notice" aria-label="Alternative draft ready"><p>A revised draft is ready to review.</p><button className="replacement-notice__review" disabled={busy} onClick={() => setAlternativeReviewOpen(true)}>Review revised draft</button></section> : replacementRecovery.length > 0 ? <section className="replacement-notice" aria-label="Replacement suggestions"><p>Try another product or a different dish.</p><div className="replacement-dialog__recovery"><button className="btn btn--outline" disabled={busy} onClick={() => void findAlternatives(replacementRecovery)}>Find another product</button><button className="btn btn--outline" disabled={busy} onClick={() => void findAlternatives(replacementRecovery, true)}>Suggest a menu change</button></div></section> : null}
           phase={phase}
-          menuProposal={menu && !building ? <MenuProposal compact menu={menu} busy={busy || !!building} onChange={setMenu} onApprove={approveMenu} /> : null}
+          menuProposal={menu && !building ? !menu.requirements ? <EventRequirements key={menu.request} initial={detectRequirements(menu.request)} delivery={delivery} defaultDate={requestDeliveryDate(menu.request, DELIVERY)} onConfirm={(requirements, choice) => {
+            setDelivery(choice);
+            setMenu(current => current ? { ...current, requirements, delivery: choice } : current);
+          }} /> : <MenuProposal compact menu={menu} busy={busy || !!building} onChange={setMenu} onApprove={approveMenu} /> : null}
+          menuReviewTitle={menu && !menu.requirements ? 'A few event details' : 'Review your menu'}
           planningMenu={!!menu}
           basket={basket}
           thread={thread}
@@ -552,6 +569,7 @@ function Shop() {
           }
         />
         <OrderPanel
+          deliveryTime={delivery?.time}
           insight={basket?.request.includes(SAMPLE_CONTEXT_MARKER) ? <MenuEconomics basket={basket} onReview={setSheet} /> : undefined}
           phase={phase}
           planningMenu={!!menu}
@@ -586,12 +604,21 @@ function Shop() {
           onHero={() => propose(HERO)}
         />
       </main>
+      {deliveryOpen && <DeliveryPicker value={delivery} defaultDate={menu ? requestDeliveryDate(menu.request, DELIVERY) : basket?.date ?? DELIVERY} onClose={() => setDeliveryOpen(false)} onConfirm={choice => {
+        setDelivery(choice);
+        setMenu(current => current ? { ...current, delivery: choice } : current);
+        if (basket && (choice.date !== basket.date || choice.placeId !== delivery?.placeId || choice.time !== delivery?.time)) {
+          void build(basket.request + `\nConfirmed delivery update: ${choice.address}; ${choice.date}, ${choice.time}. Recheck the complete draft for this delivery.`, basket.people, undefined, choice);
+        }
+      }} />}
       {alternativeReviewOpen && alternativeDraft && <AlternativeDraftReview basket={alternativeDraft} busy={busy} onClose={() => setAlternativeReviewOpen(false)} onUse={async () => {
         const next = alternativeDraft; setAlternativeReviewOpen(false); setOrder(null); setReviewing(false); await adopt(next);
       }} />}
       {sheetLine && basket && (
         <SwapSheet
+          time={delivery?.time}
           onFindAlternatives={() => { if (sheetLine) void findAlternatives([sheetLine]); }}
+          onSuggestMenuChange={() => { if (sheetLine) void findAlternatives([sheetLine], true); }}
           line={sheetLine}
           date={basket.date}
           locked={phase === "waiting" || phase === "placed"}

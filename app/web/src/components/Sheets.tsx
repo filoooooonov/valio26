@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+﻿import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { AuditEvent, Basket, BasketLine, Order } from "../api";
-import { useProductImage } from "./OrderPanel";
 import "./replacement-dialog.css";
+import { useProductImage } from "./OrderPanel";
 import { Icon } from "../icons";
 import {
   dayLabel,
@@ -78,25 +78,28 @@ export function useReplacementClose(dialog: RefObject<HTMLDialogElement | null>,
   return { closing, close };
 }
 
-function ReplacementImage({ sku, name }: { sku: string; name: string }) {
-  const url = useProductImage(sku);
+function ReplacementPhoto({ sku, image, name }: { sku: string; image?: string; name: string }) {
+  const catalogueImage = useProductImage(sku);
   const [failed, setFailed] = useState(false);
-  return <span className="replacement-image">{url && !failed ? <img src={url} alt={name} onError={() => setFailed(true)} /> : <Icon name="package" className="i-22" />}</span>;
+  const source = catalogueImage ?? image;
+  useEffect(() => setFailed(false), [sku, source]);
+  return <span className="replacement-option__image">{source && !failed ? <img src={source} alt={name} onError={() => setFailed(true)} /> : <span className="replacement-option__no-image"><Icon name="package" className="i-22" /><span>No photo available</span></span>}</span>;
 }
 
 // All choices come from the gateway's checked alternatives. Opening the dialog never accepts a swap.
-export function SwapSheet({ line, date, locked, onClose, onChoose, onFindAlternatives }: {
-  line: BasketLine; date: string; locked: boolean; onClose: () => void; onChoose: (sku: string) => void; onFindAlternatives?: () => void;
+export function SwapSheet({ line, date, locked, onClose, onChoose, onFindAlternatives, onSuggestMenuChange }: {
+  line: BasketLine; date: string; time?: string; locked: boolean; onClose: () => void; onChoose: (sku: string) => void; onFindAlternatives?: () => void; onSuggestMenuChange?: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
   const issue = line.issue;
   const opts = issue?.options ?? [];
   const [pick, setPick] = useState<string | undefined>(undefined);
-  const original = line.replaced ?? line;
+  const original = line; // Compare the item currently in this basket; historical names have no reliable price/quantity.
   const usable = (o: (typeof opts)[number]) => o.qty > 0 && o.stock.deliverable && !o.stock.cutoffPassed && (o.stock.available == null || o.qty <= o.stock.available);
   const available = opts.filter(usable);
   const selected = opts.find(o => o.sku === pick && usable(o));
+  const change = selected && Number.isFinite(selected.total) && Number.isFinite(original.total) ? Math.round((selected.total - original.total) * 100) / 100 : null;
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     dialog.current?.showModal(); closeButton.current?.focus();
@@ -110,21 +113,39 @@ export function SwapSheet({ line, date, locked, onClose, onChoose, onFindAlterna
     const box = event.currentTarget.getBoundingClientRect();
     if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) close();
   }}>
-    <header className="replacement-dialog__head"><div><p className="replacement-dialog__eyebrow">Choose a replacement</p><h2 id="replacement-heading">{niceName(original.name)}</h2></div><button ref={closeButton} type="button" className="round" aria-label="Close replacements" onClick={() => close()}><Icon name="x" className="i-18" /></button></header>
-    <p className="replacement-dialog__delivery"><Icon name="truck" className="i-16" /> Requested delivery: {dayLabel(date)}, {SLOT}</p>
-    <p className="replacement-dialog__reason">{reason}</p>
-    {!available.length && <div className="replacement-dialog__empty"><h3>No verified replacement</h3><p>No checked alternative can fulfil this quantity and delivery.</p>{onFindAlternatives && <button className="btn btn--outline" type="button" disabled={locked || closing} onClick={() => { if (!locked) close(onFindAlternatives); }}>Find another</button>}</div>}
-    {opts.length > 0 && <fieldset className="replacement-options" disabled={locked}><legend>Checked alternatives <span>Price difference versus the original</span></legend>
-      {opts.map(o => { const ok = usable(o); const note = o.stock.cutoffPassed ? 'Order cut-off passed' : !o.stock.deliverable ? 'Unavailable for this delivery' : o.stock.available != null && o.qty > o.stock.available ? 'Insufficient stock for this quantity' : o.qty <= 0 ? 'No orderable quantity' : o.reason.split(/\s*\u00b7\s*/).find(x => /^adds /i.test(x)) ?? null;
+    <header className="replacement-dialog__head"><div><h2 id="replacement-heading">{niceName(line.name)} is unavailable for delivery on {dayLabel(date)}.</h2><p className="replacement-dialog__instruction">Choose a replacement.</p></div><button ref={closeButton} type="button" className="round" aria-label="Close replacements" onClick={() => close()}><Icon name="x" className="i-18" /></button></header>
+    {!available.length && <div className="replacement-dialog__empty"><p>No available replacement for this delivery. Find another product or try a different dish.</p><div className="replacement-dialog__recovery">{onFindAlternatives && <button className="btn replacement-dialog__use" type="button" disabled={locked || closing} onClick={() => { if (!locked) close(onFindAlternatives); }}>Find another product</button>}{onSuggestMenuChange && <button className="btn btn--outline" type="button" disabled={locked || closing} onClick={() => { if (!locked) close(onSuggestMenuChange); }}>Suggest a menu change</button>}</div></div>}
+    {opts.length > 0 && <fieldset className="replacement-options" disabled={locked || closing}><legend className="sr-only">Choose a replacement</legend>
+      <div className="replacement-options__grid">
+      {opts.map(o => {
+        const ok = usable(o);
+        const note = o.stock.cutoffPassed ? 'Order cut-off passed.' : !o.stock.deliverable ? 'Unavailable for this delivery.' : o.stock.available != null && o.qty > o.stock.available ? 'Not enough stock for your quantity.' : o.qty <= 0 ? 'No orderable quantity.' : [o.frozen ? 'Frozen product' : '', o.reason.split(/\s*\u00b7\s*/).find(part => /^adds /i.test(part)) ?? ''].filter(Boolean).join('. ');
+        const delivery = ok ? dayLabel(date) : o.stock.availableDate ? dayLabel(o.stock.availableDate) : 'Unavailable';
         return <label key={o.sku} className={'replacement-option' + (pick === o.sku ? ' replacement-option--selected' : '') + (!ok ? ' replacement-option--disabled' : '')}>
-          <input type="radio" name="replacement-choice" value={o.sku} aria-label={niceName(o.name)} checked={pick === o.sku} disabled={locked || closing || !ok} onChange={() => setPick(o.sku)} />
-          <ReplacementImage sku={o.sku} name={niceName(o.name)} />
-          <span className="replacement-option__copy"><strong>{niceName(o.name)}</strong><span>{qtyLabel(o.qty, o.pack)}</span>{note && <span className={!ok ? 'replacement-option__problem' : ''}>{note}</span>}</span>
-          <span className="replacement-option__price"><b>{money(o.total)}</b><span>{Math.abs(o.delta) < .005 ? 'Same price' : (o.delta > 0 ? '+' : '-') + money(Math.abs(o.delta))}</span></span>
+          <span className="replacement-option__top">
+            <input type="radio" name="replacement-choice" value={o.sku} aria-label={niceName(o.name)} checked={pick === o.sku} disabled={locked || closing || !ok} onChange={() => setPick(o.sku)} />
+            <span className={'replacement-option__availability' + (!ok ? ' replacement-option__availability--unavailable' : '')}><Icon name={ok ? 'circle-check' : 'circle-x'} className="i-14" />{delivery}</span>
+          </span>
+          <ReplacementPhoto sku={o.sku} name={niceName(o.name)} />
+          <span className="replacement-option__copy"><strong>{niceName(o.name)}</strong></span>
+          <span className="replacement-option__facts"><span>{qtyLabel(o.qty, o.pack)}</span><span className="replacement-option__price"><b>{money(o.total)}</b><span>{Math.abs(o.total - original.total) < .005 ? 'Same price' : money(Math.abs(o.total - original.total)) + (o.total < original.total ? ' less' : ' more')}</span></span></span>
+          <span className={'replacement-option__note' + (!ok ? ' replacement-option__problem' : '')}>{note}</span>
         </label>;
       })}
+      <div className="replacement-option replacement-option--original" aria-label="Original item for comparison">
+        <span className="replacement-option__top"><span className="replacement-option__original-label">Original item</span><Icon name="circle-alert" className="i-16" /></span>
+        <ReplacementPhoto sku={original.sku} image={original.image} name={niceName(original.name)} />
+        <span className="replacement-option__copy"><strong>{niceName(original.name)}</strong></span>
+        <span className="replacement-option__facts"><span>{qtyLabel(original.qty, original.pack)}</span><span className="replacement-option__price"><b>{money(original.total)}</b><span>Original total</span></span></span>
+        <span className="replacement-option__note" title={reason}>Unavailable</span>
+      </div>
+      </div>
     </fieldset>}
-    <footer className="replacement-dialog__actions"><button type="button" className="btn btn--outline" disabled={locked} onClick={() => choose('remove')}>Remove item</button><button type="button" className="btn replacement-dialog__use" disabled={locked || closing || !selected} onClick={() => selected && choose(selected.sku)}>Use replacement</button></footer>
+    {selected && <div className="replacement-comparison__summary" aria-live="polite">
+      {change != null ? <p className={'replacement-comparison__change' + (change < 0 ? ' replacement-comparison__change--less' : '')}>{money(original.total)} <Icon name="arrow-right" className="i-16" /> {money(selected!.total)}<span>{Math.abs(change) < .005 ? 'No price change' : money(Math.abs(change)) + (change < 0 ? ' less for this item' : ' more for this item')}</span></p> : <p className="replacement-comparison__hint">Choose a product, then confirm with Use replacement.</p>}
+    </div>}
+    <p className="replacement-dialog__vat">Prices excl. VAT</p>
+    <footer className="replacement-dialog__actions"><button type="button" className="btn btn--outline" disabled={locked || closing} onClick={() => choose('remove')}>Remove item</button>{available.length > 0 && <button type="button" className="btn replacement-dialog__use" disabled={locked || closing || !selected} onClick={() => selected && choose(selected.sku)}>Use replacement</button>}</footer>
   </dialog>;
 }
 

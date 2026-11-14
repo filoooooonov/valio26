@@ -1,13 +1,22 @@
-﻿.replacement-notice{margin:var(--s-12) 0;padding:var(--s-8) 0;color:var(--ink);font-family:inherit}
-.replacement-notice__heading{display:flex;align-items:flex-start;gap:var(--s-8)}
-.replacement-notice__heading > svg{flex-shrink:0;margin-top:var(--s-3);color:var(--red-ink)}
-.replacement-notice__heading p{margin:0;font-size:var(--fs-14);font-weight:var(--w-medium);line-height:var(--lh-chat);overflow-wrap:anywhere}
-.replacement-notice__date{display:flex;align-items:center;gap:var(--s-6);margin:var(--s-8) 0 0;font-size:var(--fs-12);line-height:var(--lh-chat);color:var(--teal)}
-.replacement-notice__review{display:inline-flex;align-items:center;gap:var(--s-8);min-height:var(--hit);padding:var(--s-8) 0;margin-top:var(--s-6);border:0;background:transparent;color:var(--teal);font-size:var(--fs-13);font-weight:var(--w-medium);cursor:pointer}
-.replacement-notice__items{list-style:none;margin:var(--s-10) 0 0;padding:0}
-.replacement-notice__items button{display:flex;align-items:center;justify-content:space-between;gap:var(--s-12);width:100%;min-height:var(--hit);padding:var(--s-10) 0;border:0;background:transparent;color:var(--teal);text-align:left;font-size:var(--fs-13);line-height:var(--lh-chat);cursor:pointer}
-.replacement-notice__items button span{min-width:0;overflow-wrap:anywhere}
-.replacement-notice__items svg{flex-shrink:0}
+﻿/* Product-led notice with an explicit warning symbol and one clear route to review. */
+.replacement-notice{margin:var(--s-12) 0;padding:var(--s-18);border:0;border-radius:var(--r-16);box-shadow:inset 0 0 0 var(--s-2) var(--issue-yellow);background:var(--white);color:var(--ink);font-family:inherit}
+.replacement-notice__heading{display:flex;align-items:center;gap:var(--s-10)}
+.replacement-notice__heading p{margin:0;font-size:var(--fs-14);font-weight:var(--w-medium);line-height:var(--lh-chat)}
+.replacement-notice__attention{display:grid;place-items:center;width:var(--s-28);height:var(--s-28);flex:0 0 var(--s-28);border-radius:var(--r-pill);background:var(--issue-yellow);color:var(--ink)}
+.replacement-notice__date{display:flex;align-items:center;gap:var(--s-6);margin:var(--s-8) 0 var(--s-12);font-size:var(--fs-12);line-height:var(--lh-chat);color:var(--teal)}
+.replacement-notice__date svg{flex-shrink:0}
+.replacement-notice__items{list-style:none;margin:0;padding:0}
+.replacement-notice__items li + li{margin-top:var(--s-8)}
+.replacement-notice__items button{display:flex;align-items:center;gap:var(--s-14);width:100%;min-height:var(--hit);padding:var(--s-12) 0;border:0;border-radius:var(--r-10);background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:background var(--dur-hover) var(--ease-out)}
+.replacement-notice__items button:not(:disabled):hover{background:var(--issue-bg)}
+.replacement-notice__photo{display:grid;place-items:center;flex:0 0 52px;width:52px;height:56px;color:var(--muted)}
+.replacement-notice__photo img{display:block;width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
+.replacement-notice__copy{display:flex;flex-direction:column;gap:var(--s-4);min-width:0}
+.replacement-notice__copy > strong{font-size:var(--fs-12);font-weight:var(--w-medium);line-height:var(--lh-chat);overflow-wrap:anywhere}
+.replacement-notice__problem{font-size:var(--fs-12);line-height:var(--lh-chat);color:var(--muted)}
+.replacement-notice__action{display:flex;align-items:center;gap:var(--s-6);margin-top:var(--s-3);font-size:var(--fs-12);font-weight:var(--w-medium);line-height:var(--lh-chat);color:var(--teal)}
+.replacement-notice__action svg{flex-shrink:0}
 .replacement-notice button:disabled{opacity:.5;cursor:default}
-.replacement-notice button:not(:disabled):hover{color:var(--teal-deep);text-decoration:underline;text-underline-offset:var(--s-3)}
-.replacement-notice button:focus-visible{outline:var(--s-2) solid var(--teal);outline-offset:var(--s-4);border-radius:var(--r-6)}
+.replacement-notice button:focus-visible{outline:var(--s-2) solid var(--teal);outline-offset:var(--s-4)}
+@media(max-width:520px){.replacement-notice{padding:var(--s-16)}.replacement-notice__items button{gap:var(--s-12)}}
+@media(prefers-reduced-motion:reduce){.replacement-notice__items button{transition:none}}

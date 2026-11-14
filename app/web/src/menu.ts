@@ -1,6 +1,8 @@
 import { samplePlanningContext } from './minunAimo';
+import { requirementsText, type EventRequirements } from './requirements';
+import type { DeliveryChoice } from './components/DeliveryPicker';
 export type MenuCategory = { id: string; title: string; description: string; selected: boolean };
-export type MenuDraft = { request: string; categories: MenuCategory[]; useMinunAimo?: boolean };
+export type MenuDraft = { request: string; categories: MenuCategory[]; useMinunAimo?: boolean; requirements?: EventRequirements; delivery?: DeliveryChoice };
 const category = (title: string, description: string, index: number): MenuCategory => ({ id: 'menu-' + index, title, description, selected: true });
 export function suggestMenu(request: string): MenuDraft {
  const known = [
@@ -38,7 +40,9 @@ export function menuSummary(menu: MenuDraft) {
 }
 export function plannerRequest(menu: MenuDraft) {
  const chosen = menu.categories.filter(c => c.selected);
- return menu.request + '\n\nAPPROVED MENU ONLY:\n' + chosen.map(c => '- ' + c.title + ': ' + c.description).join('\n') + '\nUse ONLY the approved categories above. The initial request provides guest count, date and dietary requirements; its unapproved dishes are superseded. Do not add removed or unselected categories or extra dishes. Include products for every approved category. Keep guest quantities and dietary requirements from the request.' + (menu.useMinunAimo ? samplePlanningContext() : '');
+ const confirmed = menu.requirements ? '\nConfirmed event requirements (override any conflicting earlier assumptions): ' + requirementsText(menu.requirements) : '';
+ const delivery = menu.delivery ? `\nConfirmed delivery: ${menu.delivery.address}; ${menu.delivery.date}, ${menu.delivery.time}.` : '';
+ return menu.request + confirmed + delivery + '\n\nAPPROVED MENU ONLY:\n' + chosen.map(c => '- ' + c.title + ': ' + c.description).join('\n') + '\nUse ONLY the approved categories above. The initial request provides guest count, date and dietary requirements; its unapproved dishes are superseded. Do not add removed or unselected categories or extra dishes. Include products for every approved category. Keep guest quantities and dietary requirements from the request.' + (menu.useMinunAimo ? samplePlanningContext() : '');
 }
 export function fallbackMatchesMenu(menu: MenuDraft, dishes: { name: string }[]) {
  const norm = (s: string) => s.toLowerCase().replace(/creamy|lactose.free|[^a-z ]/g, '').trim();

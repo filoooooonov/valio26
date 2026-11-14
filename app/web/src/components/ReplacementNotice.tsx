@@ -1,29 +1,32 @@
-﻿import type { BasketLine } from '../api';
+﻿import { useEffect, useState } from 'react';
+import type { BasketLine } from '../api';
 import { dayLabel, niceName } from '../format';
 import { Icon } from '../icons';
+import { useProductImage } from './OrderPanel';
 import './replacement-notice.css';
 
-type Props = {
-  lines: BasketLine[];
-  date: string;
-  onReview: (lineId: string) => void;
-  busy: boolean;
-};
+type Props = { lines: BasketLine[]; date: string; onReview: (lineId: string) => void; busy: boolean };
 
-// Chat only announces the exception. The shared product dialog owns replacement decisions.
+function IssuePhoto({ line }: { line: BasketLine }) {
+  const cached = useProductImage(line.sku);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [line.sku]);
+  const source = cached ?? line.image;
+  return <span className="replacement-notice__photo">{source && !failed ? <img src={source} alt="" loading="lazy" onError={() => setFailed(true)} /> : <Icon name="package" className="i-22" />}</span>;
+}
+
+// Only a compact issue summary lives in chat; the shared dialog owns decisions.
 export function ReplacementNotice({ lines, date, onReview, busy }: Props) {
   if (!lines.length) return null;
-  const single = lines.length === 1;
-  return <section className="replacement-notice enter" aria-label="Delivery issues">
-    <div className="replacement-notice__heading">
-      <Icon name="circle-alert" className="i-16" />
-      <p>{single ? `${niceName(lines[0].name)} can't arrive on time` : `${lines.length} items can't arrive by ${dayLabel(date)}`}</p>
-    </div>
-    {single ? <>
-      <p className="replacement-notice__date"><Icon name="truck" className="i-14" />Delivery {dayLabel(date)}</p>
-      <button className="replacement-notice__review" disabled={busy} onClick={() => onReview(lines[0].id)} aria-label={`Review replacement options for ${niceName(lines[0].name)}`}>Review options<Icon name="arrow-right" className="i-14" /></button>
-    </> : <ul className="replacement-notice__items">
-      {lines.map(line => <li key={line.id}><button disabled={busy} onClick={() => onReview(line.id)} aria-label={`Review replacement options for ${niceName(line.name)}`}><span>{niceName(line.name)}</span><Icon name="chevron-right" className="i-14" /></button></li>)}
-    </ul>}
+  return <section className="replacement-notice enter" aria-label="Product issues">
+    <div className="replacement-notice__heading"><span className="replacement-notice__attention" aria-hidden="true"><Icon name="triangle-alert" className="i-18" /></span><p>{lines.length === 1 ? 'One product needs your review' : `${lines.length} products need your review`}</p></div>
+    <p className="replacement-notice__date"><Icon name="truck" className="i-14" />Delivery {dayLabel(date)}</p>
+    <ul className="replacement-notice__items">{lines.map(line => {
+      const reason = line.issue?.kind === 'cutoff' ? 'Order cut-off passed' : line.issue?.kind === 'short' ? 'Not enough stock for your order' : 'Not available for this delivery';
+      return <li key={line.id}><button disabled={busy} onClick={() => onReview(line.id)} aria-label={`Review replacement options for ${niceName(line.name)}`}>
+        <IssuePhoto line={line} />
+        <span className="replacement-notice__copy"><strong>{niceName(line.name)}</strong><span className="replacement-notice__problem">{reason}</span><span className="replacement-notice__action">Review options <Icon name="arrow-right" className="i-14" /></span></span>
+      </button></li>;
+    })}</ul>
   </section>;
 }
