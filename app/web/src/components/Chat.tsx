@@ -22,7 +22,7 @@ import {
   timeLabel,
   weekdayLong,
 } from "../format";
-import { firstName, orderLabel, PEOPLE, shortName, type Item } from "../thread";
+import { firstName, orderLabel, PEOPLE, shortName, syncProductReviews, reviewProductKey, type ProductReviewTimeline, type Item } from "../thread";
 import type { Phase } from "../App";
 import { AssistantBadge, ThinkingMark } from "./Mark";
 import { ReplacementNotice } from './ReplacementNotice';
@@ -101,13 +101,21 @@ export function Chat(p: Props) {
     window.addEventListener('resize', measure); window.visualViewport?.addEventListener('resize', measure);
     return () => { observer.disconnect(); window.removeEventListener('resize', measure); window.visualViewport?.removeEventListener('resize', measure); };
   }, [hasMenuReview]);
-  const items = [...p.thread, ...p.local].sort(
+  const contextItems = [...p.thread, ...p.local].sort(
     (a, b) => Date.parse(a.at) - Date.parse(b.at),
   );
+  const [reviews, setReviews] = useState<ProductReviewTimeline>({ basketId: null, messages: [] });
+  useLayoutEffect(() => {
+    setReviews(previous => syncProductReviews(previous, p.basket, contextItems));
+  }, [p.basket, p.thread, p.local]);
   const open =
     p.basket && (p.phase === "draft" || p.phase === "review")
       ? p.basket.lines.filter(lineIsOpen)
       : [];
+  const reviewMessages = reviews.basketId === p.basket?.id
+    ? reviews.messages.filter(message => open.some(line => message.products.includes(reviewProductKey(line))))
+    : [];
+  const items = [...contextItems, ...reviewMessages].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
   const firstAt = items.find((i) => i.kind === "user")?.at;
 
   const pinned = useRef(true);
@@ -156,7 +164,7 @@ export function Chat(p: Props) {
         <h2 className="chat__title">Helmi</h2>
         <span className="grow" />
         <button className="btn-ghost" onClick={p.onNew}>
-          <Icon name="plus" className="i-14" /> New request
+          <Icon name="plus" className="i-14" /> New order
         </button>
       </div>
 
@@ -178,10 +186,9 @@ export function Chat(p: Props) {
             long
           />
         )}
-        {items.map((it) => (
-          <Turn key={it.key} it={it} p={p} firstAt={firstAt} />
-        ))}
-        {p.basket && <ReplacementNotice lines={open} date={p.basket.date} busy={p.busy} onReview={p.onSeeAll} />}
+        {items.map(it => it.kind === "productReview" && p.basket
+          ? <ReplacementNotice key={it.key} lines={open.filter(line => it.products.includes(reviewProductKey(line)))} date={p.basket.date} busy={p.busy} onReview={p.onSeeAll} />
+          : it.kind !== "productReview" ? <Turn key={it.key} it={it} p={p} firstAt={firstAt} /> : null)}
         {p.alternativeProposal}
         {p.phase === "waiting" && p.order && <Waiting order={p.order} />}
         {p.stale && p.basket && (
@@ -189,7 +196,7 @@ export function Chat(p: Props) {
         )}
         {p.building && <Thinking since={p.building.since} />}
         {p.error && <ErrorCard e={p.error} onDismiss={p.onDismissError} />}
-        {p.busy && !p.building && <div className="chat-pending" role="status"><ThinkingMark small /><span>Updating your request...</span></div>}
+        {p.busy && !p.building && <div className="chat-pending" role="status"><ThinkingMark small /><span>Updating your order...</span></div>}
         {p.order?.status === "placed" && <ConfirmedOrder order={p.order} onLog={p.onLog} />}
       </div>
 
@@ -838,7 +845,7 @@ function Composer({ p }: { p: Props }) {
         ? "Building your order…"
         : "Describe what you need…"
       : p.phase === "waiting"
-        ? "Ask for a change (this withdraws the request)…"
+        ? "Ask for a change (this withdraws the order)…"
         : p.phase === "placed"
           ? held
             ? `Ask for a change (possible until ${stamp(held)})…`

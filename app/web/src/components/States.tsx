@@ -148,7 +148,7 @@ export function StatesView() {
     <main className="states">
       <h1>States board · sample data</h1>
       <div className="states__grid">
-        <Cell label="Empty · no request yet">
+        <Cell label="Empty · no order yet">
           <Intro onHero={noop} onSend={noop} onAttach={noop} />
         </Cell>
         <Cell label="Thinking · planner running">

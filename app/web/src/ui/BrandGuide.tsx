@@ -314,7 +314,7 @@ const TYPE: { role: string; token: string; el: ReactNode }[] = [
   {
     role: "Eyebrow",
     token: "fs-12 · bold · uppercase",
-    el: <Eyebrow glyph>Order draft · built from your request</Eyebrow>,
+    el: <Eyebrow glyph>Order draft · prepared for you</Eyebrow>,
   },
   { role: "Micro / tag", token: "fs-11", el: <Tag>Swapped</Tag> },
 ];
@@ -804,11 +804,11 @@ export function BrandGuide() {
               chat
               name="Button · ghost"
               code={'<Button variant="ghost">'}
-              use="Quiet action on the lavender assistant column, e.g. New request."
+              use="Quiet action on the lavender assistant column, e.g. New order."
             >
               <State label="Default">
                 <Button variant="ghost" icon="plus">
-                  New request
+                  New order
                 </Button>
               </State>
             </Comp>
@@ -1022,7 +1022,7 @@ export function BrandGuide() {
               use="Small uppercase label above a page title."
             >
               <State label="With glyph">
-                <Eyebrow glyph>Order draft · built from your request</Eyebrow>
+                <Eyebrow glyph>Order draft · prepared for you</Eyebrow>
               </State>
             </Comp>
             <Comp

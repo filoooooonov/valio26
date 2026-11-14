@@ -207,7 +207,7 @@ export const isNotFound = (e: unknown) =>
   e instanceof ApiError && e.status === 404;
 
 export type RecipeProposal = {id:string; from:string; to:string; before:BasketLine[]; after:BasketLine[]; totalBefore:number; totalAfter:number};
-const checkedData = <T,>(r:{status:number;data:T}) => { if (r.status >= 400) throw new ApiError(r.status,(r.data as {error?:string}).error ?? 'Request failed',r.data); return r.data; };
+const checkedData = <T,>(r:{status:number;data:T}) => { if (r.status >= 400) throw new ApiError(r.status,(r.data as {error?:string}).error ?? 'Order update failed',r.data); return r.data; };
 
 export type MenuItem = { title: string; description: string; course: "starter" | "main" | "dessert" | "drinks" | "side" | "snack" | "other" };
 export type MenuReply = { items: MenuItem[]; reply: string; planner: "llm" | "fallback" };

@@ -1,6 +1,6 @@
 # TASKS.md: claim before starting
 
-- [~] @aleksei-codex S40 Place product-review boxes in chronological chat order above newer messages; replace visible request wording with order (rubric: demo, user need) - files: app/web/src/components/Chat.tsx, thread.ts and UI copy.
+- [x] @aleksei-codex S40 Product-review cards keep their first position in the chat timeline above newer user/reply messages; later issues get separate turns and partial resolution/undo preserves positions. Replaced visible request wording with order. Desktop1440/phone390 chronology and review popup checked; build and88fast tests pass (rubric: demo, user need) - files: app/web/src/components/Chat.tsx, thread.ts and UI copy; app/server/src/product-review-order.test.ts.
 
 - [x] @aleksei-codex S39 Unchecked cart rows stay visible across reload with saved quantity; explicit removal hides rows. Added Ctrl+Z/Cmd+Z and kit Undo button for up to30 server-owned line edits; stale/locked guards, audit and exact replacement restoration. Phone checkboxes remain usable. Desktop1440/phone390 workflows pass; build and80fast tests pass (rubric: user need, guardrails) - files: app/web/src/App.tsx, components/OrderPanel.tsx, components/order-polish.css, api.ts; app/server/src/app.ts, plan.ts, cartHistory.ts, cartHistory.test.ts; CONTRACT.md.
 

@@ -32,7 +32,7 @@ type Btn = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
  * - primary (teal): the main action in a card, dialog or form.
  * - accent (lime): the ONE commit action on a screen (order, approve). Never two on one screen.
  * - secondary (white + petrol outline): alternatives next to a primary.
- * - ghost (blueberry outline): low-emphasis actions inside the assistant column (e.g. New request).
+ * - ghost (blueberry outline): low-emphasis actions inside the assistant column (e.g. New order).
  */
 export function Button({
   variant = "primary",

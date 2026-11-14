@@ -1,6 +1,6 @@
 // The chat thread is the record: it is rebuilt from the gateway's audit events (GET /api/basket/:id/audit),
-// so it never rewrites history. Live things (open questions, waiting, errors) are appended at the end by Chat.
-import type { AuditEvent, Basket, MandateResult } from "./api";
+// so it never rewrites history. Product reviews keep their original position among those messages.
+import type { AuditEvent, Basket, BasketLine, MandateResult } from "./api";
 import type { IconName } from "./icons";
 import {
   money,
@@ -10,7 +10,50 @@ import {
   timeLabel,
   weekday,
   weekdayLong,
+  lineIsOpen,
 } from "./format";
+
+export type ProductReviewMessage = {
+  kind: "productReview";
+  key: string;
+  at: string;
+  products: string[];
+  awaitingPlan?: boolean;
+};
+export type ProductReviewTimeline = { basketId: string | null; messages: ProductReviewMessage[] };
+export const reviewProductKey = (line: BasketLine) => `${line.id}:${line.sku}:${line.issue?.kind}`;
+
+// Remember when each issue first appeared; later replies must not push its card to the bottom.
+export function syncProductReviews(
+  previous: ProductReviewTimeline,
+  basket: Basket | null,
+  items: readonly { kind: string; key: string; at: string; added?: { lineId: string }[] }[],
+): ProductReviewTimeline {
+  if (!basket) return previous.basketId === null ? previous : { basketId: null, messages: [] };
+  const initial = previous.basketId !== basket.id;
+  const firstReply = items.find(i => i.key.startsWith("plan-")) ?? items.find(i => i.kind === "assistant");
+  const refined = !initial && firstReply && previous.messages.some(m => m.awaitingPlan);
+  const messages = initial ? [] : refined
+    ? previous.messages.map(m => m.awaitingPlan ? { ...m, at: firstReply.at, awaitingPlan: false } : m)
+    : previous.messages;
+  const known = new Set(messages.flatMap(m => m.products));
+  const fresh = basket.lines.filter(l => lineIsOpen(l) && !known.has(reviewProductKey(l)));
+  if (!initial && !fresh.length && !refined) return previous;
+  const grouped = new Map<string, string[]>();
+  for (const line of fresh) {
+    const addedReply = [...items].reverse().find(i => i.added?.some(a => a.lineId === line.id));
+    const anchor = addedReply ?? (initial ? firstReply : items[items.length - 1]);
+    const at = anchor?.at ?? basket.createdAt;
+    grouped.set(at, [...(grouped.get(at) ?? []), reviewProductKey(line)]);
+  }
+  return {
+    basketId: basket.id,
+    messages: [...messages, ...[...grouped].map(([at, products]) => ({
+      kind: "productReview" as const, key: `product-review-${basket.id}-${products.join("|")}`, at, products,
+      awaitingPlan: initial && !firstReply,
+    }))],
+  };
+}
 
 export type Did = { icon: IconName; text: string };
 export type Item =

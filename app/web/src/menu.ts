@@ -23,7 +23,7 @@ export function suggestMenu(request: string): MenuDraft {
  let items = known.filter(([match]) => match.test(request)).map(([, title, description], i) => category(title, description, i));
  if (!items.length && (request.includes(':') || !/catering|event|party|restock|guests|people/i.test(request))) {
   const list = (request.split(':')[1] ?? request).split(/[.;]/)[0].split(/,|\s+and\s+/i).map(s => s.trim()).filter(Boolean);
-  items = list.map((title, i) => category(title, 'Select products and quantities for this part of your request.', i));
+  items = list.map((title, i) => category(title, 'Select products and quantities for this part of your order.', i));
  }
  // Offline only: the gateway's /api/menu proposes the real menu. Never invent a fixed snack menu here.
  if (!items.length) items = [

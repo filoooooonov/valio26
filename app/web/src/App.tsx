@@ -409,7 +409,7 @@ function Shop() {
       if (isNotFound(e))
         say({
           kind: "assistant",
-          text: "I can't change that yet. Use the steppers and swap buttons in the order, or start a new request.",
+          text: "I can't change that yet. Use the steppers and swap buttons in the order, or start a new order.",
         });
       else fail(e, () => send(t), "edit");
     } finally {

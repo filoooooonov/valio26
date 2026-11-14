@@ -161,7 +161,7 @@ export function SwapSheet({ line, date, locked, onClose, onChoose, onCheck, onUn
 }
 
 const KIND: Record<string, string> = {
-  request: "Request",
+  request: "Order",
   plan: "Menu plan",
   search: "Catalogue search",
   pick: "Products picked",
