@@ -30,6 +30,7 @@ import { useProductImage } from './OrderPanel';
 import { Card, ProductTile } from '../ui';
 import { closePopup } from './popupMotion';
 import "./chat-polish.css";
+import { RulesDialog } from "./RulesDialog";
 
 export type LocalItem =
   | { kind: "user"; key: string; at: string; who: string; text: string }
@@ -81,6 +82,7 @@ export function Chat(p: Props) {
   const reviewPanel = useRef<HTMLDivElement>(null);
   const hasMenuReview = !!p.menuProposal && !!p.planningMenu;
   const [menuReviewOpen, setMenuReviewOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const closeMenuReview = () => closePopup(reviewPanel.current, () => { setMenuReviewOpen(false); requestAnimationFrame(() => reviewTrigger.current?.focus()); });
   useLayoutEffect(() => {
     setMenuReviewOpen(hasMenuReview);
@@ -214,8 +216,10 @@ export function Chat(p: Props) {
         <Composer p={p} />
       </div>
       <p className="foot">
-        Rules are checked by Valio Aimo on every order, not by the assistant.
+        Rules are checked by the Valio Aimo gateway on every order, not by the assistant.{" "}
+        <button type="button" className="link foot__rules" onClick={() => setRulesOpen(true)}>Who decides what</button>
       </p>
+      {rulesOpen && <RulesDialog customer={p.basket?.customer ?? "123"} onClose={() => setRulesOpen(false)} />}
     </section>
   );
 }

@@ -11,7 +11,7 @@ import { parseMenuInput, suggestMenu } from "./menu";
 import { checkReplacements, proposeRecipeChange, applyRecipeChange } from './plan';
 import { productImage } from "./images";
 import { handleMcp } from "./mcp";
-import { getMandate } from "./policy";
+import { getMandate, decisionMatrix } from "./policy";
 import { baskets, orders } from "./store";
 import { receiptFor, verifyReceipt, wellKnown } from "./trust";
 
@@ -185,6 +185,7 @@ app.get("/api/orders/:id/audit", (c) => {
   return o ? c.json(events(o.basketId)) : c.json({ error: "order not found" }, 404);
 });
 app.get("/api/mandate/:customer", (c) => c.json(getMandate(c.req.param("customer"))));
+app.get("/api/mandate/:customer/matrix", (c) => { const m = getMandate(c.req.param("customer")); return c.json({ mandate: m, rows: decisionMatrix(m) }); });
 app.get("/api/mandate", (c) => c.json(getMandate(c.req.query("customer") ?? "123")));
 // Whole audit trail, newest first (each event carries its basket scope). Per order: /api/orders/:id/audit.
 app.get("/api/audit", (c) => c.json(allEvents(Math.min(Number(c.req.query("limit") ?? 200), 1000))));

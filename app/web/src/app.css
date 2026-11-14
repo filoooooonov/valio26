@@ -2109,3 +2109,10 @@ a.btn:active {
 .trail__who{font-size:var(--fs-12);opacity:.7}
 .trail__data pre{font-size:11px;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow:auto;margin:4px 0 0}
 .log__export{display:inline-block;margin-top:8px;font-size:var(--fs-12);color:var(--teal)}
+
+.foot__rules{font-size:inherit}
+.rules__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+@media (max-width:640px){.rules__grid{grid-template-columns:1fr}}
+.rules__col h3{font-size:var(--fs-14, 14px);margin:0 0 8px;color:var(--teal)}
+.rules__card{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border:1px solid color-mix(in srgb,currentColor 15%,transparent);border-radius:10px;margin-bottom:8px;font-size:var(--fs-12)}
+.rules__card strong{font-size:var(--fs-14, 14px)}

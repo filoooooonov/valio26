@@ -7,6 +7,7 @@ import { z } from "zod";
 import { search } from "./catalog";
 import { placeOrder } from "./orders";
 import { buildBasket } from "./plan";
+import { getMandate, decisionMatrix } from "./policy";
 import { orders } from "./store";
 import { checkStock } from "./valio";
 import { receiptFor, verifyReceipt } from "./trust";
@@ -63,6 +64,17 @@ function server(): McpServer {
     "get_order",
     { description: "Order status, mandate verdict and reasons.", inputSchema: { orderId: z.string() } },
     async ({ orderId }) => json(orders.get(orderId) ?? { error: "order not found" }),
+  );
+  s.registerTool(
+    "get_mandate",
+    {
+      description: "The buyer's mandate: spend limits, approver, and a readable table of which decisions the gateway, the buyer or the approver makes.",
+      inputSchema: { customer: z.string().optional() },
+    },
+    async ({ customer }) => {
+      const m = getMandate(customer ?? "123");
+      return json({ mandate: m, rows: decisionMatrix(m) });
+    },
   );
   return s;
 }

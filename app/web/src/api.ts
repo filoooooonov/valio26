@@ -218,7 +218,10 @@ const checkedData = <T,>(r:{status:number;data:T}) => { if (r.status >= 400) thr
 export type MenuItem = { title: string; description: string; course: "starter" | "main" | "dessert" | "drinks" | "side" | "snack" | "other" };
 export type MenuReply = { items: MenuItem[]; reply: string; planner: "llm" | "fallback" };
 
+export type MatrixRow = { decision: string; who: "gateway" | "buyer" | "approver"; rule: string };
+
 export const api = {
+  matrix: (customer: string) => call<{ rows: MatrixRow[] }>(`/mandate/${customer}/matrix`).then((r) => r.data.rows),
   undo: (id: string) => call<{ basket: Basket; canUndo: boolean }>(`/basket/${id}/undo`, { by: BUYER }).then(checkedData),
   menu: (body: { request: string; current?: MenuItem[]; instruction?: string }, signal?: AbortSignal) => call<MenuReply>("/menu", body, signal).then(checkedData),
   checkReplacements: (id:string,lineId:string) => call<Basket>(`/basket/${id}/lines/${lineId}/replacements/check`,{}).then(checkedData),

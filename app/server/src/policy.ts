@@ -83,3 +83,20 @@ export function evaluate(m: Mandate, x: MandateInput): MandateResult {
     ],
   };
 }
+
+export type MatrixRow = { decision: string; who: "gateway" | "buyer" | "approver"; rule: string };
+/** The mandate as a readable table: what the gateway does on its own, what needs the buyer, what needs the approver. */
+export function decisionMatrix(m: Mandate): MatrixRow[] {
+  return [
+    { decision: "Look up products, prices and stock", who: "gateway", rule: "Only for the shortlisted products of this request, never the whole catalogue." },
+    m.autoSwapSameUse
+      ? { decision: "Same-use swap", who: "gateway", rule: "Same product group, no new allergens, not fish or meat, at most +20 % or +€25. Logged in the audit trail." }
+      : { decision: "Same-use swap", who: "buyer", rule: "Automatic swaps are switched off for this customer." },
+    { decision: "Any other substitution", who: "buyer", rule: "The buyer chooses from ranked Best / Better / Good options, or keeps what is available, or removes the line." },
+    { decision: "A swap chosen by an outside agent", who: "buyer", rule: "Does not count as the buyer's OK. The buyer confirms it." },
+    { decision: `Order up to ${eur(m.maxOrderEur)}`, who: "buyer", rule: `The buyer confirms; the gateway records it. Today's orders must stay under ${eur(m.maxDailyEur)}.` },
+    { decision: `Order over ${eur(m.maxOrderEur)}`, who: "approver", rule: `${m.approver} approves. Price and stock are re-checked at approval.` },
+    { decision: `Today's orders over ${eur(m.maxDailyEur)}`, who: "approver", rule: `${m.approver} approves, so splitting one order into several small ones is caught.` },
+    { decision: "Approve an order", who: "approver", rule: `Only ${m.approver}. An agent cannot approve its own order (HTTP 403).` },
+  ];
+}
