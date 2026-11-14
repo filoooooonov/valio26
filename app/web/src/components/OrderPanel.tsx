@@ -69,14 +69,14 @@ export function OrderPanel(p: OrderProps) {
         ? `Sent for approval · waiting for ${firstName(b?.rules.approver ?? "Mikko")}`
         : p.phase === "placed"
           ? `Order placed · ${p.order ? orderLabel(p.order.id) : ""}`
-          : "Order draft · built from your request";
+          : null;
   return (
     <section className="order" aria-label="Order">
       <div className="order__head">
-        <div className="eyebrow">
+        {eyebrow && <div className="eyebrow">
           <AssistantGlyph />
           {eyebrow}
-        </div>
+        </div>}
         <h1 className="order__title">
           {b ? `Catering for ${b.people} · ${dayLabel(p.event)}` : "Your order"}
         </h1>
