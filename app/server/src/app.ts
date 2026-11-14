@@ -4,7 +4,8 @@ import { catalogSize, getProduct, search } from "./catalog";
 import { callLog, checkStock, missingLine } from "./valio";
 import { allEvents, events } from "./audit";
 import { decide, listOrders, placeOrder, type Decision } from "./orders";
-import { buildBasket, editLine, HttpError, recompute, rescaleGuests, type BasketRequest, type LineEdit } from "./plan";
+import { buildBasket, HttpError, recompute, rescaleGuests, type BasketRequest, type LineEdit } from "./plan";
+import { editCartLine, undoCartLine } from "./cartHistory";
 import { chat } from "./chat";
 import { parseMenuInput, suggestMenu } from "./menu";
 import { checkReplacements, proposeRecipeChange, applyRecipeChange } from './plan';
@@ -100,7 +101,15 @@ app.post('/api/basket/:id/recipe-change/:proposalId/apply', c => {
 app.post("/api/basket/:id/lines/:lineId", async (c) => {
   try {
     const body = await c.req.json<LineEdit>().catch(() => ({}) as LineEdit);
-    return c.json(editLine(c.req.param("id"), c.req.param("lineId"), body));
+    return c.json(editCartLine(c.req.param("id"), c.req.param("lineId"), body));
+  } catch (e) {
+    return fail(c, e);
+  }
+});
+app.post("/api/basket/:id/undo", async (c) => {
+  try {
+    const body = await c.req.json<{ by?: string }>().catch(() => ({} as { by?: string }));
+    return c.json(undoCartLine(c.req.param("id"), body.by || "buyer"));
   } catch (e) {
     return fail(c, e);
   }

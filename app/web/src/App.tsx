@@ -101,7 +101,8 @@ function Shop() {
   const [now, setNow] = useState(Date.now());
   const abort = useRef<AbortController | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
-  const qtyMemo = useRef<Record<string, number>>({});
+  const [undoCount, setUndoCount] = useState(0);
+  const lineEditInFlight = useRef(false);
 
   const say = useCallback((item: NewItem) => {
     const at = new Date().toISOString();
@@ -120,7 +121,10 @@ function Shop() {
   }, []);
 
   const adopt = useCallback(
-    async (b: Basket) => {
+    async (b: Basket, keepUndo = false) => {
+      if (!keepUndo) {
+        setUndoCount(0);
+      }
       setAlternativeDraft(null);
       setBasket(b);
       setFreshAt(null);
@@ -272,32 +276,61 @@ function Shop() {
 
   async function edit(
     lineId: string,
-    e: { qty?: number; chooseOption?: string },
+    e: { qty?: number; chooseOption?: string; included?: boolean },
   ) {
-    if (!basket) return;
+    if (!basket || busy || lineEditInFlight.current || building) return;
+    lineEditInFlight.current = true;
     setError(null);
     setBusyLine(lineId);
     try {
-      await adopt(await api.edit(basket.id, lineId, e));
+      const next = await api.edit(basket.id, lineId, e);
+      await adopt(next, true);
+      setUndoCount(count => Math.min(count + 1, 30));
     } catch (err) {
       fail(err, () => edit(lineId, e), "edit");
     } finally {
+      lineEditInFlight.current = false;
       setBusyLine(null);
+    }
+  }
+
+  async function undoCart() {
+    if (!basket || busy || building || lineEditInFlight.current || !undoCount || order && order.status !== "rejected") return;
+    lineEditInFlight.current = true;
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await api.undo(basket.id);
+      await adopt(result.basket, true);
+      setUndoCount(count => result.canUndo ? Math.max(0, count - 1) : 0);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        setUndoCount(0);
+      }
+      fail(err, undoCart, "edit");
+    } finally {
+      lineEditInFlight.current = false;
+      setBusy(false);
     }
   }
 
   // "Don't order them" on the grouped no-substitute card: one remove per line, in order.
   async function removeMany(ids: string[]) {
-    if (!basket) return;
+    if (!basket || busy || lineEditInFlight.current) return;
+    lineEditInFlight.current = true;
     setError(null);
     setBusy(true);
     let b = basket;
     try {
-      for (const id of ids) b = await api.edit(b.id, id, { chooseOption: "remove" });
-      await adopt(b);
+      for (const id of ids) {
+        b = await api.edit(b.id, id, { chooseOption: "remove" });
+        await adopt(b, true);
+        setUndoCount(count => Math.min(count + 1, 30));
+      }
     } catch (err) {
       fail(err, () => removeMany(ids), "edit");
     } finally {
+      lineEditInFlight.current = false;
       setBusy(false);
     }
   }
@@ -318,11 +351,7 @@ function Shop() {
     }
     if (l.issue?.decided === "remove")
       return edit(lineId, { chooseOption: l.issue.options[0]?.sku ?? "keep" });
-    if (l.qty > 0) {
-      qtyMemo.current[lineId] = l.qty;
-      return edit(lineId, { qty: 0 });
-    }
-    return edit(lineId, { qty: qtyMemo.current[lineId] ?? 1 });
+    return edit(lineId, { included: l.qty === 0 });
   }
 
   async function setGuests(people: number) {
@@ -519,6 +548,19 @@ function Shop() {
             ? "review"
             : "draft";
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey || event.key.toLowerCase() !== "z" || event.defaultPrevented) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), dialog[open], [role="dialog"]')) return;
+      if (screen !== "shop" || !basket || !undoCount || busy || busyLine || building || phase === "waiting" || phase === "placed") return;
+      event.preventDefault();
+      void undoCart();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
+
   const thread = useMemo(
     () => (basket ? buildThread(events, basket).map(it => it.kind === "user" && it.text.includes("APPROVED MENU ONLY:") ? { ...it, text: approvedSummary ?? displayMenuRequest(it.text) } : it) : []),
     [events, basket, approvedSummary],
@@ -624,6 +666,8 @@ function Shop() {
           }
         />
         <OrderPanel
+          canUndo={undoCount > 0}
+          onUndo={() => void undoCart()}
           onRepeat={repeatOrder}
           deliveryTime={delivery?.time}
           insight={<>{basket?.request.includes(SAMPLE_CONTEXT_MARKER) && <MenuEconomics basket={basket} onReview={setSheet} />}{basket && scheduleLimit !== null && basket.total > scheduleLimit && <p className="schedule-notice" role="status">This draft exceeds your saved review threshold of €{scheduleLimit.toFixed(2)}. Review the total before ordering.</p>}</>}
@@ -632,7 +676,7 @@ function Shop() {
           basket={basket}
           order={order}
           event={event}
-          busy={busy}
+          busy={busy || !!busyLine}
           busyLine={busyLine}
           pickup={pickup}
           onPickup={setPickup}

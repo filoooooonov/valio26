@@ -30,8 +30,11 @@ import { Segmented } from "./Header";
 import { AssistantGlyph } from "./Mark";
 import "./order-polish.css";
 import { RecipeDialog } from "./RecipeDialog";
+import { Button } from "../ui";
 
 export type OrderProps = {
+  canUndo?: boolean;
+  onUndo?: () => void;
   onRepeat?: () => void;
   deliveryTime?: string;
   insight?: ReactNode;
@@ -233,6 +236,7 @@ function Controls({ p, b }: { p: OrderProps; b: Basket }) {
         )}
         <button className="pill" type="button" onClick={() => setRecipeOpen(true)} aria-haspopup="dialog"><Icon name="utensils" className="i-16" />Recipe</button>
         {p.onRepeat && <button className="pill" type="button" aria-haspopup="dialog" onClick={p.onRepeat}><Icon name="repeat" className="i-16" />Repeat this order</button>}
+        {!locked && p.onUndo && <Button variant="secondary" size="sm" icon="undo-2" disabled={!p.canUndo || p.busy} onClick={p.onUndo} title="Undo last cart change (Ctrl+Z / Cmd+Z)" aria-keyshortcuts="Control+z Meta+z">Undo</Button>}
         {recipeOpen && <RecipeDialog basket={b} onClose={() => setRecipeOpen(false)} />}
         <span className="grow" />
         {per}
@@ -269,7 +273,7 @@ function Lines({ p, b }: { p: OrderProps; b: Basket }) {
   const frozen = p.phase === "waiting" || p.phase === "placed";
   const shown = frozen
     ? b.lines.filter((l) => l.qty > 0 && !lineIsOpen(l))
-    : b.lines.filter(l => l.qty > 0 || lineIsOpen(l));
+    : b.lines.filter(l => l.qty > 0 || l.excludedQty != null || lineIsOpen(l));
   const groups = [
     ...b.dishes.map((d) => ({
       dish: d,
@@ -468,7 +472,7 @@ export function LineRow({
       {frozen || open ? (
         <span className="line__qty">{qtyLabel(qty, pack)}</span>
       ) : off ? (
-        <span className="line__qty line__qty--off">0</span>
+        <span className="line__qty line__qty--off">{qtyLabel(l.excludedQty ?? 0, pack)}</span>
       ) : (
         <div
           className={"stepper" + (open ? " stepper--white" : "")}
@@ -500,7 +504,7 @@ export function LineRow({
           </button>
         </div>
       )}
-      {!frozen && !off && <button type="button" className="swapbtn line__remove" title="Remove item" aria-label={`Remove ${name} from cart`} disabled={busy || p.busy || !!p.busyLine} onClick={() => l.issue ? p.onChoose(l.id, 'remove') : p.onQty(l.id, 0)}><Icon name="x" className="i-16" /></button>}
+      {!frozen && (!off || l.excludedQty != null) && <button type="button" className="swapbtn line__remove" title="Remove item" aria-label={`Remove ${name} from cart`} disabled={busy || p.busy || !!p.busyLine} onClick={() => l.issue ? p.onChoose(l.id, 'remove') : p.onQty(l.id, 0)}><Icon name="x" className="i-16" /></button>}
     </div>
   );
 }

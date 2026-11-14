@@ -10,6 +10,10 @@
 .line__remove:focus-visible { outline: var(--ring-w) solid var(--teal); outline-offset: var(--s-3); border-radius: var(--r-6); }
 .line__remove:disabled { opacity: .5; cursor: default; }
 @media(max-width:780px) { .order .controls { flex-wrap: wrap; gap: var(--s-8); } .order .controls .pill { flex-shrink: 0; white-space: nowrap; } }
+@media(max-width:780px) {
+  .order .line:not(.line--placed) { grid-template-columns: var(--hit) minmax(0, 1fr) auto; grid-template-areas: "check text price" ". qty swap"; column-gap: var(--s-8); }
+  .order .line > .check { display: grid; }
+}
 .order-done { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-16); padding: var(--s-32); }
 .order-done__mark { color: var(--teal); background: var(--light-blue); padding: var(--s-16); border-radius: var(--r-pill); }
 .order-done h1 { font-family: var(--font-display); font-size: var(--fs-40); color: var(--teal); }

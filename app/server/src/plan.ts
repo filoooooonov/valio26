@@ -44,6 +44,7 @@ export type Issue = {
   decidedBy?: string;
 };
 export type BasketLine = {
+  excludedQty?: number;
   frozen?: boolean;
   id: string;
   dishId: string | null;
@@ -990,7 +991,7 @@ export function autoSwapSameUse(b: Basket): void {
 }
 
 // ---------- edits ----------
-export type LineEdit = { qty?: number; chooseOption?: string; by?: string };
+export type LineEdit = { qty?: number; chooseOption?: string; included?: boolean; by?: string };
 export class HttpError extends Error {
   constructor(
     public status: number,
@@ -1026,8 +1027,23 @@ export function editLine(
   const l = b.lines.find((x) => x.id === lineId);
   if (!l) throw new HttpError(404, "line not found");
   const by = e.by || "buyer";
+  if (e.included != null) {
+    if (typeof e.included !== "boolean" || e.qty != null || e.chooseOption != null)
+      throw new HttpError(400, "included must be a boolean used on its own");
+    if (isOpen(l)) throw new HttpError(400, "review replacements before changing inclusion");
+    if (e.included) {
+      if (l.excludedQty == null) return recompute(b);
+      e = { ...e, qty: l.excludedQty };
+      delete l.excludedQty;
+    } else {
+      if (l.qty === 0) return recompute(b);
+      l.excludedQty = l.qty;
+      e = { ...e, qty: 0 };
+    }
+  }
   if (e.qty != null) {
     if (!(e.qty >= 0)) throw new HttpError(400, "qty must be >= 0");
+    if (e.included !== false) delete l.excludedQty;
     const was = l.qty;
     l.qty = e.qty;
     l.total = r2(l.qty * l.stock.price);
@@ -1085,6 +1101,7 @@ export function editLine(
         image: p?.image ?? undefined,
       });
     }
+    delete l.excludedQty;
     l.issue.decided = c;
     l.issue.decidedBy = by;
     audit(
@@ -1155,7 +1172,7 @@ export async function rescaleGuests(
 
   // 2. which lines change qty (removed lines stay removed)
   const plan = b.lines
-    .filter((l) => !(l.issue?.decided === "remove") && ctx.has(l.id))
+    .filter((l) => l.excludedQty == null && !(l.issue?.decided === "remove") && ctx.has(l.id))
     .map((l) => {
       const needs = ctx.get(l.id)!.needs;
       const nl = makeLine(

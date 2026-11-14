@@ -45,6 +45,7 @@ export type Issue = {
   decidedBy?: string;
 };
 export type BasketLine = {
+  excludedQty?: number;
   frozen?: boolean;
   id: string;
   dishId: string | null;
@@ -212,6 +213,7 @@ export type MenuItem = { title: string; description: string; course: "starter" |
 export type MenuReply = { items: MenuItem[]; reply: string; planner: "llm" | "fallback" };
 
 export const api = {
+  undo: (id: string) => call<{ basket: Basket; canUndo: boolean }>(`/basket/${id}/undo`, { by: BUYER }).then(checkedData),
   menu: (body: { request: string; current?: MenuItem[]; instruction?: string }, signal?: AbortSignal) => call<MenuReply>("/menu", body, signal).then(checkedData),
   checkReplacements: (id:string,lineId:string) => call<Basket>(`/basket/${id}/lines/${lineId}/replacements/check`,{}).then(checkedData),
   recipeChange: (id:string,lineId:string) => call<RecipeProposal>(`/basket/${id}/lines/${lineId}/recipe-change`,{}).then(checkedData),
@@ -233,11 +235,9 @@ export const api = {
   edit: (
     id: string,
     lineId: string,
-    e: { qty?: number; chooseOption?: string },
+    e: { qty?: number; chooseOption?: string; included?: boolean },
   ) =>
-    call<Basket>(`/basket/${id}/lines/${lineId}`, { ...e, by: BUYER }).then(
-      (r) => r.data,
-    ),
+    call<Basket>(`/basket/${id}/lines/${lineId}`, { ...e, by: BUYER }).then(checkedData),
   // v1.2: may 404 on an older gateway; callers fall back.
   guests: (id: string, people: number) =>
     call<Basket>(`/basket/${id}/guests`, { people, by: BUYER }).then(
