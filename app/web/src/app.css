@@ -2099,3 +2099,13 @@ a.btn:active {
   right: 0;
   font-size: var(--fs-12);
 }
+
+.log__bar{display:flex;align-items:center;justify-content:space-between;gap:var(--s-8, 8px);flex-wrap:wrap}
+.log__tabs{display:inline-flex;border:1px solid currentColor;border-radius:999px;overflow:hidden;color:var(--teal)}
+.log__tab{appearance:none;border:0;background:transparent;color:inherit;font:inherit;font-size:var(--fs-12);padding:4px 12px;cursor:pointer}
+.log__tab--on{background:var(--teal);color:var(--white)}
+.log__chain{font-size:var(--fs-12);color:var(--teal);margin:4px 0 8px}
+.log__chain--bad{color:var(--red-ink)}
+.trail__who{font-size:var(--fs-12);opacity:.7}
+.trail__data pre{font-size:11px;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow:auto;margin:4px 0 0}
+.log__export{display:inline-block;margin-top:8px;font-size:var(--fs-12);color:var(--teal)}

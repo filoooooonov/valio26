@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { catalogSize, getProduct, search } from "./catalog";
 import { callLog, checkStock, missingLine } from "./valio";
-import { allEvents, events } from "./audit";
+import { allEvents, events, verifyChain } from "./audit";
 import { decide, listOrders, placeOrder, type Decision } from "./orders";
 import { buildBasket, HttpError, recompute, rescaleGuests, type BasketRequest, type LineEdit } from "./plan";
 import { editCartLine, undoCartLine } from "./cartHistory";
@@ -103,6 +103,16 @@ app.get("/api/basket/:id", (c) => {
   return b ? c.json(recompute(b)) : c.json({ error: "basket not found" }, 404);
 });
 app.get("/api/basket/:id/audit", (c) => c.json(events(c.req.param("id"))));
+app.get("/api/basket/:id/audit/verify", (c) => c.json(verifyChain(c.req.param("id"))));
+app.get("/api/basket/:id/audit/export", (c) => {
+  const id = c.req.param("id");
+  const b = baskets.get(id);
+  if (!b) return c.json({ error: "basket not found" }, 404);
+  const order = [...orders.values()].find((o) => o.basketId === id) ?? null;
+  const body = { exportedAt: new Date().toISOString(), gateway: "valio-aimo-gateway", basket: { id: b.id, customer: b.customer, date: b.date, total: b.total }, order: order && { id: order.id, status: order.status, total: order.total }, chain: verifyChain(id), events: events(id) };
+  c.header("Content-Disposition", `attachment; filename="aimo-audit-${id}.json"`);
+  return c.json(body);
+});
 app.post('/api/basket/:id/lines/:lineId/replacements/check', async c => {
   try { return c.json(await checkReplacements(c.req.param('id'),c.req.param('lineId'))); } catch(e) { return fail(c,e); }
 });

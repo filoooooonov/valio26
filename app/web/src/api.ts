@@ -143,6 +143,8 @@ export type AuditEvent = {
   kind: string;
   summary: string;
   data?: Record<string, unknown>;
+  prev?: string;
+  hash?: string;
 };
 
 export type ChatAction = {
@@ -236,6 +238,7 @@ export const api = {
   basket: (id: string) => call<Basket>(`/basket/${id}`).then((r) => r.data),
   basketAudit: (id: string) =>
     call<AuditEvent[]>(`/basket/${id}/audit`).then((r) => r.data),
+  auditVerify: (basketId: string) => call<{ intact: boolean; count: number; head: string | null; brokenAt?: number }>(`/basket/${basketId}/audit/verify`).then((r) => r.data),
   edit: (
     id: string,
     lineId: string,
@@ -275,3 +278,5 @@ export const api = {
   audit: (orderId: string) =>
     call<AuditEvent[]>(`/orders/${orderId}/audit`).then((r) => r.data),
 };
+
+export const auditExportUrl = (basketId: string) => `/api/basket/${basketId}/audit/export`;
