@@ -98,7 +98,7 @@ export function SwapSheet({ line, date, locked, onClose, onChoose, onCheck, onUn
   async function check() {
     if (!onCheck) return;
     setChecking(true); setCheckError('');
-    try { await onCheck(); } catch(e) { setCheckError(`Could not verify availability: ${(e as Error).message}`); }
+    try { await onCheck(); } catch { setCheckError('unverified'); }
     finally { setChecking(false); }
   }
   useEffect(() => { if (!locked && onCheck && !checkedOnce.current) { checkedOnce.current = true; void check(); } }, []);
@@ -123,9 +123,8 @@ export function SwapSheet({ line, date, locked, onClose, onChoose, onCheck, onUn
     const box = event.currentTarget.getBoundingClientRect();
     if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) close();
   }}>
-    <header className="replacement-dialog__head"><div><h2 id="replacement-heading">{niceName(line.name)}{!line.issue ? " is available again" : " is unavailable"} for delivery on {dayLabel(date)}.</h2><p className="replacement-dialog__instruction">{checking ? "Double-checking availability and suitable replacements..." : !line.issue ? "This item is available again." : available.length ? "Choose a replacement." : "Unfortunately, this item is unavailable."}</p></div><button ref={closeButton} type="button" className="round" aria-label="Close replacements" onClick={() => close()}><Icon name="x" className="i-18" /></button></header>
+    <header className="replacement-dialog__head"><div><h2 id="replacement-heading">{niceName(line.name)}{!line.issue ? " is available again" : " is unavailable"} for delivery on {dayLabel(date)}.</h2>{(checking || available.length > 0) && <p className="replacement-dialog__instruction">{checking ? "Checking availability..." : "Choose a replacement."}</p>}</div><button ref={closeButton} type="button" className="round" aria-label="Close replacements" onClick={() => close()}><Icon name="x" className="i-18" /></button></header>
     {checking && <p role="status">Checking this product and its shortlisted replacements for your delivery...</p>}
-    {checkError && <div role="alert"><p>{checkError}</p><button className="btn btn--outline" onClick={() => void check()}>Retry availability check</button></div>}
     {!checking && !checkError && line.issue && !available.length && <div className="replacement-dialog__empty"><p>No suitable product replacement was found for this delivery.</p>{onSuggestMenuChange && <p>Would you like to try a different recipe using available ingredients?</p>}<div className="replacement-dialog__recovery">{onSuggestMenuChange && <button className="btn replacement-dialog__use" type="button" disabled={locked || closing || checking} onClick={() => close(onSuggestMenuChange)}>Suggest a different recipe</button>}<button className="btn btn--outline" onClick={() => close(onUnavailable)}>No thanks</button></div></div>}
     {opts.length > 0 && <fieldset className="replacement-options" disabled={locked || closing || checking}><legend className="sr-only">Choose a replacement</legend>
       <div className="replacement-options__grid">
@@ -156,8 +155,8 @@ export function SwapSheet({ line, date, locked, onClose, onChoose, onCheck, onUn
     {selected && <div className="replacement-comparison__summary" aria-live="polite">
       {change != null ? <p className={'replacement-comparison__change' + (change < 0 ? ' replacement-comparison__change--less' : '')}>{money(original.total)} <Icon name="arrow-right" className="i-16" /> {money(selected!.total)}<span>{Math.abs(change) < .005 ? 'No price change' : money(Math.abs(change)) + (change < 0 ? ' less for this item' : ' more for this item')}</span></p> : <p className="replacement-comparison__hint">Choose a product, then confirm with Use replacement.</p>}
     </div>}
-    <p className="replacement-dialog__vat">Prices excl. VAT</p>
-    <footer className="replacement-dialog__actions">{!line.issue && <button className="btn replacement-dialog__use" onClick={() => close()}>Keep item</button>}<button type="button" className="btn btn--outline" disabled={locked || closing || checking} onClick={() => choose('remove')}>Remove item</button>{available.length > 0 && <button type="button" className="btn replacement-dialog__use" disabled={locked || closing || checking || !!checkError || !selected} onClick={() => selected && choose(selected.sku)}>Use replacement</button>}</footer>
+    {opts.length > 0 && <p className="replacement-dialog__vat">Prices excl. VAT</p>}
+    <footer className="replacement-dialog__actions">{!line.issue && <button className="btn replacement-dialog__use" onClick={() => close()}>Keep item</button>}<button type="button" className="btn btn--outline" disabled={locked || closing || checking} onClick={() => choose('remove')}>Remove item</button>{available.length > 0 && <button type="button" className="btn replacement-dialog__use" disabled={locked || closing || checking || !selected} onClick={() => selected && choose(selected.sku)}>Use replacement</button>}</footer>
   </dialog>;
 }
 

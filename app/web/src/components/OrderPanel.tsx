@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode, type CSSProperties } from "react";
 import {
   api,
+  BUYER,
   isNotFound,
   type Basket,
   type BasketLine,
@@ -106,7 +107,7 @@ function OrderDone({ p, b, order }: { p: OrderProps; b: Basket; order: Order }) 
       <dl className="order-done__facts">
         <div><dt>Total, excl. VAT</dt><dd>{money(order.total)}</dd></div>
         <div><dt>Requested delivery</dt><dd>{dayLabel(b.date)}, {p.deliveryTime ?? SLOT}</dd></div>
-        <div><dt>{order.decidedBy ? "Approved by" : "Placed by"}</dt><dd>{PEOPLE[actor]?.name ?? actor}</dd></div>
+        <div><dt>{order.decidedBy ? "Approved by" : "Placed by"}</dt><dd>{actor === BUYER ? 'You' : PEOPLE[actor]?.name ?? actor}</dd></div>
         <div><dt>Recorded at</dt><dd>{stamp(order.decidedAt ?? order.createdAt)}</dd></div>
       </dl>
       <p className="order-done__prototype">Local prototype order. Nothing has been submitted to Valio Aimo's ordering systems.</p>
@@ -173,7 +174,7 @@ function Controls({ p, b }: { p: OrderProps; b: Basket }) {
           tone="green"
           icon="circle-check"
           label={approved ? "Approved" : "Placed"}
-          value={`${approved ? (PEOPLE[o.decidedBy!]?.name ?? o.decidedBy) : firstName(o.by)} · ${timeLabel(o.decidedAt ?? o.createdAt)}`}
+          value={`${approved ? (PEOPLE[o.decidedBy!]?.name ?? o.decidedBy) : o.by === BUYER ? 'You' : firstName(o.by)} · ${timeLabel(o.decidedAt ?? o.createdAt)}`}
         />
         <Fact
           icon="truck"
@@ -268,7 +269,7 @@ function Lines({ p, b }: { p: OrderProps; b: Basket }) {
   const frozen = p.phase === "waiting" || p.phase === "placed";
   const shown = frozen
     ? b.lines.filter((l) => l.qty > 0 && !lineIsOpen(l))
-    : b.lines;
+    : b.lines.filter(l => l.qty > 0 || lineIsOpen(l));
   const groups = [
     ...b.dishes.map((d) => ({
       dish: d,
@@ -399,9 +400,6 @@ export function LineRow({
         {money(stock.price)} / {pack === "by kg" ? "kg" : "pack"}
       </span>
     );
-  const needsAlternative =
-    !off && (open || !stock.deliverable || stock.cutoffPassed ||
-      (stock.available != null && qty > stock.available));
   const atLimit =
     !open && !off && stock.available != null && qty + 1 > stock.available;
 
@@ -502,16 +500,7 @@ export function LineRow({
           </button>
         </div>
       )}
-      {!frozen && !open && needsAlternative && (
-        <button
-          className={"swapbtn" + (open ? " swapbtn--amber" : "")}
-          aria-label={`Alternatives for ${name}`}
-          disabled={frozen}
-          onClick={() => p.onSwap(l.id)}
-        >
-          <Icon name="repeat" className="i-16" />
-        </button>
-      )}
+      {!frozen && !off && <button type="button" className="swapbtn line__remove" title="Remove item" aria-label={`Remove ${name} from cart`} disabled={busy || p.busy || !!p.busyLine} onClick={() => l.issue ? p.onChoose(l.id, 'remove') : p.onQty(l.id, 0)}><Icon name="x" className="i-16" /></button>}
     </div>
   );
 }

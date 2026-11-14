@@ -277,7 +277,7 @@ function UserBubble({
     <div className="user enter">
       <div className={"bubble" + (long ? " bubble--long" : "")}>
         <div className="bubble__meta">
-          {firstName(who)} · {when}
+          {who === BUYER ? "You" : firstName(who)} · {when}
         </div>
         <div className="bubble__text">{text}</div>
       </div>
@@ -400,7 +400,7 @@ export function Route({ approver }: { approver: string }) {
   const m = PEOPLE[approver] ?? { name: approver, role: "Approver" };
   return (
     <div className="route">
-      <Person initials="AV" name="Anna (you)" role="Head chef" tone="teal" />
+      <Person initials="Y" name="You" role="Head chef" tone="teal" />
       <Icon name="chevron-right" className="i-14 route__chev" />
       <Person
         initials={m.name

@@ -297,7 +297,7 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
           key,
           at: e.at,
           icon: "repeat",
-          text: `${firstName(e.actor)} changed ${shortName(e.summary.replace(/:.*$/, ""))}: ${e.summary.replace(/^.*:\s*/, "")} · ${timeLabel(e.at)}`,
+          text: `${e.actor === "Anna K." ? "You" : firstName(e.actor)} changed ${shortName(e.summary.replace(/:.*$/, ""))}: ${e.summary.replace(/^.*:\s*/, "")} · ${timeLabel(e.at)}`,
         });
         break;
       case "guests":
