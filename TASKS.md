@@ -72,3 +72,5 @@ S22/S23 final refinements: menu white against lavender; whole-row selection and3
 S28/S29 verification: build passes;46fast tests pass with186assertions. Pen C5KNi saved with live desktop/phone previews. Actual issue-photo hook uses exact SKU images when available; b_5gzrni's two unavailable originals have no sponsor image URLs and retain honest icon fallbacks. No new recording or push.
 
 - [x] @aleksei-codex S31 Recurring editor redesigned as centered 640px single-column form: compact inherited-menu disclosure, clear Menu/Delivery/Purchasing groups, collapsed cost settings, inline next-run/delivery preview and sticky save actions. Desktop1440x1000 and phone390x844 checked; create/edit/reload/menu/diet/cost/weekdays/location/delete flows pass without API writes or overflow. Build and57fast tests pass.
+
+- [~] @aleksei-codex S32 Replace whole-draft product search with verified options and explicit dish-level recipe proposals; repeat order popup/pill and clickable inline schedule controls.
