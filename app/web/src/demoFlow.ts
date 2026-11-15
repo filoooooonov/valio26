@@ -7,8 +7,8 @@ export type Scenario = { label: string; prompt: string; shows: string };
 /** One starter per main use case and edge case. `shows` says what to watch for. */
 export const SCENARIOS: Scenario[] = [
   {
-    label: "My usual weekend order",
-    prompt: "Prepare my usual weekend order.",
+    label: "Usual weekly order for Fall menu",
+    prompt: "Prepare my usual weekly order for the fall menu.",
     shows:
       "Rebuilds the order from 8 weeks of history and learned preferences.",
   },

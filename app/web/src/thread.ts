@@ -20,38 +20,68 @@ export type ProductReviewMessage = {
   products: string[];
   awaitingPlan?: boolean;
 };
-export type ProductReviewTimeline = { basketId: string | null; messages: ProductReviewMessage[] };
-export const reviewProductKey = (line: BasketLine) => `${line.id}:${line.sku}:${line.issue?.kind}`;
+export type ProductReviewTimeline = {
+  basketId: string | null;
+  messages: ProductReviewMessage[];
+};
+export const reviewProductKey = (line: BasketLine) =>
+  `${line.id}:${line.sku}:${line.issue?.kind}`;
 
 // Remember when each issue first appeared; later replies must not push its card to the bottom.
 export function syncProductReviews(
   previous: ProductReviewTimeline,
   basket: Basket | null,
-  items: readonly { kind: string; key: string; at: string; added?: { lineId: string }[] }[],
+  items: readonly {
+    kind: string;
+    key: string;
+    at: string;
+    added?: { lineId: string }[];
+  }[],
 ): ProductReviewTimeline {
-  if (!basket) return previous.basketId === null ? previous : { basketId: null, messages: [] };
+  if (!basket)
+    return previous.basketId === null
+      ? previous
+      : { basketId: null, messages: [] };
   const initial = previous.basketId !== basket.id;
-  const firstReply = items.find(i => i.key.startsWith("plan-")) ?? items.find(i => i.kind === "assistant");
-  const refined = !initial && firstReply && previous.messages.some(m => m.awaitingPlan);
-  const messages = initial ? [] : refined
-    ? previous.messages.map(m => m.awaitingPlan ? { ...m, at: firstReply.at, awaitingPlan: false } : m)
-    : previous.messages;
-  const known = new Set(messages.flatMap(m => m.products));
-  const fresh = basket.lines.filter(l => lineIsOpen(l) && !known.has(reviewProductKey(l)));
+  const firstReply =
+    items.find((i) => i.key.startsWith("plan-")) ??
+    items.find((i) => i.kind === "assistant");
+  const refined =
+    !initial && firstReply && previous.messages.some((m) => m.awaitingPlan);
+  const messages = initial
+    ? []
+    : refined
+      ? previous.messages.map((m) =>
+          m.awaitingPlan ? { ...m, at: firstReply.at, awaitingPlan: false } : m,
+        )
+      : previous.messages;
+  const known = new Set(messages.flatMap((m) => m.products));
+  const fresh = basket.lines.filter(
+    (l) => lineIsOpen(l) && !known.has(reviewProductKey(l)),
+  );
   if (!initial && !fresh.length && !refined) return previous;
   const grouped = new Map<string, string[]>();
   for (const line of fresh) {
-    const addedReply = [...items].reverse().find(i => i.added?.some(a => a.lineId === line.id));
-    const anchor = addedReply ?? (initial ? firstReply : items[items.length - 1]);
+    const addedReply = [...items]
+      .reverse()
+      .find((i) => i.added?.some((a) => a.lineId === line.id));
+    const anchor =
+      addedReply ?? (initial ? firstReply : items[items.length - 1]);
     const at = anchor?.at ?? basket.createdAt;
     grouped.set(at, [...(grouped.get(at) ?? []), reviewProductKey(line)]);
   }
   return {
     basketId: basket.id,
-    messages: [...messages, ...[...grouped].map(([at, products]) => ({
-      kind: "productReview" as const, key: `product-review-${basket.id}-${products.join("|")}`, at, products,
-      awaitingPlan: initial && !firstReply,
-    }))],
+    messages: [
+      ...messages,
+      ...[...grouped].map(([at, products]) => ({
+        kind: "productReview" as const,
+        key: `product-review-${basket.id}-${products.join("|")}`,
+        at,
+        products,
+        awaitingPlan: initial && !firstReply,
+      })),
+    ],
   };
 }
 
@@ -94,12 +124,16 @@ export type Item =
       note: string;
     };
 
-// Demo personas of the webshop account (not API data): the API only knows "Anna K." and "Mikko L.".
+// Demo personas of the webshop account (not API data): the API only knows "Aleksei F." and "Mikko L.".
 export const PEOPLE: Record<
   string,
   { name: string; first: string; role: string }
 > = {
-  "Anna K.": { name: "Anna Korhonen", first: "Anna", role: "Head chef" },
+  "Aleksei F.": {
+    name: "Aleksei Filonov",
+    first: "Aleksei",
+    role: "Head chef",
+  },
   "Mikko L.": { name: "Mikko Laine", first: "Mikko", role: "Purchasing" },
 };
 export const firstName = (who: string) =>
@@ -108,16 +142,37 @@ export const firstName = (who: string) =>
 // Swaps the gateway applied itself (same-use rule) or an outside agent made: not the chef's OK.
 export const isAutoSwap = (who?: string) =>
   !!who &&
-  (who.startsWith("agent") || who.startsWith("gateway") || who.startsWith("policy:") || who === "assistant");
+  (who.startsWith("agent") ||
+    who.startsWith("gateway") ||
+    who.startsWith("policy:") ||
+    who === "assistant");
 // User-facing copy: no API-call counts, no repeated "no alternative" sentences, decimal commas.
 export const plain = (s: string) =>
-  s.replace(/\s*\(\d+ (Valio )?API calls?\)/g, "").replace(/(\d)\.(\d)/g, "$1,$2");
+  s
+    .replace(/\s*\(\d+ (Valio )?API calls?\)/g, "")
+    .replace(/(\d)\.(\d)/g, "$1,$2");
 export const cleanIssue = (s: string) =>
-  plain(s.replace(/\s*No deliverable alternative found\.?/i, "").trim().replace(/\.?$/, "."));
-export const orderLabel = (id: string) => "AIM-" + id.replace(/^o_/, "").toUpperCase();
-const OPEN_IN = ["Done: {n} is in.", "{N} it is.", "Switched to {n}.", "Okay, {n} is in the order now."];
-const OPEN_OUT = ["Okay, no {n} this time.", "{N} is off the order.", "Left out: {n}."];
-const fill = (t: string, n: string) => t.replace("{n}", n).replace("{N}", n.charAt(0).toUpperCase() + n.slice(1));
+  plain(
+    s
+      .replace(/\s*No deliverable alternative found\.?/i, "")
+      .trim()
+      .replace(/\.?$/, "."),
+  );
+export const orderLabel = (id: string) =>
+  "AIM-" + id.replace(/^o_/, "").toUpperCase();
+const OPEN_IN = [
+  "Done: {n} is in.",
+  "{N} it is.",
+  "Switched to {n}.",
+  "Okay, {n} is in the order now.",
+];
+const OPEN_OUT = [
+  "Okay, no {n} this time.",
+  "{N} is off the order.",
+  "Left out: {n}.",
+];
+const fill = (t: string, n: string) =>
+  t.replace("{n}", n).replace("{N}", n.charAt(0).toUpperCase() + n.slice(1));
 const quoted = (s: string) => s.match(/"([\s\S]*)"/)?.[1];
 const shortName = (s: string) => {
   const n = niceName(s)
@@ -133,6 +188,44 @@ const stateOf = (summary: string): MandateResult["state"] | null => {
 };
 const reasonOf = (summary: string) => summary.replace(/^[a-z_]+:\s*/, "");
 
+/** Why an order needs the approver, from the gateway's own reasons (never guessed from the total alone). */
+export function approvalWhy(
+  reasons: string[],
+  total: number | undefined,
+  b: Basket,
+): { short: string; sentence: string } {
+  const has = (re: RegExp) => reasons.some((r) => re.test(r));
+  if (total != null && total > b.rules.maxOrderEur)
+    return {
+      short: `Over your ${whole(b.rules.maxOrderEur)} limit`,
+      sentence: `It's over your ${whole(b.rules.maxOrderEur)} limit`,
+    };
+  if (has(/daily limit/i))
+    return {
+      short: `Over your ${whole(b.rules.maxDailyEur)} daily limit with today's orders`,
+      sentence: `With today's other orders it's over your ${whole(b.rules.maxDailyEur)} daily limit`,
+    };
+  const parts: string[] = [];
+  if (has(/confirm stock|stock quantity|stock needs/i))
+    parts.push("Valio can't confirm stock for some products");
+  if (has(/dietary|allergen/i))
+    parts.push(
+      "the catalogue doesn't prove the allergen status of some products",
+    );
+  if (!parts.length)
+    return {
+      short: "Needs approval",
+      sentence:
+        reasons.find(Boolean)?.replace(/[.\s]+$/, "") ??
+        "It's outside your purchasing rules",
+    };
+  const s = parts.join(", and ");
+  return {
+    short: s[0].toUpperCase() + s.slice(1),
+    sentence: s[0].toUpperCase() + s.slice(1),
+  };
+}
+
 export function mandateSentence(
   state: MandateResult["state"] | null,
   reason: string,
@@ -144,7 +237,7 @@ export function mandateSentence(
   if (state === "needs_approval")
     return total != null && total > b.rules.maxOrderEur
       ? `The order is ${money(total)}, which is ${money(total - b.rules.maxOrderEur)} over your ${whole(b.rules.maxOrderEur)} limit, so ${who} signs off before anything is sent.`
-      : `${t}With today's other orders it's over your ${whole(b.rules.maxDailyEur)} daily limit, so ${who} signs off before anything is sent.`;
+      : `${t}${approvalWhy([reason, ...(b.mandate?.reasons ?? [])], total, b).sentence}, so ${who} signs off before anything is sent.`;
   if (state === "agent_may_order")
     return `${t}That's inside your ${whole(b.rules.maxOrderEur)} limit, so you can place it yourself.`;
   const n = reason.match(/^(\d+) products?/)?.[1];
@@ -175,11 +268,16 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
     );
     const lf = b.dishes.find((d) => d.diet.length && d.name.includes("("));
     const people = b.people;
-    const text = b.intent === "REORDER" ? `I prepared your usual order for ${weekdayLong(b.date)} from your past orders, with today's prices and stock.` :
-      b.intent === "DIRECT_PURCHASE" ? `Here's your order for ${weekdayLong(b.date)}, with today's prices and stock.` :
-      `I planned ${base.size} ${base.size === 1 ? "dish" : "dishes"} for ${people}` +
-      (lf ? `, with a ${lf.diet.join(", ")} version for ${lf.portions}` : "") +
-      `. Prices are your Bistro Kallio prices; stock is for ${weekdayLong(b.date)}'s delivery.`;
+    const text =
+      b.intent === "REORDER"
+        ? `I prepared your usual order for ${weekdayLong(b.date)} from your past orders, with today's prices and stock.`
+        : b.intent === "DIRECT_PURCHASE"
+          ? `Here's your order for ${weekdayLong(b.date)}, with today's prices and stock.`
+          : `I planned ${base.size} ${base.size === 1 ? "dish" : "dishes"} for ${people}` +
+            (lf
+              ? `, with a ${lf.diet.join(", ")} version for ${lf.portions}`
+              : "") +
+            `. Prices are your Bistro Kallio prices; stock is for ${weekdayLong(b.date)}'s delivery.`;
     const skus = Number((stock?.data as { skus?: number })?.skus ?? 0);
     const altN = Number(
       alt?.summary.match(/checked (\d+) alternatives/)?.[1] ?? 0,
@@ -195,8 +293,13 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
         detail: true,
       },
     ];
-    const comparison=b.lines.length===1 ? b.lines[0].comparison : undefined;
-    if(comparison)did.push({icon:"scan-search",text:`Compared ${comparison.checkedCount} quoted products for your quantity`,detail:true});
+    const comparison = b.lines.length === 1 ? b.lines[0].comparison : undefined;
+    if (comparison)
+      did.push({
+        icon: "scan-search",
+        text: `Compared ${comparison.checkedCount} quoted products for your quantity`,
+        detail: true,
+      });
     const agentSwaps = b.lines.filter(
       (l) => l.replaced && isAutoSwap(l.issue?.decidedBy),
     );
@@ -216,14 +319,19 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
     else
       did.push({
         icon: "circle-check",
-        text: b.mandate.state === "needs_your_ok" ? "Some purchasing facts need review; see the decision record" : `Availability checked for ${weekday(b.date)}; rechecked before ordering`,
+        text:
+          b.mandate.state === "needs_your_ok"
+            ? "Some purchasing facts need review; see the decision record"
+            : `Availability checked for ${weekday(b.date)}; rechecked before ordering`,
       });
     if (pd.planner === "fallback" && b.intent === "MENU_PLANNING")
       did.push({
         icon: "circle-alert",
         text: "Planner offline, so I used the standard menu",
       });
-    const stockNote = b.summary?.items.find((it) => it.kind === "stock_signoff");
+    const stockNote = b.summary?.items.find(
+      (it) => it.kind === "stock_signoff",
+    );
     if (stockNote) did.push({ icon: "shield-check", text: stockNote.text });
     else if (b.mandate.reasons.some((r) => /can't confirm stock/.test(r)))
       did.push({
@@ -235,22 +343,32 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
     const sumItems = b.summary?.items ?? [];
     for (const it of sumItems) {
       if (it.kind === "price_increase")
-        did.push({ icon: "circle-alert", text: it.text.replace(/^(.+?): /, (_m, n: string) => `${shortName(n)}: `) });
-      if (it.kind === "substitution") did.push({ icon: "repeat", text: it.text });
+        did.push({
+          icon: "circle-alert",
+          text: it.text.replace(
+            /^(.+?): /,
+            (_m, n: string) => `${shortName(n)}: `,
+          ),
+        });
+      if (it.kind === "substitution")
+        did.push({ icon: "repeat", text: it.text });
     }
-    const overDaily = sumItems.find((it) => it.kind === "over_limit" && /daily/.test(it.text));
-    if (overDaily) did.push({ icon: "shield-check", text: overDaily.text });
-    else did.push(
-      b.totalIfAccepted > b.rules.maxOrderEur
-        ? {
-            icon: "shield-check",
-            text: `Over ${whole(b.rules.maxOrderEur)}, so ${firstName(b.rules.approver)} will sign off before it's sent`,
-          }
-        : {
-            icon: "shield-check",
-            text: `Under your ${whole(b.rules.maxOrderEur)} order limit; the daily limit is checked when you send`,
-          },
+    const overDaily = sumItems.find(
+      (it) => it.kind === "over_limit" && /daily/.test(it.text),
     );
+    if (overDaily) did.push({ icon: "shield-check", text: overDaily.text });
+    else
+      did.push(
+        b.totalIfAccepted > b.rules.maxOrderEur
+          ? {
+              icon: "shield-check",
+              text: `Over ${whole(b.rules.maxOrderEur)}, so ${firstName(b.rules.approver)} will sign off before it's sent`,
+            }
+          : {
+              icon: "shield-check",
+              text: `Under your ${whole(b.rules.maxOrderEur)} order limit; the daily limit is checked when you send`,
+            },
+      );
     out.push({
       kind: "assistant",
       key: "plan-" + mandate.at,
@@ -270,7 +388,7 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
           kind: "user",
           key,
           at: e.at,
-          who: "Anna K.",
+          who: "Aleksei F.",
           text: quoted(e.summary) ?? b.request,
           long: firstUser,
         });
@@ -340,22 +458,41 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
         out.push({ kind: "user", key, at: e.at, who, text });
         // Several "don't order" answers in one go (the grouped card) read as one message.
         const ri = lastRemove ? out.indexOf(lastRemove.item) : -1;
-        if (d.decision === "remove" && lastRemove && ri >= 0 && ri >= out.length - 2 && Date.parse(e.at) - Date.parse(lastRemove.at) < 10000) {
+        if (
+          d.decision === "remove" &&
+          lastRemove &&
+          ri >= 0 &&
+          ri >= out.length - 2 &&
+          Date.parse(e.at) - Date.parse(lastRemove.at) < 10000
+        ) {
           out.splice(ri + 1); // drop the reply to the previous removal; one reply follows for all
           lastRemove.names.push(name);
           const list = lastRemove.names.join(", ");
-          out[ri] = { ...(lastRemove.item as Extract<Item, { kind: "user" }>), text: `Don't order the ${list}` };
+          out[ri] = {
+            ...(lastRemove.item as Extract<Item, { kind: "user" }>),
+            text: `Don't order the ${list}`,
+          };
           lastRemove.item = out[ri];
-          awaitingReply = { at: e.at, text: fill(OPEN_OUT[nReply % OPEN_OUT.length], list) };
+          awaitingReply = {
+            at: e.at,
+            text: fill(OPEN_OUT[nReply % OPEN_OUT.length], list),
+          };
           break;
         }
         nReply++;
         awaitingReply = {
           at: e.at,
-          text: fill((d.decision === "remove" ? OPEN_OUT : OPEN_IN)[nReply % (d.decision === "remove" ? OPEN_OUT.length : OPEN_IN.length)], name),
+          text: fill(
+            (d.decision === "remove" ? OPEN_OUT : OPEN_IN)[
+              nReply %
+                (d.decision === "remove" ? OPEN_OUT.length : OPEN_IN.length)
+            ],
+            name,
+          ),
         };
         lastRemove = null;
-        if (d.decision === "remove") lastRemove = { item: out[out.length - 1], names: [name], at: e.at };
+        if (d.decision === "remove")
+          lastRemove = { item: out[out.length - 1], names: [name], at: e.at };
         break;
       }
       case "edit":
@@ -364,7 +501,7 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
           key,
           at: e.at,
           icon: "repeat",
-          text: `${e.actor === "Anna K." ? "You" : firstName(e.actor)} changed ${shortName(e.summary.replace(/:.*$/, ""))}: ${e.summary.replace(/^.*:\s*/, "")} · ${timeLabel(e.at)}`,
+          text: `${e.actor === "Aleksei F." ? "You" : firstName(e.actor)} changed ${shortName(e.summary.replace(/:.*$/, ""))}: ${e.summary.replace(/^.*:\s*/, "")} · ${timeLabel(e.at)}`,
         });
         break;
       case "guests":
@@ -387,7 +524,17 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
             key,
             at: e.at,
             text: e.summary.replace(/^[^:]*:\s*/, ""),
-            added: (e.data as { added?: { lineId: string; label: string; category?: string }[] } | undefined)?.added,
+            added: (
+              e.data as
+                | {
+                    added?: {
+                      lineId: string;
+                      label: string;
+                      category?: string;
+                    }[];
+                  }
+                | undefined
+            )?.added,
           });
           awaitingReply = null;
         } else
@@ -446,10 +593,23 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
         break;
       }
       case "decision": {
-        const d = (e.data ?? {}) as { status?: string; orderId?: string; stockConfirmedBy?: string; safetyConfirmedBy?: string; products?: string[] };
+        const d = (e.data ?? {}) as {
+          status?: string;
+          orderId?: string;
+          stockConfirmedBy?: string;
+          safetyConfirmedBy?: string;
+          products?: string[];
+        };
         if (d.safetyConfirmedBy) {
           const n = d.products?.length ?? 0;
-          out.push({ kind: "system", key, at: e.at, icon: "circle-check", tone: "green", text: `${firstName(d.safetyConfirmedBy)} confirmed the dietary safety of ${n} ${n === 1 ? "product" : "products"}` });
+          out.push({
+            kind: "system",
+            key,
+            at: e.at,
+            icon: "circle-check",
+            tone: "green",
+            text: `${firstName(d.safetyConfirmedBy)} confirmed the dietary safety of ${n} ${n === 1 ? "product" : "products"}`,
+          });
         } else if (d.stockConfirmedBy) {
           // A confirmation, not an error: one short green line instead of the full product list.
           const n = d.products?.length ?? 0;

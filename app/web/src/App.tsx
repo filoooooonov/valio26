@@ -1045,7 +1045,7 @@ function Shop() {
             !basket
               ? () => {
                   setHistoryOpen(false);
-                  void send("Prepare my usual weekend order.");
+                  void send("Prepare my usual weekly order for the fall menu.");
                 }
               : undefined
           }

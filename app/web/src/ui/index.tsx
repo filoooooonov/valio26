@@ -399,7 +399,7 @@ export function StatusDisc({
   );
 }
 
-/** Avatar: initials of a person. teal = buyer (Anna), berry = approver (Mikko). */
+/** Avatar: initials of a person. teal = buyer (Aleksei), berry = approver (Mikko). */
 export function Avatar({
   initials,
   tone = "teal",

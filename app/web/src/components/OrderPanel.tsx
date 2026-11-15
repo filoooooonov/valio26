@@ -1,4 +1,13 @@
-import { AimoLogo, Button, DecisionSummary, Pill, Popover, PurchaseOptions, ReasonList, TextLink } from "../ui";
+import {
+  AimoLogo,
+  Button,
+  DecisionSummary,
+  Pill,
+  Popover,
+  PurchaseOptions,
+  ReasonList,
+  TextLink,
+} from "../ui";
 import { useEffect, useState, type ReactNode, type CSSProperties } from "react";
 import {
   api,
@@ -23,7 +32,15 @@ import {
   timeLabel,
   weekday,
 } from "../format";
-import { firstName, isAutoSwap, orderLabel, PEOPLE, plain, shortName } from "../thread";
+import {
+  approvalWhy,
+  firstName,
+  isAutoSwap,
+  orderLabel,
+  PEOPLE,
+  plain,
+  shortName,
+} from "../thread";
 import type { Phase } from "../App";
 import { cheaperSwap } from "./Chat";
 import { Segmented } from "./Header";
@@ -31,7 +48,11 @@ import { AssistantGlyph } from "./Mark";
 import "./order-polish.css";
 
 type Cand = NonNullable<BasketLine["comparison"]>["candidates"][number];
-const unit3 = (n: number) => new Intl.NumberFormat("fi-FI", { minimumFractionDigits: 2, maximumFractionDigits: 3 }).format(n);
+const unit3 = (n: number) =>
+  new Intl.NumberFormat("fi-FI", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 3,
+  }).format(n);
 import { RecipeDialog } from "./RecipeDialog";
 
 export type OrderProps = {
@@ -56,7 +77,7 @@ export type OrderProps = {
   onToggle: (lineId: string) => void;
   onQty: (lineId: string, qty: number) => void;
   onSwap: (lineId: string) => void;
-  onSelectCandidate?: (lineId:string,sku:string)=>void;
+  onSelectCandidate?: (lineId: string, sku: string) => void;
   onGuests: (n: number) => void;
   onReview: () => void;
   onOrder: () => void;
@@ -71,12 +92,17 @@ export type OrderProps = {
 
 export function OrderPanel(p: OrderProps) {
   const b = p.basket;
-  if (p.phase === "placed" && p.order && b) return <OrderDone p={p} b={b} order={p.order} />;
+  if (p.phase === "placed" && p.order && b)
+    return <OrderDone p={p} b={b} order={p.order} />;
   // Before the buyer says anything, the right panel is just the brand watermark.
   if (!b && !p.chatStarted && p.phase === "empty")
     return (
       <section className="order" aria-label="Order">
-        <div className="order__lines order__lines--empty"><div className="order__watermark" aria-hidden="true"><AimoLogo /></div></div>
+        <div className="order__lines order__lines--empty">
+          <div className="order__watermark" aria-hidden="true">
+            <AimoLogo />
+          </div>
+        </div>
       </section>
     );
   if (!b && p.menuReview && p.phase !== "thinking")
@@ -96,36 +122,60 @@ export function OrderPanel(p: OrderProps) {
   return (
     <section className="order" aria-label="Order">
       <div className="order__head">
-        {eyebrow && <div className="eyebrow">
-          <AssistantGlyph />
-          {eyebrow}
-        </div>}
+        {eyebrow && (
+          <div className="eyebrow">
+            <AssistantGlyph />
+            {eyebrow}
+          </div>
+        )}
         {b && b.intent !== "MENU_PLANNING" && b.intent !== undefined ? (
           // One action bar instead of a title + tile: delivery is editable, counts say what needs you.
           <div className="order-bar">
-            <Pill icon="truck" className="order-bar__delivery" disabled={!p.onDelivery || p.phase === "waiting" || p.phase === "placed"} onClick={p.onDelivery} aria-label={`Delivery ${dayLabel(b.date)}, ${p.deliveryTime ?? SLOT}. Change delivery`}>
+            <Pill
+              icon="truck"
+              className="order-bar__delivery"
+              disabled={
+                !p.onDelivery || p.phase === "waiting" || p.phase === "placed"
+              }
+              onClick={p.onDelivery}
+              aria-label={`Delivery ${dayLabel(b.date)}, ${p.deliveryTime ?? SLOT}. Change delivery`}
+            >
               {dayLabel(b.date)}, {p.deliveryTime ?? SLOT}
               <Icon name="chevron-down" className="i-14" />
             </Pill>
             {b.summary && (p.phase === "draft" || p.phase === "review") && (
-              <DecisionSummary usual={b.summary.usual} adjusted={b.summary.adjusted} attention={b.summary.attention} items={[]} />
+              <DecisionSummary
+                usual={b.summary.usual}
+                adjusted={b.summary.adjusted}
+                attention={b.summary.attention}
+                items={[]}
+              />
             )}
           </div>
         ) : (
           <>
             <h1 className={"order__title" + (b ? " order__title--basket" : "")}>
-              {b ? `Catering for ${b.people} · ${dayLabel(p.event)}` : "Your order"}
+              {b
+                ? `Catering for ${b.people} · ${dayLabel(p.event)}`
+                : "Your order"}
             </h1>
             {b && <Controls p={p} b={b} />}
           </>
         )}
         {(p.phase === "draft" || p.phase === "review") && p.insight}
-
       </div>
       <div className={"order__lines" + (!b ? " order__lines--empty" : "")}>
-        {!b && !p.chatStarted && <div className="order__watermark" aria-hidden="true"><AimoLogo /></div>}
+        {!b && !p.chatStarted && (
+          <div className="order__watermark" aria-hidden="true">
+            <AimoLogo />
+          </div>
+        )}
         {!b ? (
-          <EmptyOrder planningMenu={p.planningMenu} thinking={p.phase === "thinking"} onHero={p.onHero} />
+          <EmptyOrder
+            planningMenu={p.planningMenu}
+            thinking={p.phase === "thinking"}
+            onHero={p.onHero}
+          />
         ) : (
           <Lines key={b.id} p={p} b={b} />
         )}
@@ -135,33 +185,74 @@ export function OrderPanel(p: OrderProps) {
   );
 }
 
-function OrderDone({ p, b, order }: { p: OrderProps; b: Basket; order: Order }) {
+function OrderDone({
+  p,
+  b,
+  order,
+}: {
+  p: OrderProps;
+  b: Basket;
+  order: Order;
+}) {
   const actor = order.decidedBy ?? order.by;
-  const who = actor === BUYER ? "you" : PEOPLE[actor]?.name ?? actor;
+  const who = actor === BUYER ? "you" : (PEOPLE[actor]?.name ?? actor);
   // S52: brand success state. The lime card is the moment of completion; one teal action opens the record.
-  return <section className="order order--done" aria-label="Order confirmation">
-    <div className="order__lines order-done">
-      <div className="order-done__hero">
-        <span className="order-done__mark"><Icon name="check" className="i-22" /></span>
-        <p className="order-done__eyebrow">Order {orderLabel(order.id)} · {order.decidedBy ? `approved by ${who}` : `placed by ${who}`}</p>
-        <h1>Order complete</h1>
-        <p className="order-done__total"><b>{money(order.total)}</b> excl. VAT · prices fixed</p>
+  return (
+    <section className="order order--done" aria-label="Order confirmation">
+      <div className="order__lines order-done">
+        <div className="order-done__hero">
+          <span className="order-done__mark">
+            <Icon name="check" className="i-22" />
+          </span>
+          <p className="order-done__eyebrow">
+            Order {orderLabel(order.id)} ·{" "}
+            {order.decidedBy ? `approved by ${who}` : `placed by ${who}`}
+          </p>
+          <h1>Order complete</h1>
+          <p className="order-done__total">
+            <b>{money(order.total)}</b> excl. VAT · prices fixed
+          </p>
+        </div>
+        <dl className="order-done__facts">
+          <div>
+            <dt>Delivery</dt>
+            <dd>
+              {dayLabel(b.date)}, {p.deliveryTime ?? SLOT}
+            </dd>
+          </div>
+          <div>
+            <dt>Products</dt>
+            <dd>{order.lines.length}</dd>
+          </div>
+          <div>
+            <dt>Recorded</dt>
+            <dd>{stamp(order.decidedAt ?? order.createdAt)}</dd>
+          </div>
+        </dl>
+        <ul className="order-done__lines" aria-label="Products in this order">
+          {order.lines.map((l) => (
+            <li key={l.sku}>
+              <span>{niceName(l.name)}</span>
+              <span className="order-done__qty">{qtyLabel(l.qty, l.pack)}</span>
+              <b>{money(l.total)}</b>
+            </li>
+          ))}
+        </ul>
+        <div className="order-done__actions">
+          <Button icon="file-text" onClick={p.onView}>
+            View order and audit trail
+          </Button>
+          <Button variant="secondary" icon="plus" onClick={p.onDone}>
+            Start a new order
+          </Button>
+        </div>
+        <p className="order-done__prototype">
+          Simulated order: nothing has been sent to Valio Aimo's ordering
+          systems.
+        </p>
       </div>
-      <dl className="order-done__facts">
-        <div><dt>Delivery</dt><dd>{dayLabel(b.date)}, {p.deliveryTime ?? SLOT}</dd></div>
-        <div><dt>Products</dt><dd>{order.lines.length}</dd></div>
-        <div><dt>Recorded</dt><dd>{stamp(order.decidedAt ?? order.createdAt)}</dd></div>
-      </dl>
-      <ul className="order-done__lines" aria-label="Products in this order">
-        {order.lines.map((l) => <li key={l.sku}><span>{niceName(l.name)}</span><span className="order-done__qty">{qtyLabel(l.qty, l.pack)}</span><b>{money(l.total)}</b></li>)}
-      </ul>
-      <div className="order-done__actions">
-        <Button icon="file-text" onClick={p.onView}>View order and audit trail</Button>
-        <Button variant="secondary" icon="plus" onClick={p.onDone}>Start a new order</Button>
-      </div>
-      <p className="order-done__prototype">Simulated order: nothing has been sent to Valio Aimo's ordering systems.</p>
-    </div>
-  </section>;
+    </section>
+  );
 }
 
 function EmptyOrder({
@@ -173,7 +264,15 @@ function EmptyOrder({
   planningMenu?: boolean;
   onHero: () => void;
 }) {
-  if (planningMenu && !thinking) return <div className="order__empty"><p>Agree on your menu in the assistant first. Products, quantities and prices will appear here after you approve it.</p></div>;
+  if (planningMenu && !thinking)
+    return (
+      <div className="order__empty">
+        <p>
+          Agree on your menu in the assistant first. Products, quantities and
+          prices will appear here after you approve it.
+        </p>
+      </div>
+    );
   if (thinking)
     return (
       <div className="skeleton" aria-hidden="true">
@@ -195,7 +294,7 @@ function EmptyOrder({
         builds here, with your prices and Friday stock.
       </p>
       <button className="btn btn--outline" onClick={onHero}>
-        Try: my usual weekend order
+        Try: my usual weekly order for the fall menu
       </button>
     </div>
   );
@@ -203,7 +302,16 @@ function EmptyOrder({
 
 function Controls({ p, b }: { p: OrderProps; b: Basket }) {
   const [recipeOpen, setRecipeOpen] = useState(false);
-  if (b.intent === "DIRECT_PURCHASE" || b.intent === "REORDER") return <div className="controls"><Fact icon="truck" label="Requested delivery" value={`${dayLabel(b.date)}, ${p.deliveryTime ?? SLOT}`} /></div>;
+  if (b.intent === "DIRECT_PURCHASE" || b.intent === "REORDER")
+    return (
+      <div className="controls">
+        <Fact
+          icon="truck"
+          label="Requested delivery"
+          value={`${dayLabel(b.date)}, ${p.deliveryTime ?? SLOT}`}
+        />
+      </div>
+    );
   const perGuest =
     (b.openIssues ? b.totalIfAccepted : b.total) / Math.max(1, b.people);
   const per = (
@@ -221,7 +329,7 @@ function Controls({ p, b }: { p: OrderProps; b: Basket }) {
           tone="green"
           icon="circle-check"
           label={approved ? "Approved" : "Placed"}
-          value={`${approved ? (PEOPLE[o.decidedBy!]?.name ?? o.decidedBy) : o.by === BUYER ? 'You' : firstName(o.by)} · ${timeLabel(o.decidedAt ?? o.createdAt)}`}
+          value={`${approved ? (PEOPLE[o.decidedBy!]?.name ?? o.decidedBy) : o.by === BUYER ? "You" : firstName(o.by)} · ${timeLabel(o.decidedAt ?? o.createdAt)}`}
         />
         <Fact
           icon="truck"
@@ -278,8 +386,18 @@ function Controls({ p, b }: { p: OrderProps; b: Basket }) {
             </button>
           </div>
         )}
-        <button className="pill" type="button" onClick={() => setRecipeOpen(true)} aria-haspopup="dialog"><Icon name="utensils" className="i-16" />Recipe</button>
-        {recipeOpen && <RecipeDialog basket={b} onClose={() => setRecipeOpen(false)} />}
+        <button
+          className="pill"
+          type="button"
+          onClick={() => setRecipeOpen(true)}
+          aria-haspopup="dialog"
+        >
+          <Icon name="utensils" className="i-16" />
+          Recipe
+        </button>
+        {recipeOpen && (
+          <RecipeDialog basket={b} onClose={() => setRecipeOpen(false)} />
+        )}
         <span className="grow" />
         {per}
       </div>
@@ -311,11 +429,16 @@ function Fact({
 
 function Lines({ p, b }: { p: OrderProps; b: Basket }) {
   const [entering, setEntering] = useState(true);
-  useEffect(() => { const timer = setTimeout(() => setEntering(false), 340); return () => clearTimeout(timer); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => setEntering(false), 340);
+    return () => clearTimeout(timer);
+  }, []);
   const frozen = p.phase === "waiting" || p.phase === "placed";
   const shown = frozen
     ? b.lines.filter((l) => l.qty > 0 && !lineIsOpen(l))
-    : b.lines.filter(l => l.qty > 0 || l.excludedQty != null || lineIsOpen(l));
+    : b.lines.filter(
+        (l) => l.qty > 0 || l.excludedQty != null || lineIsOpen(l),
+      );
   const groups = [
     ...b.dishes.map((d) => ({
       dish: d,
@@ -329,42 +452,60 @@ function Lines({ p, b }: { p: OrderProps; b: Basket }) {
     },
   ].filter((g) => g.lines.length);
   // A single compared product keeps its normal editable cart row; the comparison folds in under it.
-  const asCards = !!(!frozen && b.intent === "DIRECT_PURCHASE" && b.lines.length === 1 && b.lines[0].qty > 0 && b.lines[0].comparison);
+  const asCards = !!(
+    !frozen &&
+    b.intent === "DIRECT_PURCHASE" &&
+    b.lines.length === 1 &&
+    b.lines[0].qty > 0 &&
+    b.lines[0].comparison
+  );
   const sum = b.summary;
   return (
-    <div className={"product-list" + (entering ? " product-list--entering" : "")}>
-      {sum && !frozen && shown.length > 1 && (b.intent === "MENU_PLANNING" || !b.intent) && (
-        <DecisionSummary
-          usual={sum.usual}
-          adjusted={sum.adjusted}
-          attention={sum.attention}
-          items={[]}
-        />
-      )}
+    <div
+      className={"product-list" + (entering ? " product-list--entering" : "")}
+    >
+      {sum &&
+        !frozen &&
+        shown.length > 1 &&
+        (b.intent === "MENU_PLANNING" || !b.intent) && (
+          <DecisionSummary
+            usual={sum.usual}
+            adjusted={sum.adjusted}
+            attention={sum.attention}
+            items={[]}
+          />
+        )}
       {groups.map((g) => {
         const total = g.lines
           .filter((l) => !lineIsOpen(l))
           .reduce((s, l) => s + l.total, 0);
         return (
           <div key={g.dish?.id ?? "other"} className="dish">
-            {!(b.intent === "DIRECT_PURCHASE" && shown.length===1) && <div className="dish__head">
-              <span className="dish__photo dish__photo--icon">
-                <Icon name={dishIcon(g.dish?.name ?? "Other")} className="i-22" />
-              </span>
-              <div className="grow">
-                <h3 className="dish__name">
-                  {g.dish?.name ?? (b.intent === "REORDER" ? "Your usual products" : "Other products")}
-                </h3>
-                {g.dish && (
-                  <div className="dish__sub">
-                    {g.dish.portions} portions ·{" "}
-                    {g.lines.length}{" "}
-                    {g.lines.length === 1 ? "product" : "products"}
-                  </div>
-                )}
+            {!(b.intent === "DIRECT_PURCHASE" && shown.length === 1) && (
+              <div className="dish__head">
+                <span className="dish__photo dish__photo--icon">
+                  <Icon
+                    name={dishIcon(g.dish?.name ?? "Other")}
+                    className="i-22"
+                  />
+                </span>
+                <div className="grow">
+                  <h3 className="dish__name">
+                    {g.dish?.name ??
+                      (b.intent === "REORDER"
+                        ? "Your usual products"
+                        : "Other products")}
+                  </h3>
+                  {g.dish && (
+                    <div className="dish__sub">
+                      {g.dish.portions} portions · {g.lines.length}{" "}
+                      {g.lines.length === 1 ? "product" : "products"}
+                    </div>
+                  )}
+                </div>
+                <b className="dish__total">{money(total)}</b>
               </div>
-              <b className="dish__total">{money(total)}</b>
-            </div>}
+            )}
             {g.lines.map((l, index) => (
               <LineRow
                 key={l.id}
@@ -379,52 +520,142 @@ function Lines({ p, b }: { p: OrderProps; b: Basket }) {
           </div>
         );
       })}
-      {asCards && (()=>{
-        const selected=b.lines[0],comparison=selected.comparison!;
-        const unit=comparison.requested.unit.toLowerCase();
-        const day=dayLabel(b.date);
-        const byTotal=(x:Cand,y:Cand)=>x.line.total-y.line.total;
-        // Only products the buyer can order; stable order by total so cards never jump on a pick. Exclusions stay in "How we chose".
-        const shown=[...comparison.candidates.filter(c=>c.selectable || c.line.sku===selected.sku)].sort(byTotal).slice(0,6);
-        const base=Math.min(...shown.filter(c=>c.selectable).map(c=>c.line.total), Infinity);
-        const chip=(c:Cand)=>c.selectable ? day : c.line.stock.cutoffPassed ? "Cut-off passed" : !c.line.stock.deliverable ? `Not on ${day}` : c.line.quantityIssue ? "Pack size" : c.line.stock.available!=null && c.line.stock.available<c.line.qty ? "Not enough stock" : "Not confirmed";
-        const tone=(c:Cand)=>c.selectable ? "available" as const : "blocked" as const;
-        const why=(c:Cand)=>{
-          if(!c.selectable){
-            if(c.line.stock.cutoffPassed) return `Ordering for ${day} has closed.`;
-            if(!c.line.stock.deliverable) return `Can't be delivered on ${day}.`;
-            if(c.line.quantityIssue) return "Pack size doesn't fit your quantity.";
-            if(c.line.stock.available!=null && c.line.stock.available<c.line.qty) return `Only ${n2(c.line.stock.available)} in stock.`;
-            const r=c.reasons.map(r=>r.replace(c.line.name+": ","").replace(/\.$/,""));
-            return (r.some(x=>/customer-specific price/.test(x)) ? "Your account price isn't confirmed" : r.some(x=>/delivery and ordering cutoff/.test(x)) ? `Delivery on ${day} isn't confirmed` : r[0] ?? "Doesn't meet your requirements")+".";
-          }
-          // Orderable cards carry no note: shared facts (stock sign-off) live once in the chat and footer.
-          return "";
-        };
-        const query=comparison.query.charAt(0).toUpperCase()+comparison.query.slice(1);
-        const decided=selected.sku!==comparison.recommendedSku;
-        return <PurchaseOptions
-          title={`${query}, ${n2(comparison.requested.qty)} ${unit}`}
-          summary={decided ? "Your pick." : `Lowest total of ${comparison.checkedCount} quoted.`}
-          selectedId={selected.sku}
-          bestId={comparison.recommendedSku}
-          decidedByYou={decided}
-          busy={p.busy || !!p.busyLine}
-          onChoose={p.onSelectCandidate ? sku=>p.onSelectCandidate?.(selected.id,sku) : undefined}
-          options={shown.map(c=>{
-            const delta=c.line.total-base;
-            return {id:c.line.sku,name:niceName(c.line.name),meta:[c.line.brand,c.line.sku].filter(Boolean).join(" · "),image:c.line.image,
-              quantity:c.line.stock.salesUnit && c.line.stock.salesUnit!=="ST" && c.purchased!=null ? `${n2(c.line.qty)} cases · ${n2(c.purchased)} ${unit}` : qtyLabel(c.line.qty,c.line.pack),unitPrice:c.unitPrice==null ? "Unit price unknown" : `${unit3(c.unitPrice)} €/${unit}`,
-              total:c.unitPrice==null ? "Price unknown" : money(c.line.total),
-              difference:c.unitPrice==null || !c.selectable ? undefined : Math.abs(delta)<.005 ? "Lowest total" : `+${money(delta)}`,saving:Math.abs(delta)<.005,
-              availability:chip(c),tone:tone(c),note:why(c),selectable:c.selectable};
-          })}
-          scope={`We quoted ${comparison.checkedCount} of ${comparison.catalogueMatches} matching catalogue products for ${n2(comparison.requested.qty)} ${unit}. Prices exclude VAT. We did not check prices for the whole store.`}
-          quotedAt={stamp(comparison.checkedAt)}
-          source={comparison.source==="synthetic_fixture" ? "Synthetic price and stock fixture; real catalogue products." : "Prices and availability from the Valio Aimo mock API."}
-          evidence={[...comparison.candidates].sort(byTotal).map(c=>({id:c.line.sku,name:niceName(c.line.name),total:c.unitPrice==null ? "Unverified" : money(c.line.total),selected:c.line.sku===selected.sku,reason:c.status==="verified" ? "Meets product and delivery checks." : c.reasons.map(r=>r.replace(c.line.name+": ","")).join(" ")}))}
-        />;
-      })()}
+      {asCards &&
+        (() => {
+          const selected = b.lines[0],
+            comparison = selected.comparison!;
+          const unit = comparison.requested.unit.toLowerCase();
+          const day = dayLabel(b.date);
+          const byTotal = (x: Cand, y: Cand) => x.line.total - y.line.total;
+          // Only products the buyer can order; stable order by total so cards never jump on a pick. Exclusions stay in "How we chose".
+          const shown = [
+            ...comparison.candidates.filter(
+              (c) => c.selectable || c.line.sku === selected.sku,
+            ),
+          ]
+            .sort(byTotal)
+            .slice(0, 6);
+          const base = Math.min(
+            ...shown.filter((c) => c.selectable).map((c) => c.line.total),
+            Infinity,
+          );
+          const chip = (c: Cand) =>
+            c.selectable
+              ? day
+              : c.line.stock.cutoffPassed
+                ? "Cut-off passed"
+                : !c.line.stock.deliverable
+                  ? `Not on ${day}`
+                  : c.line.quantityIssue
+                    ? "Pack size"
+                    : c.line.stock.available != null &&
+                        c.line.stock.available < c.line.qty
+                      ? "Not enough stock"
+                      : "Not confirmed";
+          const tone = (c: Cand) =>
+            c.selectable ? ("available" as const) : ("blocked" as const);
+          const why = (c: Cand) => {
+            if (!c.selectable) {
+              if (c.line.stock.cutoffPassed)
+                return `Ordering for ${day} has closed.`;
+              if (!c.line.stock.deliverable)
+                return `Can't be delivered on ${day}.`;
+              if (c.line.quantityIssue)
+                return "Pack size doesn't fit your quantity.";
+              if (
+                c.line.stock.available != null &&
+                c.line.stock.available < c.line.qty
+              )
+                return `Only ${n2(c.line.stock.available)} in stock.`;
+              const r = c.reasons.map((r) =>
+                r.replace(c.line.name + ": ", "").replace(/\.$/, ""),
+              );
+              return (
+                (r.some((x) => /customer-specific price/.test(x))
+                  ? "Your account price isn't confirmed"
+                  : r.some((x) => /delivery and ordering cutoff/.test(x))
+                    ? `Delivery on ${day} isn't confirmed`
+                    : (r[0] ?? "Doesn't meet your requirements")) + "."
+              );
+            }
+            // Orderable cards carry no note: shared facts (stock sign-off) live once in the chat and footer.
+            return "";
+          };
+          const query =
+            comparison.query.charAt(0).toUpperCase() +
+            comparison.query.slice(1);
+          const decided = selected.sku !== comparison.recommendedSku;
+          return (
+            <PurchaseOptions
+              title={`${query}, ${n2(comparison.requested.qty)} ${unit}`}
+              summary={
+                decided
+                  ? "Your pick."
+                  : `Lowest total of ${comparison.checkedCount} quoted.`
+              }
+              selectedId={selected.sku}
+              bestId={comparison.recommendedSku}
+              decidedByYou={decided}
+              busy={p.busy || !!p.busyLine}
+              onChoose={
+                p.onSelectCandidate
+                  ? (sku) => p.onSelectCandidate?.(selected.id, sku)
+                  : undefined
+              }
+              options={shown.map((c) => {
+                const delta = c.line.total - base;
+                return {
+                  id: c.line.sku,
+                  name: niceName(c.line.name),
+                  meta: [c.line.brand, c.line.sku].filter(Boolean).join(" · "),
+                  image: c.line.image,
+                  quantity:
+                    c.line.stock.salesUnit &&
+                    c.line.stock.salesUnit !== "ST" &&
+                    c.purchased != null
+                      ? `${n2(c.line.qty)} cases · ${n2(c.purchased)} ${unit}`
+                      : qtyLabel(c.line.qty, c.line.pack),
+                  unitPrice:
+                    c.unitPrice == null
+                      ? "Unit price unknown"
+                      : `${unit3(c.unitPrice)} €/${unit}`,
+                  total:
+                    c.unitPrice == null ? "Price unknown" : money(c.line.total),
+                  difference:
+                    c.unitPrice == null || !c.selectable
+                      ? undefined
+                      : Math.abs(delta) < 0.005
+                        ? "Lowest total"
+                        : `+${money(delta)}`,
+                  saving: Math.abs(delta) < 0.005,
+                  availability: chip(c),
+                  tone: tone(c),
+                  note: why(c),
+                  selectable: c.selectable,
+                };
+              })}
+              scope={`We quoted ${comparison.checkedCount} of ${comparison.catalogueMatches} matching catalogue products for ${n2(comparison.requested.qty)} ${unit}. Prices exclude VAT. We did not check prices for the whole store.`}
+              quotedAt={stamp(comparison.checkedAt)}
+              source={
+                comparison.source === "synthetic_fixture"
+                  ? "Synthetic price and stock fixture; real catalogue products."
+                  : "Prices and availability from the Valio Aimo mock API."
+              }
+              evidence={[...comparison.candidates].sort(byTotal).map((c) => ({
+                id: c.line.sku,
+                name: niceName(c.line.name),
+                total: c.unitPrice == null ? "Unverified" : money(c.line.total),
+                selected: c.line.sku === selected.sku,
+                reason:
+                  c.status === "verified"
+                    ? "Meets product and delivery checks."
+                    : c.reasons
+                        .map((r) => r.replace(c.line.name + ": ", ""))
+                        .join(" "),
+              }))}
+            />
+          );
+        })()}
       {b.assumed.length > 0 && (
         <p className="assumed">
           Not ordered, assumed in your kitchen: {b.assumed.join(", ")}.
@@ -434,7 +665,6 @@ function Lines({ p, b }: { p: OrderProps; b: Basket }) {
   );
 }
 
-
 // "Why Helmi chose this": the decision reasons from the basket's own records, plain sentences, no product data dump.
 const sentence = (t: string) => (/[.!?]$/.test(t) ? t : t + ".");
 function choiceReasons(l: BasketLine, b: Basket): string[] {
@@ -442,26 +672,34 @@ function choiceReasons(l: BasketLine, b: Basket): string[] {
   const day = dayLabel(b.date);
   if (l.replaced) {
     const who = l.issue?.decidedBy ?? "";
-    out.push(`${shortName(l.replaced.name)}: ${reasonShort(l, b.date)}, so ${who.startsWith("policy:") ? "your substitution rule used this instead" : who === "gateway (best replacement)" ? "I picked this as the best available replacement (you can change it)" : isAutoSwap(who) ? "I swapped in this product for the same use" : "you chose this instead"}.`);
+    out.push(
+      `${shortName(l.replaced.name)}: ${reasonShort(l, b.date)}, so ${who.startsWith("policy:") ? "your substitution rule used this instead" : who === "gateway (best replacement)" ? "I picked this as the best available replacement (you can change it)" : isAutoSwap(who) ? "I swapped in this product for the same use" : "you chose this instead"}.`,
+    );
   }
-  if (l.preference && l.preference.status !== "unfamiliar") out.push(sentence(l.preference.reason));
-  else if (l.preference?.status === "unfamiliar" && b.intent === "REORDER") out.push("New to your restaurant.");
+  if (l.preference && l.preference.status !== "unfamiliar")
+    out.push(sentence(l.preference.reason));
+  else if (l.preference?.status === "unfamiliar" && b.intent === "REORDER")
+    out.push("New to your restaurant.");
   const c = l.comparison;
   if (c) {
     const valid = c.candidates.filter((x) => x.selectable);
     const lowest = Math.min(...valid.map((x) => x.line.total));
-    out.push(l.sku === c.recommendedSku
-      ? `Lowest total of the ${valid.length} products that can arrive ${day}, out of ${c.checkedCount} quoted.`
-      : `You picked this. It's ${money(l.total - lowest)} more than the lowest total.`);
+    out.push(
+      l.sku === c.recommendedSku
+        ? `Lowest total of the ${valid.length} products that can arrive ${day}, out of ${c.checkedCount} quoted.`
+        : `You picked this. It's ${money(l.total - lowest)} more than the lowest total.`,
+    );
   } else if (!l.replaced) {
     const dish = b.dishes.find((d) => d.id === l.dishId);
     if (dish) out.push(`Needed for ${dish.name}.`);
   }
   out.push(`Quantity: ${plain(l.why)}.`);
   if (l.stock.deliverable && !l.stock.cutoffPassed)
-    out.push(l.stock.available == null
-      ? `Can arrive ${day}. Valio can't confirm stock, so ${firstName(b.rules.approver)} checks it before ordering.`
-      : `In stock for ${day}.`);
+    out.push(
+      l.stock.available == null
+        ? `Can arrive ${day}. Valio can't confirm stock, so ${firstName(b.rules.approver)} checks it before ordering.`
+        : `In stock for ${day}.`,
+    );
   return out;
 }
 
@@ -494,7 +732,8 @@ export function LineRow({
   const unavailable = open && !!l.issue && l.issue.kind !== "short";
   const sku = l.sku;
   const name = comparisonOnly ? l.name : niceName(l.name);
-  const frozenItem = l.frozen ?? /\b(?:frozen|deep[ -]?frozen|deepfrost|FRO)\b/i.test(l.name);
+  const frozenItem =
+    l.frozen ?? /\b(?:frozen|deep[ -]?frozen|deepfrost|FRO)\b/i.test(l.name);
   const stock = l.stock;
   const total = l.total;
   const qty = l.qty;
@@ -510,7 +749,11 @@ export function LineRow({
     tag = { text: "Accepted before", tone: "green" };
   else if (!off && l.preference?.status === "rejected")
     tag = { text: "You declined this before", tone: "grey" };
-  else if (!off && l.preference?.status === "unfamiliar" && b.intent === "REORDER")
+  else if (
+    !off &&
+    l.preference?.status === "unfamiliar" &&
+    b.intent === "REORDER"
+  )
     tag = { text: "New to you", tone: "grey" };
   else if (off)
     tag = {
@@ -525,15 +768,31 @@ export function LineRow({
   return (
     <div
       className={
-        "line" + (comparisonOnly ? " line--comparison" : "") +
+        "line" +
+        (comparisonOnly ? " line--comparison" : "") +
         (open && !comparisonOnly ? " line--open" : "") +
         (off ? " line--off" : "") +
         (placed ? " line--placed" : "")
       }
       id={comparisonOnly ? undefined : "line-" + l.id}
       aria-busy={busy || undefined}
-      onClick={open && !unavailable && !frozen && !busy && !p.busy ? event => { if (!(event.target as Element).closest("button, input, a, summary, details, textarea, select")) p.onSwap(l.id); } : undefined}
-      style={{ "--product-delay": `${Math.min(revealIndex * 12, 90)}ms` } as CSSProperties}
+      onClick={
+        open && !unavailable && !frozen && !busy && !p.busy
+          ? (event) => {
+              if (
+                !(event.target as Element).closest(
+                  "button, input, a, summary, details, textarea, select",
+                )
+              )
+                p.onSwap(l.id);
+            }
+          : undefined
+      }
+      style={
+        {
+          "--product-delay": `${Math.min(revealIndex * 12, 90)}ms`,
+        } as CSSProperties
+      }
     >
       {!placed && !comparisonOnly && (
         <button
@@ -542,7 +801,13 @@ export function LineRow({
           aria-checked={!open && !off}
           aria-label={`Include ${name}`}
           disabled={frozen || busy || p.busy}
-          onClick={() => open ? (unavailable ? p.onChoose(l.id, "remove") : p.onSwap(l.id)) : p.onToggle(l.id)}
+          onClick={() =>
+            open
+              ? unavailable
+                ? p.onChoose(l.id, "remove")
+                : p.onSwap(l.id)
+              : p.onToggle(l.id)
+          }
         >
           <span className="check__box">
             {!open && !off && <Icon name="check" className="i-14" />}
@@ -553,56 +818,138 @@ export function LineRow({
         sku={sku}
         name={name}
         contains={l.contains}
-        badge={!comparisonOnly && !open ? (
-          // The assistant mark on the product photo: click shows why Helmi chose it.
-          <Popover icon ariaLabel={"Why Helmi chose " + name} label={<AssistantGlyph />} title="Why Helmi chose this">
-            <ReasonList items={choiceReasons(l, b)} />
-            <span className="line__catalogue">{l.name} · SKU {sku}</span>
-          </Popover>
-        ) : undefined}
+        badge={
+          !comparisonOnly && !open ? (
+            // The assistant mark on the product photo: click shows why Helmi chose it.
+            <Popover
+              icon
+              ariaLabel={"Why Helmi chose " + name}
+              label={<AssistantGlyph />}
+              title="Why Helmi chose this"
+            >
+              <ReasonList items={choiceReasons(l, b)} />
+              <span className="line__catalogue">
+                {l.name} · SKU {sku}
+              </span>
+            </Popover>
+          ) : undefined
+        }
       />
       <div className="line__text">
         <div className="line__name">
-          {open && !unavailable && !frozen ? <button type="button" className="line__missing-name" disabled={busy || p.busy} aria-label={"Review replacements for " + name} onClick={() => p.onSwap(l.id)}>{name}</button> : <span>{name}</span>}
+          {open && !unavailable && !frozen ? (
+            <button
+              type="button"
+              className="line__missing-name"
+              disabled={busy || p.busy}
+              aria-label={"Review replacements for " + name}
+              onClick={() => p.onSwap(l.id)}
+            >
+              {name}
+            </button>
+          ) : (
+            <span>{name}</span>
+          )}
           {!comparisonOnly && !open && (
             // Phones hide product photos, so the reasoning glyph sits after the name there.
             <span className="phone-only line__why-inline">
-              <Popover icon ariaLabel={"Why Helmi chose " + name} label={<AssistantGlyph />} title="Why Helmi chose this">
+              <Popover
+                icon
+                ariaLabel={"Why Helmi chose " + name}
+                label={<AssistantGlyph />}
+                title="Why Helmi chose this"
+              >
                 <ReasonList items={choiceReasons(l, b)} />
-                <span className="line__catalogue">{l.name} · SKU {sku}</span>
+                <span className="line__catalogue">
+                  {l.name} · SKU {sku}
+                </span>
               </Popover>
             </span>
           )}
-          {frozenItem && <span className="line__frozen" role="img" aria-label="Frozen" title="Frozen"><Icon name="snowflake" className="i-16" /></span>}
-          {tag && !open && (
-            <span className={"tag tag--" + tag.tone}>
-              {tag.text}
+          {frozenItem && (
+            <span
+              className="line__frozen"
+              role="img"
+              aria-label="Frozen"
+              title="Frozen"
+            >
+              <Icon name="snowflake" className="i-16" />
             </span>
           )}
+          {tag && !open && (
+            <span className={"tag tag--" + tag.tone}>{tag.text}</span>
+          )}
         </div>
-        {!comparisonOnly && !off && st.tone !== "green" && <div className={"line__stock line__stock--" + st.tone}>
-          <Icon name={open ? "circle-alert" : st.icon} className="i-14" />
-          {st.text}
-        </div>}
-        {open && !frozen && (unavailable
-          // Unavailable for this delivery: one inline decision, no pop-up (S51). Replacements stay one tap away.
-          ? <div className="line__unavailable"><Button size="sm" variant="secondary" icon="x" disabled={busy || p.busy} onClick={() => p.onChoose(l.id, "remove")}>Remove item</Button>{l.issue!.options.length > 0 && <TextLink disabled={busy || p.busy} onClick={() => p.onSwap(l.id)}>See replacements</TextLink>}</div>
-          : <button type="button" className="line__resolve" disabled={busy || p.busy} onClick={() => p.onSwap(l.id)}>{l.issue!.options.length ? 'Choose replacement' : 'Review options'}<Icon name="arrow-right" className="i-16" /></button>)}
-        {!comparisonOnly && l.comparison && <div className="line__unit">{l.comparison.candidates.find(c=>c.line.sku===l.sku)?.unitPrice!=null ? `${money(l.comparison.candidates.find(c=>c.line.sku===l.sku)!.unitPrice!)} / ${l.comparison.requested.unit.toLowerCase()}` : "Price needs verification"}</div>}
+        {!comparisonOnly && !off && st.tone !== "green" && (
+          <div className={"line__stock line__stock--" + st.tone}>
+            <Icon name={open ? "circle-alert" : st.icon} className="i-14" />
+            {st.text}
+          </div>
+        )}
+        {open &&
+          !frozen &&
+          (unavailable ? (
+            // Unavailable for this delivery: one inline decision, no pop-up (S51). Replacements stay one tap away.
+            <div className="line__unavailable">
+              <Button
+                size="sm"
+                variant="secondary"
+                icon="x"
+                disabled={busy || p.busy}
+                onClick={() => p.onChoose(l.id, "remove")}
+              >
+                Remove item
+              </Button>
+              {l.issue!.options.length > 0 && (
+                <TextLink
+                  disabled={busy || p.busy}
+                  onClick={() => p.onSwap(l.id)}
+                >
+                  See replacements
+                </TextLink>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="line__resolve"
+              disabled={busy || p.busy}
+              onClick={() => p.onSwap(l.id)}
+            >
+              {l.issue!.options.length
+                ? "Choose replacement"
+                : "Review options"}
+              <Icon name="arrow-right" className="i-16" />
+            </button>
+          ))}
+        {!comparisonOnly && l.comparison && (
+          <div className="line__unit">
+            {l.comparison.candidates.find((c) => c.line.sku === l.sku)
+              ?.unitPrice != null
+              ? `${money(l.comparison.candidates.find((c) => c.line.sku === l.sku)!.unitPrice!)} / ${l.comparison.requested.unit.toLowerCase()}`
+              : "Price needs verification"}
+          </div>
+        )}
         {atLimit && !frozen && (
           <div className="line__limit">
             That's all Valio has for {weekday(b.date)} ({n2(stock.available!)})
           </div>
         )}
       </div>
-      {!comparisonOnly && <div className="price">
-        <b className={off ? "price__off" : ""}>{off ? "—" : money(total)}</b>
-        {!off && l.stock.price > 0 && !l.stock.customerPrice && <span className="price__unit">List price</span>}
-      </div>}
+      {!comparisonOnly && (
+        <div className="price">
+          <b className={off ? "price__off" : ""}>{off ? "—" : money(total)}</b>
+          {!off && l.stock.price > 0 && !l.stock.customerPrice && (
+            <span className="price__unit">List price</span>
+          )}
+        </div>
+      )}
       {comparisonOnly ? null : frozen || open ? (
         <span className="line__qty">{qtyLabel(qty, pack)}</span>
       ) : off ? (
-        <span className="line__qty line__qty--off">{qtyLabel(l.excludedQty ?? 0, pack)}</span>
+        <span className="line__qty line__qty--off">
+          {qtyLabel(l.excludedQty ?? 0, pack)}
+        </span>
       ) : (
         <div
           className={"stepper" + (open ? " stepper--white" : "")}
@@ -634,7 +981,20 @@ export function LineRow({
           </button>
         </div>
       )}
-      {!frozen && (!off || l.excludedQty != null) && <button type="button" className="swapbtn line__remove" title="Remove item" aria-label={`Remove ${name} from cart`} disabled={busy || p.busy || !!p.busyLine} onClick={() => l.issue ? p.onChoose(l.id, 'remove') : p.onQty(l.id, 0)}><Icon name="x" className="i-16" /></button>}
+      {!frozen && (!off || l.excludedQty != null) && (
+        <button
+          type="button"
+          className="swapbtn line__remove"
+          title="Remove item"
+          aria-label={`Remove ${name} from cart`}
+          disabled={busy || p.busy || !!p.busyLine}
+          onClick={() =>
+            l.issue ? p.onChoose(l.id, "remove") : p.onQty(l.id, 0)
+          }
+        >
+          <Icon name="x" className="i-16" />
+        </button>
+      )}
     </div>
   );
 }
@@ -646,13 +1006,22 @@ function stockLine(
   broken: boolean,
 ): { tone: string; icon: IconName; text: string } {
   const day = dayLabel(date);
-  if (l.issue?.kind === "short" && !l.issue.decided && l.stock.available != null)
+  if (
+    l.issue?.kind === "short" &&
+    !l.issue.decided &&
+    l.stock.available != null
+  )
     return {
       tone: "amber",
       icon: "circle-alert",
       text: `Only ${n2(l.stock.available)} for ${day} · you need ${n2(l.qty)}`,
     };
-  if (s.available != null && l.qty > s.available) return { tone: "amber", icon: "circle-alert", text: `Only ${n2(s.available)} available; you need ${n2(l.qty)}` };
+  if (s.available != null && l.qty > s.available)
+    return {
+      tone: "amber",
+      icon: "circle-alert",
+      text: `Only ${n2(s.available)} available; you need ${n2(l.qty)}`,
+    };
   if (broken || s.cutoffPassed || !s.deliverable)
     return {
       tone: "red",
@@ -716,18 +1085,50 @@ function ProductTile({
       )}
     </span>
   );
-  return badge ? <span className="line__tile">{tile}<span className="line__why">{badge}</span></span> : tile;
+  return badge ? (
+    <span className="line__tile">
+      {tile}
+      <span className="line__why">{badge}</span>
+    </span>
+  ) : (
+    tile
+  );
 }
 
 function Footer({ p, b }: { p: OrderProps; b: Basket }) {
   const max = b.rules.maxOrderEur;
   const held = b.pricesHeldUntil ? stamp(b.pricesHeldUntil) : null;
-  const decisionText=b.mandate.reasons.slice(0,2).map(reason=>b.intent==="DIRECT_PURCHASE" && b.lines.length===1 ? reason.replace(b.lines[0].name+": ","").replace("stock quantity is unknown; human intervention required.","Stock needs confirmation before ordering.") : reason).join(" ");
+  const decisionText = b.mandate.reasons
+    .slice(0, 2)
+    .map((reason) =>
+      b.intent === "DIRECT_PURCHASE" && b.lines.length === 1
+        ? reason
+            .replace(b.lines[0].name + ": ", "")
+            .replace(
+              "stock quantity is unknown; human intervention required.",
+              "Stock needs confirmation before ordering.",
+            )
+        : reason,
+    )
+    .join(" ");
   const count = b.lines.filter(
     (l) => l.qty > 0 && l.issue?.decided !== "remove",
   ).length;
-  const active = b.lines.filter(l => l.qty > 0 && l.issue?.decided !== "remove");
-  const allDeliverable = (p.phase === "draft" || p.phase === "review") && active.length > 0 && b.openIssues === 0 && b.mandate.state !== "needs_your_ok" && active.every(l => !lineIsOpen(l) && l.stock.deliverable && !l.stock.cutoffPassed && (l.stock.available == null || l.qty <= l.stock.available));
+  const active = b.lines.filter(
+    (l) => l.qty > 0 && l.issue?.decided !== "remove",
+  );
+  const allDeliverable =
+    (p.phase === "draft" || p.phase === "review") &&
+    active.length > 0 &&
+    b.openIssues === 0 &&
+    b.mandate.state !== "needs_your_ok" &&
+    active.every(
+      (l) =>
+        !lineIsOpen(l) &&
+        l.stock.deliverable &&
+        !l.stock.cutoffPassed &&
+        (l.stock.available == null || l.qty <= l.stock.available),
+    );
   const open = b.lines.filter(lineIsOpen);
   const ordering = p.busy;
   let cta: ReactNode;
@@ -735,22 +1136,52 @@ function Footer({ p, b }: { p: OrderProps; b: Basket }) {
   let alt: ReactNode = null;
 
   if ((p.phase === "draft" || p.phase === "review") && open.length) {
-    cta = <button className="cta cta--issues" disabled={ordering} onClick={p.onReview}>
-      <Icon name="circle-alert" className="i-18" />
-      <span className="cta__label">Resolve {open.length} product {open.length === 1 ? 'issue' : 'issues'}</span>
-      <span className="grow" /><span className="cta__total">{money(b.total)}</span>
-    </button>;
-    note = 'Subtotal excludes ' + open.length + ' unresolved ' + (open.length === 1 ? 'product.' : 'products.');
+    cta = (
+      <button
+        className="cta cta--issues"
+        disabled={ordering}
+        onClick={p.onReview}
+      >
+        <Icon name="circle-alert" className="i-18" />
+        <span className="cta__label">
+          Resolve {open.length} product {open.length === 1 ? "issue" : "issues"}
+        </span>
+        <span className="grow" />
+        <span className="cta__total">{money(b.total)}</span>
+      </button>
+    );
+    note =
+      "Subtotal excludes " +
+      open.length +
+      " unresolved " +
+      (open.length === 1 ? "product." : "products.");
   } else if (p.phase === "draft" && b.mandate.state === "needs_your_ok") {
-    cta = <button className="cta cta--issues" disabled><span className="cta__label">Purchasing needs review</span></button>;
+    cta = (
+      <button className="cta cta--issues" disabled>
+        <span className="cta__label">Purchasing needs review</span>
+      </button>
+    );
     note = decisionText;
     alt = <TextLink onClick={p.onView}>View purchasing decisions</TextLink>;
   } else if (p.phase === "draft") {
-    cta = <button className="cta cta--lime" disabled={ordering} onClick={p.onReview}>
-      <span className="cta__label">Review and confirm<span className="desk-only"> {count} {count === 1 ? "product" : "products"}</span></span>
-      <span className="grow" /><span className="cta__total">{money(b.total)}</span>
-    </button>;
-    note = 'Prices exclude VAT.';
+    cta = (
+      <button
+        className="cta cta--lime"
+        disabled={ordering}
+        onClick={p.onReview}
+      >
+        <span className="cta__label">
+          Review and confirm
+          <span className="desk-only">
+            {" "}
+            {count} {count === 1 ? "product" : "products"}
+          </span>
+        </span>
+        <span className="grow" />
+        <span className="cta__total">{money(b.total)}</span>
+      </button>
+    );
+    note = "Prices exclude VAT.";
   } else if (p.phase === "review") {
     const st = b.mandate.state;
     const label =
@@ -783,20 +1214,20 @@ function Footer({ p, b }: { p: OrderProps; b: Basket }) {
     );
     const why =
       st === "needs_approval"
-        ? b.total > max
-          ? `Over your ${whole(max)} limit`
-          : `Over your ${whole(b.rules.maxDailyEur)} daily limit with today's orders`
+        ? approvalWhy(b.mandate.reasons, b.total, b).short
         : `Inside your ${whole(max)} limit`;
     note = `${why}${held ? ` · ordering cutoff ${held}` : ""} · excl. VAT (${money(b.totalWithVat)} with VAT)`;
-    if (st === "needs_your_ok") {note = decisionText;alt=<TextLink onClick={p.onView}>View purchasing decisions</TextLink>;}
+    if (st === "needs_your_ok") {
+      note = decisionText;
+      alt = <TextLink onClick={p.onView}>View purchasing decisions</TextLink>;
+    }
     const c = cheaperSwap(b);
     if (st === "needs_approval" && b.total > max && c && c.total <= max)
       alt = (
         <>
           Rather stay under {whole(max)}?{" "}
           <button className="link" onClick={() => p.onChoose(c.lineId, c.sku)}>
-            Switch to {shortName(c.name)} · {money(c.total)}, no
-            sign-off
+            Switch to {shortName(c.name)} · {money(c.total)}, no sign-off
           </button>
         </>
       );
@@ -839,7 +1270,12 @@ function Footer({ p, b }: { p: OrderProps; b: Basket }) {
   return (
     <div className="order__foot">
       {cta}
-      {allDeliverable && <p className="order-delivery"><Icon name="truck" className="i-16" /> Availability checked for {dayLabel(b.date)}. Delivery time is a requested sample slot.</p>}
+      {allDeliverable && (
+        <p className="order-delivery">
+          <Icon name="truck" className="i-16" /> Availability checked for{" "}
+          {dayLabel(b.date)}. Delivery time is a requested sample slot.
+        </p>
+      )}
       <p className="foot-note">{note}</p>
       {alt && <p className="foot-alt">{alt}</p>}
     </div>

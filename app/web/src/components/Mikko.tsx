@@ -19,6 +19,11 @@ import { goToBuyer, readSent, type SentOrder } from "../demoFlow";
 export function MikkoView() {
   // S52: the order the buyer just sent (stored in this browser) comes first, and deciding it returns to the buyer.
   const [sent] = useState<SentOrder | null>(() => readSent());
+  // Hosted demo: this browser's private session, so a visitor can point their own agent at their approval queue.
+  const [session, setSession] = useState<string | null>(null);
+  useEffect(() => {
+    fetch("/api/session").then((r) => r.json()).then((j) => setSession(j.isolated ? j.session : null)).catch(() => {});
+  }, []);
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [baskets, setBaskets] = useState<Record<string, Basket>>({});
   const [done, setDone] = useState<{ order: Order; failed?: string }[]>([]);
@@ -62,10 +67,11 @@ export function MikkoView() {
           {PEOPLE[APPROVER]?.name ?? APPROVER} · {PEOPLE[APPROVER]?.role}
         </span>
         <Button variant="secondary" size="sm" icon="chevron-left" onClick={() => goToBuyer(sent)}>
-          {sent ? "Back to Anna's order" : "Back to the shop"}
+          {sent ? "Back to Aleksei's order" : "Back to the shop"}
         </Button>
       </header>
       <p className="mikko__demo">Demo: you are now Mikko, who approves orders outside the purchasing rules.</p>
+      {session && <p className="mikko__demo">Your orders are private to this browser. Send an outside agent's order here: <code>node scripts/aimo-agent.mjs --session {session} order "1000 litres of lactose-free milk by Monday"</code> with <code>GATEWAY={location.origin}</code>.</p>}
       <main className="mikko__list">
         {policy && <details className="purchasing-policy">
           <summary>Purchasing policy <Icon name="chevron-down" className="i-16"/></summary>
@@ -79,6 +85,7 @@ export function MikkoView() {
               </div>
               <div className="policy-editor__checks">
                 <div><Checkbox checked={policy.requireApproval} label="Always require financial approval" disabled={savingPolicy || !canEditPolicy} onChange={value=>setPolicy({...policy,requireApproval:value})}/><span>Always require financial approval</span></div>
+                <div><Checkbox checked={policy.confirmUnknownStock ?? true} label="Unconfirmed stock needs approval" disabled={savingPolicy || !canEditPolicy} onChange={value=>setPolicy({...policy,confirmUnknownStock:value})}/><span>Unconfirmed stock needs approval</span></div>
                 <div><Checkbox checked={policy.substitutionsPermitted} label="Permit substitutions" disabled={savingPolicy || !canEditPolicy} onChange={value=>setPolicy({...policy,substitutionsPermitted:value})}/><span>Permit substitutions</span></div>
                 <div><Checkbox checked={policy.autoSwapSameUse} label="Allow verified same-use substitutions" disabled={savingPolicy || !canEditPolicy} onChange={value=>setPolicy({...policy,autoSwapSameUse:value})}/><span>Choose verified substitutes automatically</span></div>
               </div>
@@ -175,7 +182,7 @@ function Approval({
     <article className={"approval" + (mine ? " approval--mine" : "")}>
       {mine && <span className="tag tag--blue approval__mine">The order you just sent</span>}
       <div className="approval__from">
-        <span className="avatar avatar--teal">{order.by.startsWith("agent") ? "AI" : "AV"}</span>
+        <span className="avatar avatar--teal">{order.by.startsWith("agent") ? "AI" : "AF"}</span>
         <span>
           <b>{firstName(order.by)} asks you to approve</b>
           <span className="muted-12">
@@ -323,10 +330,10 @@ function Outcome({ d, basket, onBack, returnTo }: { d: { order: Order; failed?: 
           </>
         )}
       </dl>
-      <p className="muted-12">{placed ? "Prices are fixed. Anna sees it in her order now." : "Nothing is ordered. Anna sees your note in her chat."}</p>
+      <p className="muted-12">{placed ? "Prices are fixed. Aleksei sees it in the order now." : "Nothing is ordered. Aleksei sees your note in the chat."}</p>
       {returnTo ? (
         <>
-          <Button size="lg" icon="chevron-left" onClick={() => goToBuyer(returnTo)}>Back to Anna's order</Button>
+          <Button size="lg" icon="chevron-left" onClick={() => goToBuyer(returnTo)}>Back to Aleksei's order</Button>
           <p className="muted-12" aria-live="polite">Taking you back in {left} s…</p>
         </>
       ) : (

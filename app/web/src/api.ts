@@ -228,7 +228,7 @@ async function call<T>(
   return { status: r.status, data: data as T };
 }
 
-export const BUYER = "Anna K.";
+export const BUYER = "Aleksei F.";
 export const APPROVER = "Mikko L.";
 export const isNotFound = (e: unknown) =>
   e instanceof ApiError && e.status === 404;
@@ -239,7 +239,7 @@ const checkedData = <T,>(r:{status:number;data:T}) => { if (r.status >= 400) thr
 export type MenuItem = { title: string; description: string; course: "starter" | "main" | "dessert" | "drinks" | "side" | "snack" | "other" };
 export type MenuReply = { items: MenuItem[]; reply: string; planner: "llm" | "fallback" };
 
-export type PurchasingPolicy = Mandate & {substitutionsPermitted:boolean;autoSwapSameUse:boolean;forbiddenAllergens:string[];allowedCategories:string[];requireApproval:boolean;maxSubstituteIncreasePct:number;allowedDeliveryWeekdays:number[]};
+export type PurchasingPolicy = Mandate & {substitutionsPermitted:boolean;autoSwapSameUse:boolean;forbiddenAllergens:string[];allowedCategories:string[];requireApproval:boolean;confirmUnknownStock?:boolean;maxSubstituteIncreasePct:number;allowedDeliveryWeekdays:number[]};
 export const api = {
   // Re-checks price/stock and stores it on the basket (survives reloads).
   refresh:(id:string)=>call<{basket:Basket;changes:Change[]}>(`/basket/${id}/refresh`,{by:BUYER}).then(checkedData),
