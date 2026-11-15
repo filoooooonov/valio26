@@ -1297,7 +1297,7 @@ export function isSameUse(
     o.quantityIssue ||
     o.stock.available == null ||
     o.stock.available < o.qty ||
-    !o.stock.customerPrice ||
+    !(o.stock.price > 0) ||
     !o.stock.deliverable ||
     o.stock.cutoffPassed
   )
@@ -1324,7 +1324,7 @@ export function permittedSwap(customer: string, orig: BasketLine, o: Option) {
     !a ||
     !p ||
     o.quantityIssue ||
-    !o.stock.customerPrice ||
+    !(o.stock.price > 0) ||
     !orderable(o.stock, o.qty)
   )
     return undefined;

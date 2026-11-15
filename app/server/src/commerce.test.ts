@@ -84,9 +84,10 @@ test('unknown stock never places itself: it goes to the approver, whose approval
   const audit=await (await request(`/api/v1/purchase-requests/${b.id}/audit`)).json();
   expect(audit.some((e:any)=>/Stock confirmed by Mikko/.test(e.summary))).toBe(true);
 });
-test('missing delivery cutoff and missing customer price cannot be approved',async()=>{
+test('missing delivery cutoff and missing price cannot be approved; a list price (no contract price) is a valid price',async()=>{
   let b;cutoff=false;b=await create();expect(b.checks.some((c:any)=>c.code==='delivery_unverified')).toBe(true);
-  cutoff=true;customerPrice=false;b=await create();expect(b.checks.some((c:any)=>c.code==='price_unverified')).toBe(true);
+  cutoff=true;customerPrice=false;b=await create();expect(b.checks.some((c:any)=>c.code==='price_unverified')).toBe(false);
+  customerPrice=true;price=0;b=await create();expect(b.checks.some((c:any)=>c.code==='price_unverified')).toBe(true);
 });
 test('unavailable products escalate and cannot result in a partial successful order',async()=>{
   delivered=false;const b=await create();expect(b.basket.openIssues).toBeGreaterThan(0);

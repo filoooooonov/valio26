@@ -583,6 +583,7 @@ export function LineRow({
       </div>
       {!comparisonOnly && <div className="price">
         <b className={off ? "price__off" : ""}>{off ? "—" : money(total)}</b>
+        {!off && l.stock.price > 0 && !l.stock.customerPrice && <span className="price__unit">List price</span>}
       </div>}
       {comparisonOnly ? null : frozen || open ? (
         <span className="line__qty">{qtyLabel(qty, pack)}</span>

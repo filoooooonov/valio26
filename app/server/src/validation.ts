@@ -31,7 +31,9 @@ export function validatePurchase(b: Basket): Check[] {
     if(l.quantityIssue)add('quantity_unknown',`${l.name}: ${l.quantityIssue}`,'catalogue',l.sku);
     const step = p.unit === 'KG' || s.salesUnit === 'KG' ? Math.max(0.5,p.lot ?? 0.5) : Math.max(1,p.lot ?? 1);
     if (Math.abs(l.qty / step - Math.round(l.qty / step)) > 1e-6) add('package_invalid',`${l.name}: quantity must follow sales lot ${step}.`,'catalogue',l.sku);
-    if (!Number.isFinite(s.price) || s.price <= 0 || !Number.isFinite(s.priceWithTax) || s.priceWithTax <= 0 || !s.customerPrice) add('price_unverified',`${l.name}: customer-specific price is not verified.`,'mock_api',l.sku);
+    // Valio's catalogPrice is the price this customer pays today; netPriceFound only marks a negotiated contract price
+    // (aleksei, 15 Nov). A list price is shown as such; only a missing or invalid price blocks.
+    if (!Number.isFinite(s.price) || s.price <= 0 || !Number.isFinite(s.priceWithTax) || s.priceWithTax <= 0) add('price_unverified',`${l.name}: Valio returned no price for this product.`,'mock_api',l.sku);
     if (!s.deliverable || s.cutoffPassed || !s.availableDate || s.availableDate > b.date || !s.closingTime || !Number.isFinite(Date.parse(s.closingTime))) add('delivery_unverified',`${l.name}: delivery and ordering cutoff are not verified.`,'mock_api',l.sku);
     if (s.available == null || !Number.isFinite(s.available)) add('stock_unknown',`${l.name}: Valio can't confirm stock for this quantity, so a person confirms it before the order is placed.`,'mock_api',l.sku);
     else if (s.available < l.qty) add('stock_short',`${l.name}: requested ${l.qty} sales units, only ${s.available} available.`,'mock_api',l.sku);
@@ -49,7 +51,9 @@ export function validatePurchase(b: Basket): Check[] {
     if (l.replaced) {
       if(!m.substitutionsPermitted)add("substitution_forbidden",`${l.name}: customer policy forbids substitutions.`,"policy",l.sku);
       const original = getProduct(l.replaced.sku);
-      if (!m.autoSwapSameUse && l.issue?.decidedBy?.startsWith('gateway')) add('substitution_forbidden',`${l.name}: automatic substitutions are disabled.`,'policy',l.sku);
+      const by = l.issue?.decidedBy ?? '';
+      const allowedAuto = by === 'gateway (best replacement)' ? m.autoPickReplacement !== false : m.autoSwapSameUse;
+      if (!allowedAuto && by.startsWith('gateway')) add('substitution_forbidden',`${l.name}: automatic substitutions are disabled.`,'policy',l.sku);
       if (!original || p.mayContain.some(a => !original.contains.includes(a) && !original.mayContain.includes(a))) add('substitution_unverified',`${l.name}: substitution introduces unverified allergen risk.`,'catalogue',l.sku);
     }
   }

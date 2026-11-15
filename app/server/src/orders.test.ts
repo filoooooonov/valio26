@@ -285,7 +285,7 @@ describe("orders", () => {
   });
 
   test("swap requires the buyer's OK before ordering", async () => {
-    setMandate("c1", { autoSwapSameUse: false });
+    setMandate("c1", { autoSwapSameUse: false, autoPickReplacement: false }); // the manual gate is under test
     mocks["464073"] = { deliverable: false };
     mocks["464201"] = { price: 1, cmp: 1, unit: "L" };
     mocks["463380"] = { deliverable: false };
@@ -528,4 +528,14 @@ describe("LLM planner (mocked)", () => {
         : true,
     ).toBe(true); // diet filter applied
   });
+});
+
+test("S51: a best-replacement pick passes validation even when the same-use rule is off", async () => {
+  setMandate("123", { autoPickReplacement: true, autoSwapSameUse: false, forbiddenAllergens: [] });
+  mocks["461814"] = { deliverable: false };
+  const b = await (await post("/api/basket", { request: "50 people", date: "2026-11-20" })).json();
+  const l = b.lines.find((x: any) => x.issue?.decidedBy === "gateway (best replacement)");
+  expect(l).toBeTruthy();
+  expect(b.checks?.some?.((c: any) => c.code === "substitution_forbidden") ?? false).toBe(false);
+  expect(b.mandate.reasons.join(" ")).not.toMatch(/automatic substitutions are disabled/);
 });
