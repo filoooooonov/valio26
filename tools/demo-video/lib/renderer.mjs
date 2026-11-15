@@ -366,11 +366,11 @@ export async function render(
       y = expr("y", g);
     const rings = RINGS.map((_, k) =>
       ringEnable[k].length
-        ? `[c${k}][${k + 2}:v]overlay@r${k}=x=-500:y=-500:enable='${ringEnable[k].join("+")}':shortest=1[c${k + 1}];`
+        ? `[c${k}][${k + 2}:v]overlay@r${k}=x=-500:y=-500:enable='${ringEnable[k].join("+")}':eof_action=repeat[c${k + 1}];`
         : `[c${k}]null[c${k + 1}];`,
     ).join("\n");
     const graph = `[0:v]fps=${FPS},zoompan=z='${z}':x='max(0,min(iw-iw/zoom,(${x})*${rec.scale}-iw/zoom/2))':y='max(0,min(ih-ih/zoom,(${y})*${rec.scale}-ih/zoom/2))':d=1:s=${OUT_W}x${OUT_H}:fps=${FPS},setsar=1,sendcmd=f='seg${gi}.cmd'[bg];
-[bg][1:v]overlay@cur=x=-500:y=-500:shortest=1[c0];
+[bg][1:v]overlay@cur=x=-500:y=-500:eof_action=repeat[c0];
 ${rings}
 [c${RINGS.length}]format=yuv420p[out]`;
     writeFileSync(resolve(work, `seg${gi}.graph`), graph);
@@ -384,20 +384,11 @@ ${rings}
       "0",
       "-i",
       resolve(recDir, `seg${gi}.ffconcat`),
-      "-loop",
-      "1",
-      "-framerate",
-      String(FPS),
+      // Overlay images are single-frame inputs that overlay repeats (eof_action=repeat). Looping them at 60 fps
+      // (-loop 1) let ffmpeg 7 queue thousands of decoded frames and run out of memory on long parts.
       "-i",
       resolve(assets, "cursor.png"),
-      ...RINGS.flatMap((_, k) => [
-        "-loop",
-        "1",
-        "-framerate",
-        String(FPS),
-        "-i",
-        resolve(assets, `ring${k}.png`),
-      ]),
+      ...RINGS.flatMap((_, k) => ["-i", resolve(assets, `ring${k}.png`)]),
       "-filter_complex_script",
       `seg${gi}.graph`,
       "-map",
@@ -422,7 +413,7 @@ ${rings}
       );
     });
   });
-  await pool(jobs, 3);
+  await pool(jobs, Number(process.env.DEMO_VIDEO_JOBS) || 3); // DEMO_VIDEO_JOBS=1 when ffmpeg runs out of memory
 
   // ---- 6. dissolve parts together, optional burned captions ----
   let offset = 0;

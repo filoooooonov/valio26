@@ -82,7 +82,7 @@ zoom out
 
 | Step | Meaning | Re-render only? |
 |---|---|---|
-| `open /path` | Navigate (relative to `app`, or a full URL). Dissolves in. | |
+| `open /path` | Navigate (relative to `app`, or a full URL). `open back` = browser Back (return to a page whose URL is only known at run time). Dissolves in. | |
 | `click "Target"` | Eased cursor move, hover, click with ripple | |
 | `hover "Target"` | Move the cursor there | |
 | `type "text" into "Target"` | Click the field and type at a natural pace; the camera zooms in (auto mode) | |

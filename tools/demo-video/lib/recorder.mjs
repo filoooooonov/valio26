@@ -187,10 +187,14 @@ export async function record(
     async open(s) {
       cam("wide");
       log_.cursor.push({ t: now(), visible: true });
-      const url = /^https?:/.test(s.url)
-        ? s.url
-        : app + (s.url.startsWith("/") ? s.url : "/" + s.url);
-      await page.goto(url, { waitUntil: "load" });
+      // "open back": browser Back, e.g. return to a buyer page whose URL (?b=…&o=…) is only known at run time.
+      if (s.url === "back") await page.goBack({ waitUntil: "load" });
+      else {
+        const url = /^https?:/.test(s.url)
+          ? s.url
+          : app + (s.url.startsWith("/") ? s.url : "/" + s.url);
+        await page.goto(url, { waitUntil: "load" });
+      }
       const ready = now();
       await sleep(900);
       return { ready };
