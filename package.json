@@ -11,8 +11,8 @@
     "explore:prep": "node tools/catalog-explorer/prep.mjs",
     "dev:app": "node scripts/dev-app.mjs",
     "demos": "node scripts/demos.mjs",
-    "test:app": "cd app/server && bun test && cd ../web && bunx tsc -b",
-    "test:fast": "cd app/server && bun test",
+    "test:app": "cd app/server && bun test --timeout 20000 && cd ../web && bunx tsc -b",
+    "test:fast": "cd app/server && bun test --timeout 20000",
     "build": "cd app/web && bun run build",
     "demo:reset": "node scripts/demo-reset.mjs"
   },

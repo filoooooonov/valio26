@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "bunVersion": "1.x",
+  "installCommand": "bun install && cd app/server && bun install && cd ../web && bun install",
+  "buildCommand": "cd app/web && bunx vite build",
+  "outputDirectory": "app/web/dist",
+  "regions": ["arn1"],
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 120,
+      "memory": 2048,
+      "includeFiles": "{data/raw/valio/catalog.slim.json,data/raw/valio/images.cache.json,tools/catalog-explorer/aimo-categories.json}"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/mcp", "destination": "/api/index" }
+  ]
+}

@@ -1,0 +1,19 @@
+# Upload only what the hosted demo needs. Never upload secrets.
+.env
+.env.*
+!.env.example
+node_modules
+**/node_modules
+.git
+.claude
+artifacts
+video
+team
+challenges
+docs
+tools/demo-video
+data/commerce
+app/server/data
+data/raw/valio/valio_aimo_junction26_product_data.json
+data/raw/valio/*.csv
+app/web/dist
