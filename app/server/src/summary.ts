@@ -69,7 +69,7 @@ export function basketSummary(b: Basket): BasketSummary {
       items.push({
         lineId,
         kind: "substitution",
-        text: `${l.replaced!.name} replaced by ${l.name}${by.startsWith("policy:") ? " under your standing permission" : by.startsWith("gateway") ? " under the same-use rule" : ""}.`,
+        text: `${l.replaced!.name} replaced by ${l.name}${by.startsWith("policy:") ? " under your standing permission" : by === "gateway (best replacement)" ? " automatically (best available replacement; you can change it)" : by.startsWith("gateway") ? " under the same-use rule" : ""}.`,
       });
     }
     if (open) {

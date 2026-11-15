@@ -182,6 +182,7 @@ describe("fallback planner", () => {
     });
   });
   test("undeliverable line gets ranked options, stock-checked in one extra call", async () => {
+    setMandate("123", { autoPickReplacement: false }); // the ranked options themselves are under test
     mocks["461814"] = { deliverable: false };
     mocks["462150"] = { price: 14 };
     mocks["461883"] = { price: 12, cutoff: true };
@@ -195,6 +196,58 @@ describe("fallback planner", () => {
     expect(l.issue.options.length).toBeLessThanOrEqual(3);
     expect(b.apiCalls).toBe(4);
     expect(b.mandate.state).toBe("needs_your_ok");
+  });
+});
+
+describe("S51 best replacement", () => {
+  const build = async () => {
+    mocks["461814"] = { deliverable: false };
+    mocks["462150"] = { price: 14 };
+    mocks["461883"] = { price: 12, cutoff: true };
+    return (
+      await post("/api/basket", { request: "50 people", date: "2026-11-20" })
+    ).json();
+  };
+  test("an unavailable line gets the best safe, priced, in-stock replacement pre-selected; the buyer can change it", async () => {
+    setMandate("123", { autoPickReplacement: true, forbiddenAllergens: [] });
+    const b = await build();
+    const l = b.lines.find((x: any) => x.replaced?.sku === "461814");
+    expect(l).toBeTruthy();
+    expect(l.issue.decided).toBe(l.sku);
+    expect(l.issue.decidedBy).toBe("gateway (best replacement)");
+    expect(l.stock.price).toBeGreaterThan(0);
+    expect(
+      b.summary.items.some(
+        (i: any) =>
+          i.kind === "substitution" && i.lineId === l.id && !i.attention,
+      ),
+    ).toBe(true);
+    // The buyer can still take it out (or pick another option).
+    const changed = await (
+      await post(`/api/basket/${b.id}/lines/${l.id}`, {
+        chooseOption: "remove",
+      })
+    ).json();
+    expect(changed.lines.find((x: any) => x.id === l.id).issue.decided).toBe(
+      "remove",
+    );
+  });
+  test("never auto-picks when a hard allergen rule cannot be proven safe, or when switched off", async () => {
+    setMandate("123", {
+      autoPickReplacement: true,
+      forbiddenAllergens: ["milk"],
+    });
+    let b = await build();
+    expect(
+      b.lines.some(
+        (x: any) => x.issue?.decidedBy === "gateway (best replacement)",
+      ),
+    ).toBe(false);
+    setMandate("123", { autoPickReplacement: false, forbiddenAllergens: [] });
+    b = await build();
+    expect(
+      b.lines.find((x: any) => x.sku === "461814").issue.decided,
+    ).toBeUndefined();
   });
 });
 
@@ -218,7 +271,10 @@ describe("orders", () => {
     const b = await (
       await post("/api/basket", {
         request: "100 L lactose-free milk",
-        items:[{query:"lactose-free milk",quantity:100,unit:"l"},{query:"rice",quantity:1,unit:"kg"}],
+        items: [
+          { query: "lactose-free milk", quantity: 100, unit: "l" },
+          { query: "rice", quantity: 1, unit: "kg" },
+        ],
         date: "2026-11-20",
         customer: "c0",
       })
@@ -237,7 +293,10 @@ describe("orders", () => {
     const b = await (
       await post("/api/basket", {
         request: "100 L lactose-free milk",
-        items:[{query:"lactose-free milk",quantity:100,unit:"l"},{query:"rice",quantity:1,unit:"kg"}],
+        items: [
+          { query: "lactose-free milk", quantity: 100, unit: "l" },
+          { query: "rice", quantity: 1, unit: "kg" },
+        ],
         date: "2026-11-20",
         customer: "c1",
       })
@@ -288,10 +347,21 @@ describe("orders", () => {
       ).status,
     ).toBe(403);
     mocks["464073"] = { price: 1.1, cmp: 1.1, unit: "L" }; // price moved since the quote
-    const stale = await post(`/api/orders/${o.id}/decision`, {decision:"approve",by:"Mikko L.",revision:o.revision});
+    const stale = await post(`/api/orders/${o.id}/decision`, {
+      decision: "approve",
+      by: "Mikko L.",
+      revision: o.revision,
+    });
     expect(stale.status).toBe(409);
     const updated = await (await app.request(`/api/orders/${o.id}`)).json();
-    const d = await (await post(`/api/orders/${o.id}/decision`,{decision:"approve",by:"Mikko L.",revision:updated.revision,note:"ok for the updated event price"})).json();
+    const d = await (
+      await post(`/api/orders/${o.id}/decision`, {
+        decision: "approve",
+        by: "Mikko L.",
+        revision: updated.revision,
+        note: "ok for the updated event price",
+      })
+    ).json();
     expect(d.status).toBe("placed");
     expect(updated.changes[0]).toMatchObject({
       kind: "price",

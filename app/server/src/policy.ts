@@ -10,6 +10,8 @@ export type Mandate = {
   /** Like-for-like swaps (same product group, no new allergens, not fish/meat, at most +20 % or +€25) are
    *  made by the gateway under this rule and logged; every other swap waits for the buyer. */
   autoSwapSameUse: boolean;
+  /** CONTRACT S51: pre-select the best safe, priced, in-stock replacement for an unavailable line (buyer can change). */
+  autoPickReplacement: boolean;
   approver: string;
   forbiddenAllergens: string[];
   substitutionsPermitted: boolean;
@@ -82,6 +84,7 @@ export function getMandate(customer: string): Mandate {
     swapsNeedOk: true,
     // Bistro Kallio (account 123, synthetic profile) has no account-wide same-use rule: only explicit permissions swap.
     autoSwapSameUse: customer !== "123",
+    autoPickReplacement: true,
     approver: "Mikko L.",
     forbiddenAllergens: [],
     substitutionsPermitted:true,

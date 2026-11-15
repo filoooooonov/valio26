@@ -7,7 +7,7 @@ import { CREAM_A, CREAM_B, CREAM_C, historyOrders } from "./history";
 import { purchasingIntent } from "./intent";
 import { setLlm } from "./llm";
 import { editLine, rankOptions, type Basket, type Option } from "./plan";
-import { getMandate, resetMandates, resetPermissions } from "./policy";
+import { getMandate, resetMandates, resetPermissions, setMandate } from "./policy";
 import {
   acceptedCount,
   preferenceOf,
@@ -79,6 +79,8 @@ beforeEach(() => {
   resetAudit();
   resetPermissions();
   resetMandates();
+  // These tests cover the buyer's own choices, permissions and memory: keep S51 auto-pick out of the way.
+  setMandate("123", { autoPickReplacement: false });
   setLlm(null);
   mocks = { [CREAM_A]: { cutoff: true } }; // the usual cream misses its cut-off, like the real mock API
   calls = 0;

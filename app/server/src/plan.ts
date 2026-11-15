@@ -1280,6 +1280,7 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
 
 // ---------- same-use rule (mandate.autoSwapSameUse) ----------
 export const SAME_USE_BY = "gateway (same-use rule)";
+export const BEST_REPLACEMENT_BY = "gateway (best replacement)";
 const FISH_MEAT = /^(18|41(70|71|72|73))/; // fresh fish/meat, frozen fish/meat (same groups as MEAT_FISH)
 /** Same product group, no additional declared allergens, verified quantities and current facts,
  * no fish/meat, within the customer's configured percentage increase. Final safety checks still apply. */
@@ -1395,8 +1396,29 @@ export function autoSwapSameUse(b: Basket): void {
       o.preference?.status !== "rejected" &&
       !breaksHardRule(b, l, o.sku) &&
       isSameUse(l, o, b.rules.maxSubstituteIncreasePct)
-    )
+    ) {
       editLine(b.id, l.id, { chooseOption: o.sku, by: SAME_USE_BY });
+      continue;
+    }
+    // 3. CONTRACT S51: pre-select the best replacement the buyer would otherwise pick by hand. Only unavailable or
+    //    past-cut-off lines; only a verified price, stock that covers the quantity, a delivery date, no hard-rule risk,
+    //    not rejected before, within the price ceiling. The buyer can change or undo it; validation still applies.
+    if (b.rules.autoPickReplacement === false || l.issue.kind === "short") continue;
+    // Price ceiling like the same-use rule: +maxSubstituteIncreasePct % or +25 EUR, whichever is larger.
+    const ceiling = Math.max((b.rules.maxSubstituteIncreasePct / 100) * Math.max(l.total, 0), 25);
+    const safe = l.issue.options.filter(
+      (x) =>
+        x.preference?.status !== "rejected" &&
+        !x.quantityIssue &&
+        x.stock.price > 0 &&
+        x.stock.available != null &&
+        orderable(x.stock, x.qty) &&
+        x.delta <= ceiling + 1e-9 &&
+        !breaksHardRule(b, l, x.sku),
+    );
+    // Contract-priced options first; a list-priced pick still carries the price check to validation.
+    const best = safe.find((x) => x.stock.customerPrice) ?? safe[0];
+    if (best) editLine(b.id, l.id, { chooseOption: best.sku, by: BEST_REPLACEMENT_BY });
   }
 }
 
