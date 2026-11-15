@@ -22,4 +22,4 @@
 @media(prefers-reduced-motion:reduce){.replacement-notice__row{transition:none}}
 
 .replacement-notice__row--static{cursor:default}
-.replacement-notice__decide{display:flex;flex-direction:column;align-items:flex-end;gap:var(--s-4);margin-left:auto;flex:none}
+.replacement-notice__replacements{align-self:flex-start;margin-top:var(--s-3)}
