@@ -114,6 +114,12 @@ export function Chat(p: Props) {
     ? reviews.messages.filter(message => open.some(line => message.products.includes(reviewProductKey(line))))
     : [];
   const items = [...contextItems, ...reviewMessages].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+  // One review list = exactly the products counted in "need you" (server summary), in the newest review card (S51).
+  const reasons = new Map((p.basket?.summary?.items ?? []).filter(i => i.attention && i.lineId).map(i => [i.lineId!, i.text] as const));
+  const needYou = p.basket && (p.phase === "draft" || p.phase === "review")
+    ? p.basket.lines.filter(l => lineIsOpen(l) || reasons.has(l.id))
+    : [];
+  const lastReview = [...items].reverse().find(i => i.kind === "productReview")?.key;
   const firstAt = items.find((i) => i.kind === "user")?.at;
 
   const pinned = useRef(true);
@@ -184,9 +190,10 @@ export function Chat(p: Props) {
             long
           />
         )}
-        {items.map(it => it.kind === "productReview" && p.basket
-          ? <ReplacementNotice key={it.key} lines={open.filter(line => it.products.includes(reviewProductKey(line)))} date={p.basket.date} busy={p.busy} onReview={p.onSeeAll} />
-          : it.kind !== "productReview" ? <Turn key={it.key} it={it} p={p} firstAt={firstAt} /> : null)}
+        {items.map(it => it.kind === "productReview"
+          ? it.key === lastReview && p.basket ? <ReplacementNotice key="product-review" lines={needYou} reasons={reasons} date={p.basket.date} busy={p.busy} onReview={p.onSeeAll} /> : null
+          : <Turn key={it.key} it={it} p={p} firstAt={firstAt} />)}
+        {!lastReview && p.basket && needYou.length > 0 && <ReplacementNotice key="product-review" lines={needYou} reasons={reasons} date={p.basket.date} busy={p.busy} onReview={p.onSeeAll} />}
         {p.alternativeProposal}
         {p.basket && (p.phase === "draft" || p.phase === "review") && p.basket.lines.filter((l) => l.offerPermission).map((l) => (
           <PermissionOffer key={l.id + l.offerPermission!.toSku} offer={l.offerPermission!} maxIncreasePct={p.basket!.rules.maxSubstituteIncreasePct ?? 10} />

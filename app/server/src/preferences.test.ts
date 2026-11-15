@@ -15,7 +15,7 @@ import {
   recordPreference,
 } from "./preferences";
 import { orders, resetStore } from "./store";
-import { blockingChecks, stockToConfirm } from "./validation";
+import { blockingChecks } from "./validation";
 import { setFetcher, type StockLine } from "./valio";
 
 type Mock = {
@@ -418,14 +418,11 @@ describe("exception-first summary", () => {
     );
     const s = b.summary!;
     const blocked = new Set(blockingChecks(b).map((c) => c.sku));
-    const signoff = new Set(stockToConfirm(b));
-    const attention =
-      inCart.filter(
-        (l) =>
-          (l.issue && !l.issue.decided) ||
-          blocked.has(l.sku) ||
-          signoff.has(l.name),
-      ).length + (b.total > b.rules.maxOrderEur ? 1 : 0);
+    // "Need you" = products the buyer must act on; stock sign-off and limits are the approver's notes.
+    const attention = inCart.filter(
+      (l) => (l.issue && !l.issue.decided) || blocked.has(l.sku),
+    ).length;
+    expect(s.items.filter((i) => i.attention).length).toBe(attention);
     expect(s.attention).toBe(attention);
     expect(s.usual + s.adjusted + s.attention).toBeLessThanOrEqual(
       inCart.length + 1,

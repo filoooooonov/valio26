@@ -1,6 +1,8 @@
 // Exception-first cart summary (CONTRACT S48), computed in recompute from the basket's own records.
 // Every line in the cart is counted at most once: attention > adjusted > usual. Lines that are none of these
 // (new products, extras) are simply in the cart. Removed/excluded lines are not in the cart.
+// "Need you" counts PRODUCTS the buyer must act on (unavailable, or blocked by a check). Stock sign-off and the
+// spending limits are the approver's, so they are notes, not part of the count (S51).
 import { lastPaid } from "./history";
 import type { Basket } from "./plan";
 // Same money/date style as the webshop: "1 634,51 €", "13 Nov".
@@ -18,7 +20,8 @@ export type SummaryKind =
   | "over_limit"
   | "stock_signoff"
   | "needs_choice";
-export type SummaryItem = { lineId?: string; kind: SummaryKind; text: string };
+/** `attention`: this product is counted in "need you" and listed in the chat review card. */
+export type SummaryItem = { lineId?: string; kind: SummaryKind; text: string; attention?: boolean };
 export type BasketSummary = {
   usual: number;
   adjusted: number;
@@ -76,6 +79,7 @@ export function basketSummary(b: Basket): BasketSummary {
         lineId,
         kind: l.issue!.kind === "cutoff" ? "late" : "unavailable",
         text: `${l.name}: ${l.issue!.text}${n ? ` Choose from ${n} replacement${n > 1 ? "s" : ""}.` : ""}`,
+        attention: true,
       });
     } else if (blocking.length) {
       attention++;
@@ -83,6 +87,7 @@ export function basketSummary(b: Basket): BasketSummary {
         lineId,
         kind: checkKind(blocking[0]),
         text: blocking[0].message,
+        attention: true,
       });
     } else if (swapped || rounded) {
       adjusted++;
@@ -110,7 +115,6 @@ export function basketSummary(b: Basket): BasketSummary {
     }
   }
   if (unconfirmed.length) {
-    attention++;
     items.push({
       kind: "stock_signoff",
       text: unconfirmed.length === 1
@@ -121,13 +125,11 @@ export function basketSummary(b: Basket): BasketSummary {
   const limit = b.rules?.maxOrderEur;
   const day = Math.round((dailySoFar(b.customer, b.id) + b.total) * 100) / 100;
   if (limit != null && b.total > limit) {
-    attention++;
     items.push({
       kind: "over_limit",
       text: `${eur(b.total)} is over your ${eur(limit)} per-order limit, so ${b.rules.approver} approves it.`,
     });
   } else if (b.rules?.maxDailyEur != null && day > b.rules.maxDailyEur) {
-    attention++;
     items.push({
       kind: "over_limit",
       text: `${eur(day)} today is over the ${eur(b.rules.maxDailyEur)} daily limit, so ${b.rules.approver} approves it.`,
