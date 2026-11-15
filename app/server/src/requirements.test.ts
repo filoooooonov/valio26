@@ -35,3 +35,8 @@ test('relative delivery weekdays use the local calendar and cross month and year
   expect(requestDeliveryDate('Catering for 50 on Saturday', '', saturday)).toBe('2026-11-21');
   expect(requestDeliveryDate('Tuesday, Nov 24, 2026', '', saturday)).toBe('2026-11-24');
 });
+
+test("'a nut allergy' is recognised as a tree nut allergy (S52 demo starter)", () => {
+  expect(detectRequirements("Plan a three-course dinner for 30 people. One guest has a nut allergy.").dietary).toEqual(["Tree nut allergy"]);
+  expect(detectRequirements("10 people, peanut allergy").dietary).toEqual(["Peanut allergy"]);
+});

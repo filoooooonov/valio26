@@ -205,8 +205,8 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
         icon: "repeat",
         text:
           agentSwaps.length > 2
-            ? `Swapped ${agentSwaps.length} products that can't arrive ${weekday(b.date)} for the same use`
-            : `Swapped ${agentSwaps.map((l) => shortName(l.replaced!.name)).join(" and ")} for ${weekday(b.date)} · same use`,
+            ? `Replaced ${agentSwaps.length} products that can't arrive ${weekday(b.date)} automatically`
+            : `Replaced ${agentSwaps.map((l) => shortName(l.replaced!.name)).join(" and ")} for ${weekday(b.date)} automatically`,
       });
     else if (problems)
       did.push({
@@ -446,8 +446,19 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
         break;
       }
       case "decision": {
-        const d = (e.data ?? {}) as { status?: string; orderId?: string };
-        if (d.status === "placed") {
+        const d = (e.data ?? {}) as { status?: string; orderId?: string; stockConfirmedBy?: string; products?: string[] };
+        if (d.stockConfirmedBy) {
+          // A confirmation, not an error: one short green line instead of the full product list.
+          const n = d.products?.length ?? 0;
+          out.push({
+            kind: "system",
+            key,
+            at: e.at,
+            icon: "circle-check",
+            tone: "green",
+            text: `${firstName(d.stockConfirmedBy)} confirmed stock for ${n} ${n === 1 ? "product" : "products"} Valio couldn't confirm automatically`,
+          });
+        } else if (d.status === "placed") {
           out.push({
             kind: "system",
             key,

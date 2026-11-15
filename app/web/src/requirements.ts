@@ -44,7 +44,7 @@ export function detectRequirements(request: string): DetectedRequirements {
       "Peanut allergy",
     ],
     [
-      /\bnut[ -]?free|tree nut allergy|allerg(?:ic|y) to (?:tree )?nuts?/i,
+      /\bnut[ -]?free|\b(?:tree )?nut allerg(?:y|ies)|allerg(?:ic|y) to (?:tree )?nuts?/i,
       "Tree nut allergy",
     ],
     [/fish[ -]?free|fish allergy|allerg(?:ic|y) to fish/i, "Fish allergy"],

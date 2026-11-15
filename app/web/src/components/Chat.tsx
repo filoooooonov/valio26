@@ -25,7 +25,8 @@ import type { Phase } from "../App";
 import { AssistantBadge, ThinkingMark } from "./Mark";
 import { ReplacementNotice } from './ReplacementNotice';
 import { useProductImage } from './OrderPanel';
-import { Card, ProductTile } from '../ui';
+import { Button, Card, Chip, ProductTile } from '../ui';
+import { SCENARIOS } from '../demoFlow';
 import { closePopup } from './popupMotion';
 import "./chat-polish.css";
 
@@ -68,6 +69,7 @@ type Props = {
   onLog: () => void;
   onAttach: () => void;
   onHero: () => void;
+  onApproveAsMikko?: () => void;
   onAgain: () => void;
 };
 
@@ -198,7 +200,7 @@ export function Chat(p: Props) {
         {p.basket && (p.phase === "draft" || p.phase === "review") && p.basket.lines.filter((l) => l.offerPermission).map((l) => (
           <PermissionOffer key={l.id + l.offerPermission!.toSku} offer={l.offerPermission!} maxIncreasePct={p.basket!.rules.maxSubstituteIncreasePct ?? 10} />
         ))}
-        {p.phase === "waiting" && p.order && <Waiting order={p.order} />}
+        {p.phase === "waiting" && p.order && <Waiting order={p.order} onApprove={p.onApproveAsMikko} />}
         {p.stale && p.basket && (
           <Stale checkedAt={p.basket.checkedAt} onRefresh={p.onRefreshPrices} />
         )}
@@ -237,9 +239,7 @@ function ConfirmedOrder({ order, onLog }: { order: Order; onLog: () => void }) {
 }
 
 export function Intro({
-  onHero,
   onSend,
-  onAttach,
 }: {
   onHero: () => void;
   onSend: (s: string) => void;
@@ -256,22 +256,17 @@ export function Intro({
         <p className="muted-12">
           Demo account: Bistro Kallio, with a synthetic 8-week order history. Orders are simulated.
         </p>
-        <div className="examples">
-          <button className="chip chip--example" onClick={onHero}>
-            <Icon name="corner-down-right" className="i-14" /> Catering for 50
-            on Saturday
-          </button>
-          <button
-            className="chip chip--example"
-            onClick={() => onSend("Prepare my usual weekend order.")}
-          >
-            <Icon name="corner-down-right" className="i-14" /> My usual weekend
-            order
-          </button>
-          <button className="chip chip--example" onClick={onAttach}>
-            <Icon name="camera" className="i-14" /> Photo of a menu
-          </button>
-        </div>
+        {/* One starter per main use case and edge case (S52), each with what it demonstrates. */}
+        <ul className="examples examples--scenarios" aria-label="Try a demo scenario">
+          {SCENARIOS.map((s) => (
+            <li key={s.label} className="example">
+              <Chip example icon="corner-down-right" onClick={() => onSend(s.prompt)}>
+                {s.label}
+              </Chip>
+              <span className="example__shows">{s.shows}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
@@ -571,7 +566,7 @@ export function NoSubstitute({ lines, date, busy, onRemove, onFind }: {
   </section>;
 }
 
-function Waiting({ order }: { order: Order }) {
+function Waiting({ order, onApprove }: { order: Order; onApprove?: () => void }) {
   const stockCheck = order.mandate?.reasons.some((r) => /can't confirm stock/.test(r));
   const [seen, setSeen] = useState<string | null>(null);
   useEffect(() => {
@@ -607,6 +602,15 @@ function Waiting({ order }: { order: Order }) {
             : ""}
           His answer shows up here as soon as he decides.
         </p>
+        {onApprove && (
+          // Demo: one click to Mikko's approval screen; it brings you back here after he decides (S52).
+          <div className="notice__actions">
+            <Button icon="arrow-right" onClick={onApprove}>
+              Approve it as Mikko
+            </Button>
+            <span className="muted-12">Demo: switch to Mikko's screen.</span>
+          </div>
+        )}
       </div>
     </div>
   );

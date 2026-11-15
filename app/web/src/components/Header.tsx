@@ -13,6 +13,8 @@ export function Header({
   delivery,
   onDelivery,
   onHistory,
+  approvals,
+  onApprovals,
 }: {
   cartTotal: number;
   date: string;
@@ -23,6 +25,9 @@ export function Header({
   delivery?: DeliveryChoice | null;
   onDelivery?: () => void;
   onHistory?: () => void;
+  /** Orders waiting for Mikko (S52 demo: one click to his approval screen). */
+  approvals?: number;
+  onApprovals?: () => void;
 }) {
   return (
     <header className="hdr">
@@ -35,6 +40,12 @@ export function Header({
         <button type="button" className="hdr__history" onClick={onHistory}>
           <Icon name="clock" className="i-16" />
           Order history
+        </button>
+      )}
+      {onApprovals && (
+        <button type="button" className="hdr__history" onClick={onApprovals}>
+          <Icon name="users" className="i-16" />
+          {approvals ? `Mikko's approvals (${approvals})` : "Mikko's approvals"}
         </button>
       )}
       <span className="hdr__spacer" />

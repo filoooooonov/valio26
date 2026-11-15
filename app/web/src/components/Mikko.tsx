@@ -9,13 +9,16 @@ import {
   type OrderConflict,
 } from "../api";
 import { Icon } from "../icons";
-import { addDays, dayLabel, money, n2, SLOT, stamp, timeLabel, whole } from "../format";
+import { dayLabel, money, n2, SLOT, stamp, timeLabel, whole } from "../format";
 import { firstName, orderLabel, PEOPLE } from "../thread";
 import { AimoLogo } from "./Mark";
+import { goToBuyer, readSent, type SentOrder } from "../demoFlow";
 
 // Mikko's view (?view=mikko): the approver's phone card from the states board. Lists pending orders and
 // decides them through POST /api/orders/:id/decision as the mandate approver.
 export function MikkoView() {
+  // S52: the order the buyer just sent (stored in this browser) comes first, and deciding it returns to the buyer.
+  const [sent] = useState<SentOrder | null>(() => readSent());
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [baskets, setBaskets] = useState<Record<string, Basket>>({});
   const [done, setDone] = useState<{ order: Order; failed?: string }[]>([]);
@@ -58,7 +61,11 @@ export function MikkoView() {
         <span className="mikko__who">
           {PEOPLE[APPROVER]?.name ?? APPROVER} · {PEOPLE[APPROVER]?.role}
         </span>
+        <Button variant="secondary" size="sm" icon="chevron-left" onClick={() => goToBuyer(sent)}>
+          {sent ? "Back to Anna's order" : "Back to the shop"}
+        </Button>
       </header>
+      <p className="mikko__demo">Demo: you are now Mikko, who approves orders outside the purchasing rules.</p>
       <main className="mikko__list">
         {policy && <details className="purchasing-policy">
           <summary>Purchasing policy <Icon name="chevron-down" className="i-16"/></summary>
@@ -91,14 +98,15 @@ export function MikkoView() {
           </div>
         )}
         {done.map((d) => (
-          <Outcome key={d.order.id + (d.failed ?? "")} d={d} basket={baskets[d.order.basketId]} onBack={() => setDone((x) => x.filter((y) => y !== d))} />
+          <Outcome key={d.order.id + (d.failed ?? "")} d={d} basket={baskets[d.order.basketId]} returnTo={sent && sent.orderId === d.order.id ? sent : null} onBack={() => setDone((x) => x.filter((y) => y !== d))} />
         ))}
         {orders && orders.length === 0 && !done.length && (
           <p className="mikko__empty">Nothing waits for your approval.</p>
         )}
-        {orders?.map((o) => (
+        {orders && [...orders].sort((a, b) => Number(b.id === sent?.orderId) - Number(a.id === sent?.orderId)).map((o) => (
           <Approval
             key={o.id}
+            mine={o.id === sent?.orderId}
             order={o}
             basket={baskets[o.basketId]}
             onDone={(order, failed) => {
@@ -116,7 +124,9 @@ function Approval({
   order,
   basket,
   onDone,
+  mine,
 }: {
+  mine?: boolean;
   order: Order;
   basket?: Basket;
   onDone: (o: Order, failed?: string) => void;
@@ -162,7 +172,8 @@ function Approval({
   const buyer = PEOPLE[order.by]?.name ?? order.by;
   const max = basket?.rules.maxOrderEur ?? 500;
   return (
-    <article className="approval">
+    <article className={"approval" + (mine ? " approval--mine" : "")}>
+      {mine && <span className="tag tag--blue approval__mine">The order you just sent</span>}
       <div className="approval__from">
         <span className="avatar avatar--teal">{order.by.startsWith("agent") ? "AI" : "AV"}</span>
         <span>
@@ -177,7 +188,7 @@ function Approval({
         {basket?.intent === "DIRECT_PURCHASE" && basket.lines[0]?.comparison
           ? `${basket.lines[0].comparison.query.charAt(0).toUpperCase()}${basket.lines[0].comparison.query.slice(1)}, ${n2(basket.lines[0].comparison.requested.qty)} ${basket.lines[0].comparison.requested.unit.toLowerCase()}`
           : basket?.people
-          ? `Catering for ${basket.people} · ${dayLabel(addDays(basket.date, 1))}`
+          ? `Catering for ${basket.people} · ${dayLabel(basket.date)}`
           : `Order ${orderLabel(order.id)}`}
       </h1>
       <p className="approval__meta">
@@ -188,14 +199,17 @@ function Approval({
         <span>Total excl. VAT</span>
         <b>{money(order.total)}</b>
       </div>
-      <div className="approval__why">
-        <Icon name="scale" className="i-16" />
-        <span>
-          {order.total > max
-            ? `${money(order.total - max)} over the ${whole(max)} limit for assistant orders.`
-            : `With today's other orders this is over the ${whole(basket?.rules.maxDailyEur ?? 1500)} daily limit.`}
-        </span>
-      </div>
+      {/* Only the reasons that actually apply to this order (the gateway's mandate reasons). */}
+      {(order.total > max || order.mandate?.reasons.some((r) => /daily limit/.test(r))) && (
+        <div className="approval__why">
+          <Icon name="scale" className="i-16" />
+          <span>
+            {order.total > max
+              ? `${money(order.total - max)} over the ${whole(max)} limit for assistant orders.`
+              : `With today's other orders this is over the ${whole(basket?.rules.maxDailyEur ?? 1500)} daily limit.`}
+          </span>
+        </div>
+      )}
       {order.mandate?.reasons.some((r) => /can't confirm stock/.test(r)) && (
         <div className="approval__why">
           <Icon name="package" className="i-16" />
@@ -264,8 +278,16 @@ function Approval({
   );
 }
 
-function Outcome({ d, basket, onBack }: { d: { order: Order; failed?: string }; basket?: Basket; onBack: () => void }) {
+function Outcome({ d, basket, onBack, returnTo }: { d: { order: Order; failed?: string }; basket?: Basket; onBack: () => void; returnTo?: SentOrder | null }) {
   const placed = d.order.status === "placed";
+  // The demo viewer decided their own order: take them back to it (button too, in case they want to stay).
+  const [left, setLeft] = useState(returnTo ? 3 : 0);
+  useEffect(() => {
+    if (!returnTo) return;
+    if (left <= 0) return goToBuyer(returnTo);
+    const t = setTimeout(() => setLeft((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [left, returnTo]);
   return (
     <article className="approval approval--done">
       <span className={"disc disc--32 " + (placed ? "disc--green" : "disc--amber")}>
@@ -293,9 +315,16 @@ function Outcome({ d, basket, onBack }: { d: { order: Order; failed?: string }; 
         )}
       </dl>
       <p className="muted-12">{placed ? "Prices are fixed. Anna sees it in her order now." : "Nothing is ordered. Anna sees your note in her chat."}</p>
-      <button className="btn btn--outline btn--lg" onClick={onBack}>
-        Back to approvals
-      </button>
+      {returnTo ? (
+        <>
+          <Button size="lg" icon="chevron-left" onClick={() => goToBuyer(returnTo)}>Back to Anna's order</Button>
+          <p className="muted-12" aria-live="polite">Taking you back in {left} s…</p>
+        </>
+      ) : (
+        <button className="btn btn--outline btn--lg" onClick={onBack}>
+          Back to approvals
+        </button>
+      )}
     </article>
   );
 }

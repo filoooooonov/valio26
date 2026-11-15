@@ -181,7 +181,7 @@ function EmptyOrder({
         builds here, with your prices and Friday stock.
       </p>
       <button className="btn btn--outline" onClick={onHero}>
-        Try: catering for 50 on Saturday
+        Try: my usual weekend order
       </button>
     </div>
   );
@@ -428,7 +428,7 @@ function choiceReasons(l: BasketLine, b: Basket): string[] {
   const day = dayLabel(b.date);
   if (l.replaced) {
     const who = l.issue?.decidedBy ?? "";
-    out.push(`${shortName(l.replaced.name)}: ${reasonShort(l, b.date)}, so ${who.startsWith("policy:") ? "your substitution rule used this instead" : isAutoSwap(who) ? "I swapped in this product for the same use" : "you chose this instead"}.`);
+    out.push(`${shortName(l.replaced.name)}: ${reasonShort(l, b.date)}, so ${who.startsWith("policy:") ? "your substitution rule used this instead" : who === "gateway (best replacement)" ? "I picked this as the best available replacement (you can change it)" : isAutoSwap(who) ? "I swapped in this product for the same use" : "you chose this instead"}.`);
   }
   if (l.preference && l.preference.status !== "unfamiliar") out.push(sentence(l.preference.reason));
   else if (l.preference?.status === "unfamiliar" && b.intent === "REORDER") out.push("New to your restaurant.");

@@ -2194,3 +2194,8 @@ html,
 @media (prefers-reduced-motion: reduce) {
   .step--done .step__dot .i-14 { animation: none; }
 }
+
+/* S52 demo round trip on Mikko's screen */
+.mikko__demo { max-width: var(--mikko-w); margin: var(--s-12) auto 0; padding: 0 var(--s-16); color: var(--text-2); font-size: var(--fs-13); }
+.approval--mine { box-shadow: 0 0 0 var(--ring-w) var(--teal); }
+.approval__mine { align-self: flex-start; }

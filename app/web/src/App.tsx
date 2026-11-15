@@ -36,12 +36,13 @@ import { MenuEconomics } from "./components/MinunAimo";
 import { SAMPLE_CONTEXT_MARKER } from "./minunAimo";
 import { Header, PhoneTabs } from "./components/Header";
 import { Chip, TextLink } from "./ui";
+import { clearSent, goToMikko, readSent, rememberSent, SCENARIOS } from "./demoFlow";
 import { Chat, type LocalItem, type ChatError } from "./components/Chat";
 import { OrderPanel } from "./components/OrderPanel";
 import { SwapSheet, LogSheet } from "./components/Sheets";
 import { MikkoView } from "./components/Mikko";
 import { StatesView } from "./components/States";
-import { addDays, lineIsOpen, niceName, timeLabel } from "./format";
+import { lineIsOpen, niceName, timeLabel } from "./format";
 import { buildThread, firstName, shortName } from "./thread";
 
 // In-webshop assistant (owner: aleksei). Flow: request -> draft (answer questions in chat) -> review ->
@@ -174,6 +175,21 @@ function Shop() {
   }, [adopt]);
 
   useEffect(() => setUrl(basket?.id, order?.id), [basket?.id, order?.id]);
+
+  // Header: how many orders wait for Mikko (demo entry point to his screen).
+  const [approvals, setApprovals] = useState(0);
+  useEffect(() => {
+    let live = true;
+    const load = () => api.orders("pending_approval").then((os) => live && setApprovals(os.length)).catch(() => undefined);
+    load();
+    const t = setInterval(load, 5000);
+    return () => { live = false; clearInterval(t); };
+  }, [order?.status]);
+  // Back from Mikko with the decided order: the round trip is complete.
+  useEffect(() => {
+    const s = readSent();
+    if (s && order && s.orderId === order.id && order.status !== "pending_approval") clearSent();
+  }, [order]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 15000);
@@ -695,7 +711,9 @@ function Shop() {
         await refreshAudit(basket.id);
         return;
       }
-      setOrder(r.data as Order);
+      const placed = r.data as Order;
+      setOrder(placed);
+      if (placed.status === "pending_approval") rememberSent(placed.id, basket.id);
       await refreshAudit(basket.id);
     } catch (e) {
       fail(e, placeOrder, "edit");
@@ -842,7 +860,7 @@ function Shop() {
     now - Math.max(Date.parse(basket.checkedAt), freshAt ?? 0) > STALE_MS;
   const cartTotal = phase === "placed" ? 0 : basket ? basket.total : 0;
   const sheetLine = basket?.lines.find((l) => l.id === sheet) ?? null;
-  const event = basket ? addDays(basket.date, 1) : addDays(DELIVERY, 1);
+  const event = basket ? basket.date : DELIVERY;
 
   return (
     <div className="app" data-tab={tab}>
@@ -850,6 +868,11 @@ function Shop() {
         delivery={delivery}
         onDelivery={() => setDeliveryOpen(true)}
         onHistory={() => setHistoryOpen(true)}
+        approvals={approvals}
+        onApprovals={() => {
+          if (basket && order?.status === "pending_approval") rememberSent(order.id, basket.id);
+          goToMikko();
+        }}
         cartTotal={cartTotal}
         date={basket?.date ?? delivery?.date ?? DELIVERY}
         orderBy={basket?.pricesHeldUntil ?? null}
@@ -939,7 +962,11 @@ function Shop() {
           onRetryOrder={placeOrder}
           onLog={() => setLogOpen(true)}
           onAttach={noAttach}
-          onHero={() => startRequest(HERO)}
+          onHero={() => startRequest(SCENARIOS[0].prompt)}
+          onApproveAsMikko={() => {
+            if (basket && order) rememberSent(order.id, basket.id);
+            goToMikko();
+          }}
           onAgain={() => {
             if (!basket) return;
             const again = (
@@ -1008,7 +1035,7 @@ function Shop() {
           onView={() => setLogOpen(true)}
           onDone={reset}
           onPrefill={prefill}
-          onHero={() => startRequest(HERO)}
+          onHero={() => startRequest(SCENARIOS[0].prompt)}
         />
       </main>
       {historyOpen && (

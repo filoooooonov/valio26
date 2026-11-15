@@ -97,3 +97,10 @@
 .added-row__meta { font-size: var(--fs-13); color: var(--muted); }
 .added-row__price { font-size: var(--fs-14); font-weight: 600; font-variant-numeric: tabular-nums; }
 .stock-replacement__pref{display:block;margin-top:var(--s-2);font-size:var(--fs-12);line-height:var(--lh-chat);color:var(--green)}
+
+/* S52 demo starters: one chip per scenario with what it demonstrates. */
+.examples--scenarios { list-style: none; margin: var(--s-4) 0 0; padding: 0; gap: var(--s-10); }
+.example { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); }
+.example__shows { color: var(--text-2); font-size: var(--fs-12); line-height: var(--lh-body); padding-left: var(--s-12); }
+/* Waiting card action: go and approve as Mikko. */
+.notice__actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-12); margin-top: var(--s-12); }
