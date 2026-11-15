@@ -9,8 +9,6 @@ export function Header({
   cartTotal,
   date,
   orderBy,
-  pickup,
-  onPickup,
   locked,
   delivery,
   onDelivery,
@@ -32,7 +30,7 @@ export function Header({
         <AimoLogo />
       </a>
       <span className="hdr__div" aria-hidden="true" />
-      <span className="hdr__shop">Delivery wholesale</span>
+      <span className="hdr__shop">Bistro Kallio</span>
       {onHistory && (
         <button type="button" className="hdr__history" onClick={onHistory}>
           <Icon name="clock" className="i-16" />
@@ -40,7 +38,6 @@ export function Header({
         </button>
       )}
       <span className="hdr__spacer" />
-      <Segmented pickup={pickup} onPickup={onPickup} disabled={locked} />
       <button
         type="button"
         className={"hdr__slot" + (onDelivery ? " hdr__slot--interactive" : "")}
@@ -58,7 +55,7 @@ export function Header({
           </div>
           <div className="hdr__slot-sub">
             {/* No choice yet: say plainly this is the demo account's preset, not something the buyer picked. */}
-            {delivery ? delivery.placeName : "Default · Bistro Kallio"}
+            {delivery ? delivery.placeName : "Default delivery"}
             {orderBy ? ` · order by ${stamp(orderBy)}` : ""}
           </div>
         </div>

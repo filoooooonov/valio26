@@ -185,7 +185,7 @@ export function Chat(p: Props) {
           />
         )}
         {items.map(it => it.kind === "productReview" && p.basket
-          ? <ReplacementNotice key={it.key} lines={open.filter(line => it.products.includes(reviewProductKey(line)))} date={p.basket.date} busy={p.busy} onReview={p.onSeeAll} />
+          ? <ReplacementNotice key={it.key} lines={open.filter(line => it.products.includes(reviewProductKey(line)))} date={p.basket.date} busy={p.busy} onReview={p.onSeeAll} onRemove={lineId => p.onChoose(lineId, "remove")} />
           : it.kind !== "productReview" ? <Turn key={it.key} it={it} p={p} firstAt={firstAt} /> : null)}
         {p.alternativeProposal}
         {p.basket && (p.phase === "draft" || p.phase === "review") && p.basket.lines.filter((l) => l.offerPermission).map((l) => (

@@ -31,7 +31,7 @@ Every `.tsx` file in `components/` and `ui/` must be listed here. Adding a line 
 Kit (`ui/`):
 - `index.tsx`: Button, TextLink, Cta, IconButton, Chip, Pill, Segmented, Stepper, Checkbox, Eyebrow, Tag, Notice,
   StatusDisc, Avatar, Card, ProductTile, Dialog, Popover (small anchored pop-up, scales from its trigger,
-  closes on Escape/outside click), ReasonList (grey round check bullets); re-exports Icon, AimoLogo, AssistantBadge, AssistantGlyph, ThinkingMark
+  closes on Escape/outside click; `icon` = assistant-glyph trigger on a product photo that shows the reasoning on click (`hover` also opens on hover/focus)), ReasonList (grey round check bullets); re-exports Icon, AimoLogo, AssistantBadge, AssistantGlyph, ThinkingMark
 - `PurchaseOptions.tsx`: single-product comparison built from the replacement-card pattern (`.replacement-option*` in `components/replacement-dialog.css`): radio, availability chip, photo, name, brand · SKU, pack maths + unit price to 3 decimals, order total + difference, one-line note; up to three orderable products and the cards replace the cart row; unavailable ones are listed only in the dialog. Header with "Decided by you" badge; "How we chose" opens the shared Dialog.
 - `DecisionSummary.tsx`: exception-first order summary above the cart: three counts ("N usual · N adjusted · N need you", derived from `basket.summary`) and one quiet row per exception (amber for attention, surface for adjusted); a row can jump to its cart line. Routine lines get no row.
 - `BrandGuide.tsx`: the brand guideline page

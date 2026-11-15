@@ -463,15 +463,23 @@ export function ProductTile({
 /**
  * Popover: a small anchored pop-up for short secondary info (e.g. "Why Helmi chose this").
  * Opens below its trigger, scales in from the trigger corner, closes on Escape or an outside click.
+ * `icon`: an icon-only trigger (e.g. the assistant glyph next to a product); it needs `ariaLabel`.
+ * `hover`: also opens on pointer hover and keyboard focus (click/tap still toggles for touch).
  */
 export function Popover({
   label,
   title,
   children,
+  icon,
+  hover,
+  ariaLabel,
 }: {
   label: ReactNode;
   title?: ReactNode;
   children: ReactNode;
+  icon?: boolean;
+  hover?: boolean;
+  ariaLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLSpanElement>(null);
@@ -486,8 +494,13 @@ export function Popover({
     return () => { document.removeEventListener("pointerdown", away); document.removeEventListener("keydown", esc); };
   }, [open]);
   return (
-    <span className="popover" ref={root}>
-      <button ref={trigger} type="button" className="popover__trigger" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>
+    <span
+      className="popover"
+      ref={root}
+      onPointerEnter={hover ? (e) => { if (e.pointerType === "mouse") setOpen(true); } : undefined}
+      onPointerLeave={hover ? (e) => { if (e.pointerType === "mouse") setOpen(false); } : undefined}
+    >
+      <button ref={trigger} type="button" className={cx("popover__trigger", icon && "popover__trigger--icon")} aria-label={ariaLabel} aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)} onFocus={hover ? () => setOpen(true) : undefined}>
         {label}
       </button>
       {open && (

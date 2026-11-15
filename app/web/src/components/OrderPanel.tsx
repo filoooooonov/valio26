@@ -1,4 +1,4 @@
-import { AimoLogo, DecisionSummary, Pill, Popover, PurchaseOptions, ReasonList, TextLink } from "../ui";
+import { AimoLogo, Button, DecisionSummary, Pill, Popover, PurchaseOptions, ReasonList, TextLink } from "../ui";
 import { useEffect, useState, type ReactNode, type CSSProperties } from "react";
 import {
   api,
@@ -475,6 +475,7 @@ export function LineRow({
 }) {
   const open = lineIsOpen(l);
   const off = !open && (l.qty === 0 || l.issue?.decided === "remove");
+  const unavailable = open && !!l.issue && l.issue.kind !== "short";
   const sku = l.sku;
   const name = comparisonOnly ? l.name : niceName(l.name);
   const frozenItem = l.frozen ?? /\b(?:frozen|deep[ -]?frozen|deepfrost|FRO)\b/i.test(l.name);
@@ -515,7 +516,7 @@ export function LineRow({
       }
       id={comparisonOnly ? undefined : "line-" + l.id}
       aria-busy={busy || undefined}
-      onClick={open && !frozen && !busy && !p.busy ? event => { if (!(event.target as Element).closest("button, input, a, summary, details, textarea, select")) p.onSwap(l.id); } : undefined}
+      onClick={open && !unavailable && !frozen && !busy && !p.busy ? event => { if (!(event.target as Element).closest("button, input, a, summary, details, textarea, select")) p.onSwap(l.id); } : undefined}
       style={{ "--product-delay": `${Math.min(revealIndex * 12, 90)}ms` } as CSSProperties}
     >
       {!placed && !comparisonOnly && (
@@ -525,7 +526,7 @@ export function LineRow({
           aria-checked={!open && !off}
           aria-label={`Include ${name}`}
           disabled={frozen || busy || p.busy}
-          onClick={() => open ? p.onSwap(l.id) : p.onToggle(l.id)}
+          onClick={() => open ? (unavailable ? p.onChoose(l.id, "remove") : p.onSwap(l.id)) : p.onToggle(l.id)}
         >
           <span className="check__box">
             {!open && !off && <Icon name="check" className="i-14" />}
@@ -536,10 +537,17 @@ export function LineRow({
         sku={sku}
         name={name}
         contains={l.contains}
+        badge={!comparisonOnly && !open ? (
+          // The assistant mark on the product photo: click shows why Helmi chose it.
+          <Popover icon ariaLabel={"Why Helmi chose " + name} label={<AssistantGlyph />} title="Why Helmi chose this">
+            <ReasonList items={choiceReasons(l, b)} />
+            <span className="line__catalogue">{l.name} · SKU {sku}</span>
+          </Popover>
+        ) : undefined}
       />
       <div className="line__text">
         <div className="line__name">
-          {open && !frozen ? <button type="button" className="line__missing-name" disabled={busy || p.busy} aria-label={"Review replacements for " + name} onClick={() => p.onSwap(l.id)}>{name}</button> : <span>{name}</span>}
+          {open && !unavailable && !frozen ? <button type="button" className="line__missing-name" disabled={busy || p.busy} aria-label={"Review replacements for " + name} onClick={() => p.onSwap(l.id)}>{name}</button> : <span>{name}</span>}
           {frozenItem && <span className="line__frozen" role="img" aria-label="Frozen" title="Frozen"><Icon name="snowflake" className="i-16" /></span>}
           {tag && !open && (
             <span className={"tag tag--" + tag.tone}>
@@ -551,14 +559,11 @@ export function LineRow({
           <Icon name={open ? "circle-alert" : st.icon} className="i-14" />
           {st.text}
         </div>}
-        {open && !frozen && <button type="button" className="line__resolve" disabled={busy || p.busy} onClick={() => p.onSwap(l.id)}>{l.issue!.options.length ? 'Choose replacement' : 'Review options'}<Icon name="arrow-right" className="i-16" /></button>}
+        {open && !frozen && (unavailable
+          // Unavailable for this delivery: one inline decision, no pop-up (S51). Replacements stay one tap away.
+          ? <div className="line__unavailable"><Button size="sm" variant="secondary" icon="x" disabled={busy || p.busy} onClick={() => p.onChoose(l.id, "remove")}>Remove item</Button>{l.issue!.options.length > 0 && <TextLink disabled={busy || p.busy} onClick={() => p.onSwap(l.id)}>See replacements</TextLink>}</div>
+          : <button type="button" className="line__resolve" disabled={busy || p.busy} onClick={() => p.onSwap(l.id)}>{l.issue!.options.length ? 'Choose replacement' : 'Review options'}<Icon name="arrow-right" className="i-16" /></button>)}
         {!comparisonOnly && l.comparison && <div className="line__unit">{l.comparison.candidates.find(c=>c.line.sku===l.sku)?.unitPrice!=null ? `${money(l.comparison.candidates.find(c=>c.line.sku===l.sku)!.unitPrice!)} / ${l.comparison.requested.unit.toLowerCase()}` : "Price needs verification"}</div>}
-        {!comparisonOnly && !open && (
-          <Popover label="Why Helmi chose this" title="Why Helmi chose this">
-            <ReasonList items={choiceReasons(l, b)} />
-            <span className="line__catalogue">{l.name} · SKU {sku}</span>
-          </Popover>
-        )}
         {atLimit && !frozen && (
           <div className="line__limit">
             That's all Valio has for {weekday(b.date)} ({n2(stock.available!)})
@@ -667,14 +672,16 @@ function ProductTile({
   sku,
   name,
   contains,
+  badge,
 }: {
   sku: string;
   name: string;
   contains: string[];
+  badge?: ReactNode;
 }) {
   const url = useProductImage(sku);
   const [broken, setBroken] = useState(false);
-  return (
+  const tile = (
     <span className="tile">
       {url && !broken ? (
         <img src={url} alt="" loading="lazy" onError={() => setBroken(true)} />
@@ -683,6 +690,7 @@ function ProductTile({
       )}
     </span>
   );
+  return badge ? <span className="line__tile">{tile}<span className="line__why">{badge}</span></span> : tile;
 }
 
 function Footer({ p, b }: { p: OrderProps; b: Basket }) {

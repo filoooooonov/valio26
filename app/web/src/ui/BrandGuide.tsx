@@ -22,6 +22,8 @@ import {
   IconButton,
   Notice,
   Pill,
+  Popover,
+  ReasonList,
   ProductTile,
   PurchaseOptions,
   DecisionSummary,
@@ -742,6 +744,19 @@ export function BrandGuide() {
                   style={{ fontSize: "var(--fs-13)", color: "var(--text-2)" }}
                 >
                   Inline, takes the text colour (eyebrows, tabs).
+                </span>
+              </dd>
+              <dt>
+                Reasoning on the glyph<code>{"Popover icon"}</code>
+              </dt>
+              <dd>
+                <Popover icon ariaLabel="Why Helmi chose this product" label={<AssistantGlyph />} title="Why Helmi chose this">
+                  <ReasonList items={["Purchased in 8 of your last 8 orders.", "Quantity: 4 kg → 8 × 500 g."]} />
+                </Popover>{" "}
+                <span
+                  style={{ fontSize: "var(--fs-13)", color: "var(--text-2)" }}
+                >
+                  On a cart product photo. Click shows why Helmi chose it.
                 </span>
               </dd>
             </dl>

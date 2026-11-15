@@ -479,7 +479,7 @@ function Shop() {
         return edit(lineId, { chooseOption: l.issue.options[0].sku });
       if (l.issue.kind === "short")
         return edit(lineId, { chooseOption: "keep" });
-      return setSheet(lineId);
+      return edit(lineId, { chooseOption: "remove" }); // unavailable, no alternative: remove inline (S51)
     }
     if (l.issue?.decided === "remove") {
       if (l.issue.options[0])
@@ -765,7 +765,12 @@ function Shop() {
 
   function focusQuestion() {
     const missing = basket?.lines.find(lineIsOpen);
-    if (missing) setSheet(missing.id);
+    if (!missing) return;
+    // Unavailable items are decided inline (Remove / See replacements): show the line, no pop-up (S51).
+    if (missing.issue && missing.issue.kind !== "short") {
+      setTab("order");
+      document.getElementById("line-" + missing.id)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else setSheet(missing.id);
   }
   function prefill(text: string) {
     setDraft(text);

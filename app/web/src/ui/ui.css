@@ -9,6 +9,7 @@
 
 /* Popover: small anchored pop-up for short secondary info. Scales in from the trigger corner. */
 .popover { position: relative; display: inline-block; }
+.popover__trigger--icon { position: relative; }
 .popover__trigger {
   padding: var(--s-3) 0;
   border: 0;
@@ -22,6 +23,10 @@
   text-underline-offset: var(--s-3);
 }
 .popover__trigger:hover, .popover__trigger[aria-expanded="true"] { color: var(--teal); }
+/* Icon-only trigger: the assistant glyph next to a product. Full hit area, no underline. */
+.popover__trigger--icon { display: inline-grid; place-items: center; width: var(--s-28); height: var(--s-28); padding: 0; border-radius: var(--r-pill); background: var(--white); box-shadow: 0 0 0 var(--hair-w) var(--petrol-15); color: var(--teal); text-decoration: none; vertical-align: middle; }
+.popover__trigger--icon::after { content: ""; position: absolute; inset: calc((var(--s-28) - var(--hit)) / 2); }
+.popover__trigger--icon:hover, .popover__trigger--icon[aria-expanded="true"] { background: var(--blueberry-light); }
 .popover__trigger:focus-visible { outline: var(--ring-w) solid var(--teal); outline-offset: var(--s-2); border-radius: var(--r-6); }
 .popover__panel {
   position: absolute;
