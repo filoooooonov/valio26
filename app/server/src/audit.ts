@@ -4,7 +4,7 @@ import { readLedger, writeLedger } from "./ledger";
 
 export type AuditEvent = {
   at: string;
-  actor: string; // "assistant" | "gateway" | a person ("Anna K.", "Mikko L.") | an agent id
+  actor: string; // "assistant" | "gateway" | a person ("Aleksei F.", "Mikko L.") | an agent id
   kind: string; // request | plan | search | pick | stock | issues | alternatives | edit | swap | mandate | order | recheck | decision
   summary: string; // one plain-language line
   data?: object;
@@ -44,4 +44,8 @@ export const allEvents = (limit = 200): (AuditEvent & { scope: string })[] =>
     .sort((a, b) => (a.at < b.at ? 1 : -1))
     .slice(0, limit);
 
-export const resetAudit = () => { byScope.clear(); writeLedger("audit", []); };
+export const resetAudit = (scopes?: string[]) => {
+  if (scopes) for (const s of scopes) byScope.delete(s);
+  else byScope.clear();
+  writeLedger("audit", [...byScope]);
+};

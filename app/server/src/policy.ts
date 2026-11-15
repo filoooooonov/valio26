@@ -1,4 +1,7 @@
 import { readLedger, writeLedger } from "./ledger";
+import { currentSession, visible } from "./session";
+/** Hosted demo: a visitor's policy edits apply to their own session only. */
+const key = (customer: string) => { const s = currentSession(); return s ? `${s}|${customer}` : customer; };
 // Mandate (spend rules) per customer. Enforced HERE, in the gateway, on every order and approval,
 // whoever sends it (webshop UI or an outside agent over MCP). Never in an LLM prompt.
 
@@ -17,6 +20,9 @@ export type Mandate = {
   substitutionsPermitted: boolean;
   allowedCategories: string[];
   requireApproval: boolean;
+  /** S53: unknown stock (Valio's placeholder) routes the order to the approver. Off = Valio's current webshop behaviour
+   *  (any quantity can be ordered); the order then lists those products as a note. */
+  confirmUnknownStock: boolean;
   maxSubstituteIncreasePct: number;
   allowedDeliveryWeekdays: number[];
   /** Explicit, user-granted standing permissions (CONTRACT S48). Preference memory never creates or widens these.
@@ -37,7 +43,7 @@ export type SubstitutionPermission = {
 };
 
 let permissions: SubstitutionPermission[] = readLedger<SubstitutionPermission[]>("permissions", []);
-export const listPermissions = (customer: string) => permissions.filter((p) => p.customer === customer);
+export const listPermissions = (customer: string) => permissions.filter((p) => p.customer === customer && visible((p as { session?: string }).session));
 export const isActivePermission = (p: SubstitutionPermission, now = Date.now()) =>
   !p.revokedAt && (!p.expiresAt || Date.parse(p.expiresAt) > now);
 export const activePermission = (customer: string, fromSku: string, toSku: string) =>
@@ -56,6 +62,7 @@ export function grantPermission(customer: string, x: { fromSku: string; toSku: s
     grantedBy: x.grantedBy,
     grantedAt: now,
     ...(x.expiresAt ? { expiresAt: x.expiresAt } : {}),
+    ...(currentSession() ? { session: currentSession() } : {}),
   };
   permissions.push(perm);
   writeLedger("permissions", permissions);
@@ -67,9 +74,9 @@ export function revokePermission(customer: string, id: string, by: string): Subs
   if (!p.revokedAt) { p.revokedAt = new Date().toISOString(); p.revokedBy = by; writeLedger("permissions", permissions); }
   return p;
 }
-export function resetPermissions() { permissions = []; writeLedger("permissions", permissions); }
+export function resetPermissions() { permissions = currentSession() ? permissions.filter((p) => !visible((p as { session?: string }).session)) : []; writeLedger("permissions", permissions); }
 /** Dev reset: drop persisted policy overrides so every account is back to its default mandate. */
-export function resetMandates() { overrides.clear(); writeLedger("policies", []); }
+export function resetMandates() { const s = currentSession(); if (s) { for (const k of [...overrides.keys()]) if (k.startsWith(s + "|")) overrides.delete(k); } else overrides.clear(); writeLedger("policies", [...overrides]); }
 export type MandateState =
   "agent_may_order" | "needs_your_ok" | "needs_approval";
 export type MandateResult = { state: MandateState; reasons: string[] };
@@ -90,15 +97,17 @@ export function getMandate(customer: string): Mandate {
     substitutionsPermitted:true,
     allowedCategories: [],
     requireApproval: false,
+    // Bistro Kallio (synthetic demo account) follows today's webshop: unknown-stock items are orderable without sign-off.
+    confirmUnknownStock: customer !== "123",
     maxSubstituteIncreasePct: 20,
     allowedDeliveryWeekdays: [],
-    ...overrides.get(customer),
+    ...overrides.get(key(customer)),
     substitutionPermissions: listPermissions(customer).map((p) => ({ ...p })),
   };
 }
 export const setMandate = (customer: string, m: Partial<Mandate>) => {
   const { substitutionPermissions: _ignored, ...rest } = m; // permissions only change through grant/revoke
-  overrides.set(customer, { ...overrides.get(customer), ...rest });
+  overrides.set(key(customer), { ...overrides.get(key(customer)), ...rest });
   writeLedger("policies", [...overrides]);
 };
 
@@ -138,7 +147,7 @@ export function evaluate(m: Mandate, x: MandateInput): MandateResult {
   if (reasons.length) return { state: "needs_your_ok", reasons };
 
   for(const increase of x.substituteIncreases ?? []) if(increase.percent > m.maxSubstituteIncreasePct) reasons.push(`${increase.name}: substitute price increase ${increase.percent.toFixed(1)}% exceeds the ${m.maxSubstituteIncreasePct}% autonomous allowance.`);
-  if (x.stockToConfirm?.length)
+  if (m.confirmUnknownStock && x.stockToConfirm?.length)
     reasons.push(
       `Valio can't confirm stock for ${x.stockToConfirm.join(", ")}, so ${m.approver} confirms it before the order is placed.`,
     );
@@ -166,6 +175,9 @@ export function evaluate(m: Mandate, x: MandateInput): MandateResult {
     reasons: [
       `${eur(x.total)} is within your ${eur(m.maxOrderEur)} per-order limit (${eur(day)} of ${eur(m.maxDailyEur)} today).`,
       `Every product can be delivered${x.deliveryLabel ? ` on ${x.deliveryLabel}` : ""} and no swap is waiting for you.`,
+      ...(x.stockToConfirm?.length
+        ? [`Valio doesn't report a stock quantity for ${x.stockToConfirm.length} product${x.stockToConfirm.length > 1 ? "s" : ""}; your policy orders them as Valio's webshop does today.`]
+        : []),
     ],
   };
 }

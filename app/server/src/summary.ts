@@ -8,6 +8,7 @@ import type { Basket } from "./plan";
 // Same money/date style as the webshop: "1 634,51 €", "13 Nov".
 const eur = (n: number) => n.toLocaleString("fi-FI", { style: "currency", currency: "EUR" });
 const shortDate = (iso: string) => new Date(iso.slice(0, 10) + "T12:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+import { getMandate } from "./policy";
 import { dailySoFar } from "./store";
 import { APPROX_QTY, SIGN_OFF_CODES, validatePurchase, type Check } from "./validation";
 
@@ -121,7 +122,7 @@ export function basketSummary(b: Basket): BasketSummary {
         });
     }
   }
-  if (unconfirmed.length) {
+  if (unconfirmed.length && getMandate(b.customer).confirmUnknownStock) {
     items.push({
       kind: "stock_signoff",
       text: unconfirmed.length === 1

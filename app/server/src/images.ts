@@ -75,7 +75,11 @@ function lookup(gtin: string): Promise<Img> {
       };
       // merge with the file first: the catalog explorer may have written to it meanwhile
       cache = { ...readFile(), ...getCache(), [gtin]: entry };
-      writeFileSync(file, JSON.stringify(cache));
+      try {
+        writeFileSync(file, JSON.stringify(cache));
+      } catch {
+        /* read-only filesystem (hosted demo): keep the photo in memory only */
+      }
       const p = getProduct(skuByGtin.get(gtin) ?? "");
       if (p) p.image = img; // new baskets pick the photo up from the catalogue
       return entry;

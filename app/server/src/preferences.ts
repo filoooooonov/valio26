@@ -1,6 +1,7 @@
 // Purchase memory (CONTRACT S48). Deterministic, plain-language, no confidence percentages.
 // Preferences only ORDER choices that are already valid (safety, availability and explicit instructions come first);
 // they never create, widen or extend substitution permissions (those live in policy.ts).
+import { currentSession, visible } from "./session";
 import { getProduct } from "./catalog";
 import { historyDecisions, historyOrders } from "./history";
 import { readLedger, writeLedger } from "./ledger";
@@ -78,8 +79,12 @@ function seedEvents(): PreferenceEvent[] {
 let live: PreferenceEvent[] = readLedger<PreferenceEvent[]>("preferences", []);
 const seed = seedEvents();
 
+// Hosted demo: live events belong to the visitor who caused them (session.ts); the synthetic seed is shared.
+const own = (e: PreferenceEvent) => visible((e as { session?: string }).session);
+const mineLive = () => live.filter(own);
+
 export const preferenceEvents = (customer: string): PreferenceEvent[] =>
-  [...seed, ...live].filter((e) => e.customer === customer);
+  [...seed, ...mineLive()].filter((e) => e.customer === customer);
 
 const isChoiceFor = (e: PreferenceEvent, customer: string, basketId: string, lineId: string, fromSku: string) =>
   e.customer === customer && e.basketId === basketId && e.kind.startsWith("substitution_") &&
@@ -87,13 +92,14 @@ const isChoiceFor = (e: PreferenceEvent, customer: string, basketId: string, lin
 
 /** Current choice evidence only. Legacy events are matched by original SKU, never timestamp. */
 export function choiceMemory(customer: string, basketId: string, lineId: string, fromSku: string): PreferenceEvent[] {
-  return structuredClone(live.filter(e => isChoiceFor(e, customer, basketId, lineId, fromSku)));
+  return structuredClone(mineLive().filter(e => isChoiceFor(e, customer, basketId, lineId, fromSku)));
 }
 
 /** Changing/undoing a cart choice replaces that line's evidence, preserving other lines and synthetic history. */
 export function restoreChoiceMemory(customer: string, basketId: string, lineId: string, fromSku: string, snapshot: PreferenceEvent[]) {
-  live = live.filter(e => !isChoiceFor(e, customer, basketId, lineId, fromSku));
-  live.push(...structuredClone(snapshot));
+  live = live.filter(e => !(own(e) && isChoiceFor(e, customer, basketId, lineId, fromSku)));
+  const s = currentSession();
+  live.push(...structuredClone(snapshot).map((e) => (s ? { ...e, session: s } : e)));
   writeLedger("preferences", live);
 }
 
@@ -108,6 +114,7 @@ export function recordPreference(
     ...e,
     at: e.at ?? new Date().toISOString(),
     source: e.source ?? "live",
+    ...(currentSession() ? { session: currentSession() } : {}),
   };
   live.push(ev);
   writeLedger("preferences", live);
@@ -116,7 +123,7 @@ export function recordPreference(
 
 /** Back to the synthetic baseline (dev reset, tests). */
 export function resetPreferences() {
-  live = [];
+  live = currentSession() ? live.filter((e) => !own(e)) : [];
   writeLedger("preferences", live);
 }
 

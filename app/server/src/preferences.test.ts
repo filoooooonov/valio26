@@ -7,7 +7,12 @@ import { CREAM_A, CREAM_B, CREAM_C, historyOrders } from "./history";
 import { purchasingIntent } from "./intent";
 import { setLlm } from "./llm";
 import { editLine, rankOptions, type Basket, type Option } from "./plan";
-import { getMandate, resetMandates, resetPermissions, setMandate } from "./policy";
+import {
+  getMandate,
+  resetMandates,
+  resetPermissions,
+  setMandate,
+} from "./policy";
 import {
   acceptedCount,
   preferenceOf,
@@ -449,11 +454,17 @@ describe("exception-first summary", () => {
     });
     expect(s.items.some((i) => i.kind === "substitution")).toBe(true);
   });
-  test("unknown stock lines are counted as sign-off attention", async () => {
+  test("unknown stock lines are sign-off attention only when the policy asks for it (S53)", async () => {
     mocks["469549"] = { amount: 999999 };
-    const b = await usual();
-    const s = check(b);
-    expect(s.items.some((i) => i.kind === "stock_signoff")).toBe(true);
+    // Demo account default: today's webshop behaviour, no sign-off and not held for stock.
+    const off = await usual();
+    expect(check(off).items.some((i) => i.kind === "stock_signoff")).toBe(
+      false,
+    );
+    expect(off.mandate.reasons.join(" ")).not.toMatch(/can't confirm stock/);
+    setMandate("123", { confirmUnknownStock: true });
+    const on = await usual();
+    expect(check(on).items.some((i) => i.kind === "stock_signoff")).toBe(true);
   });
 });
 

@@ -11,11 +11,27 @@ import {
 } from "./auth";
 import { persistStore } from "./store";
 import { Hono } from "hono";
+import { getCookie, setCookie } from "hono/cookie";
+import {
+  currentSession,
+  isolated,
+  newSession,
+  runInSession,
+  SESSION_COOKIE,
+  SESSION_HEADER,
+  validSession,
+} from "./session";
 import { cors } from "hono/cors";
 import { catalogSize, getProduct, search } from "./catalog";
 import { callLog, checkStock, missingLine } from "./valio";
 import { allEvents, events } from "./audit";
-import { decide, listOrders, placeOrder, refreshBasket, type Decision } from "./orders";
+import {
+  decide,
+  listOrders,
+  placeOrder,
+  refreshBasket,
+  type Decision,
+} from "./orders";
 import {
   buildBasket,
   HttpError,
@@ -55,6 +71,30 @@ import { resetPreferences } from "./preferences";
 
 // Agent gateway: order builder API for the webshop + outside agents. Shapes in /CONTRACT.md (v1).
 export const app = new Hono();
+// Hosted demo (SESSION_ISOLATION=1): every request runs in the visitor's private session (session.ts).
+// Browsers get an HttpOnly cookie; an outside agent joins a visitor's session with the x-aimo-session header.
+app.use("*", async (c, next) => {
+  if (!isolated()) return next();
+  const header = c.req.header(SESSION_HEADER);
+  const cookie = getCookie(c, SESSION_COOKIE);
+  const session = validSession(header)
+    ? header
+    : validSession(cookie)
+      ? cookie
+      : newSession();
+  if (session !== cookie && !validSession(header))
+    setCookie(c, SESSION_COOKIE, session, {
+      httpOnly: true,
+      sameSite: "Lax",
+      secure: true,
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+  return runInSession(session, () => next());
+});
+app.get("/api/session", (c) =>
+  c.json({ isolated: isolated(), session: currentSession() ?? null }),
+);
 app.use(
   "/api/*",
   cors({
@@ -276,7 +316,9 @@ app.post("/api/basket/:id/lines/:lineId", async (c) => {
 });
 app.post("/api/basket/:id/refresh", async (c) => {
   try {
-    const body = await c.req.json<{ by?: string }>().catch(() => ({}) as { by?: string });
+    const body = await c.req
+      .json<{ by?: string }>()
+      .catch(() => ({}) as { by?: string });
     return c.json(await refreshBasket(c.req.param("id"), body.by ?? "buyer"));
   } catch (e) {
     return fail(c, e);
@@ -377,9 +419,10 @@ app.get("/api/audit", (c) =>
   c.json(
     allEvents(Math.min(Number(c.req.query("limit") ?? 200), 1000)).filter(
       (e) =>
-        !authenticate(c.req.raw) ||
+        (!isolated() || baskets.has(e.scope)) &&
+        (!authenticate(c.req.raw) ||
         (baskets.get(e.scope)?.customer ?? e.scope.replace(/^profile:/, "")) ===
-          authenticate(c.req.raw)!.customer,
+          authenticate(c.req.raw)!.customer),
     ),
   ),
 );
@@ -392,14 +435,38 @@ app.get("/api/history", (c) => {
   const customer = accountOf(c);
   const name = (sku: string) => getProduct(sku)?.en ?? sku;
   const past = historyOrders(customer).map((o) => ({
-    id: o.id, date: o.date, total: o.total, source: "synthetic_history" as const,
-    lines: o.lines.map((l) => ({ sku: l.sku, name: name(l.sku), qty: l.qty, total: l.total, substitutedFor: l.substitutedFor ? name(l.substitutedFor) : undefined })),
+    id: o.id,
+    date: o.date,
+    total: o.total,
+    source: "synthetic_history" as const,
+    lines: o.lines.map((l) => ({
+      sku: l.sku,
+      name: name(l.sku),
+      qty: l.qty,
+      total: l.total,
+      substitutedFor: l.substitutedFor ? name(l.substitutedFor) : undefined,
+    })),
   }));
-  const live = listOrders("placed").filter((o) => o.customer === customer).map((o) => ({
-    id: o.id, date: (o.decidedAt ?? o.createdAt).slice(0, 10), total: o.total, source: "demo_order" as const,
-    lines: o.lines.map((l) => ({ sku: l.sku, name: l.name, qty: l.qty, total: l.total, substitutedFor: undefined })),
-  }));
-  return c.json({ customer, synthetic: true, orders: [...live, ...past].sort((a, b) => (a.date < b.date ? 1 : -1)) });
+  const live = listOrders("placed")
+    .filter((o) => o.customer === customer)
+    .map((o) => ({
+      id: o.id,
+      date: (o.decidedAt ?? o.createdAt).slice(0, 10),
+      total: o.total,
+      source: "demo_order" as const,
+      lines: o.lines.map((l) => ({
+        sku: l.sku,
+        name: l.name,
+        qty: l.qty,
+        total: l.total,
+        substitutedFor: undefined,
+      })),
+    }));
+  return c.json({
+    customer,
+    synthetic: true,
+    orders: [...live, ...past].sort((a, b) => (a.date < b.date ? 1 : -1)),
+  });
 });
 app.get("/api/profile", (c) => {
   const customer = accountOf(c);
@@ -486,8 +553,9 @@ app.delete("/api/permissions/:id", async (c) => {
 // Dev-only: back to the synthetic baseline (baskets, orders, audit, preference events, permissions, policy overrides).
 app.post("/api/dev/reset", (c) => {
   if (process.env.DEV_TOOLS !== "1") return c.json({ error: "not found" }, 404);
+  const mine = isolated() ? [...baskets.keys()] : undefined;
   resetStore();
-  resetAudit();
+  resetAudit(mine);
   resetPreferences();
   resetPermissions();
   resetMandates();
