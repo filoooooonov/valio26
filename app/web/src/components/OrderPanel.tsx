@@ -43,6 +43,8 @@ export type OrderProps = {
   planningMenu?: boolean;
   /** Minimal inline menu review (S50), shown in place of the empty cart while a menu is being agreed. */
   menuReview?: ReactNode;
+  /** The buyer has started talking to Helmi: the empty-cart watermark steps aside. */
+  chatStarted?: boolean;
   phase: Phase;
   basket: Basket | null;
   order: Order | null;
@@ -114,7 +116,7 @@ export function OrderPanel(p: OrderProps) {
 
       </div>
       <div className={"order__lines" + (!b ? " order__lines--empty" : "")}>
-        {!b && <div className="order__watermark" aria-hidden="true"><AimoLogo /></div>}
+        {!b && !p.chatStarted && <div className="order__watermark" aria-hidden="true"><AimoLogo /></div>}
         {!b ? (
           <EmptyOrder planningMenu={p.planningMenu} thinking={p.phase === "thinking"} onHero={p.onHero} />
         ) : (

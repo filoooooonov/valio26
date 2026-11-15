@@ -965,6 +965,7 @@ function Shop() {
           }
           phase={phase}
           planningMenu={!!menu}
+          chatStarted={local.length > 0 || !!building || !!menu || !!askMenu}
           menuReview={
             menu && !building ? (
               <MenuProposal

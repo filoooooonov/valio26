@@ -3,7 +3,9 @@
 @keyframes product-arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 .order .line { align-items: start; }
 .order .line > .check, .order .line > .tile, .order .line > .price, .order .line > .stepper, .order .line > .line__qty, .order .line > .swapbtn { align-self: start; }
-.order .line > .price, .order .line > .line__qty { padding-top: var(--s-8); }
+/* Price and quantity share the stepper row height, so their text sits on the same line as the stepper. */
+.order .line > .price { min-height: var(--stepper-h); justify-content: center; }
+.order .line > .line__qty { min-height: var(--stepper-h); display: inline-flex; align-items: center; justify-content: center; }
 .line__catalogue { color: var(--text-2); font-size: var(--fs-12); line-height: var(--lh-body); overflow-wrap: anywhere; }
 .order .line__remove { display: inline-flex; align-items: center; justify-content: center; width: var(--hit); min-height: var(--hit); padding: 0; border: 0; background: transparent; color: var(--text-2); cursor: pointer; }
 .line__remove:not(:disabled):hover { color: var(--red-ink); text-decoration: underline; text-underline-offset: var(--s-3); }
