@@ -104,7 +104,7 @@ export function OrderPanel(p: OrderProps) {
           </div>
         ) : (
           <>
-            <h1 className="order__title">
+            <h1 className={"order__title" + (b ? " order__title--basket" : "")}>
               {b ? `Catering for ${b.people} · ${dayLabel(p.event)}` : "Your order"}
             </h1>
             {b && <Controls p={p} b={b} />}
@@ -548,6 +548,15 @@ export function LineRow({
       <div className="line__text">
         <div className="line__name">
           {open && !unavailable && !frozen ? <button type="button" className="line__missing-name" disabled={busy || p.busy} aria-label={"Review replacements for " + name} onClick={() => p.onSwap(l.id)}>{name}</button> : <span>{name}</span>}
+          {!comparisonOnly && !open && (
+            // Phones hide product photos, so the reasoning glyph sits after the name there.
+            <span className="phone-only line__why-inline">
+              <Popover icon ariaLabel={"Why Helmi chose " + name} label={<AssistantGlyph />} title="Why Helmi chose this">
+                <ReasonList items={choiceReasons(l, b)} />
+                <span className="line__catalogue">{l.name} · SKU {sku}</span>
+              </Popover>
+            </span>
+          )}
           {frozenItem && <span className="line__frozen" role="img" aria-label="Frozen" title="Frozen"><Icon name="snowflake" className="i-16" /></span>}
           {tag && !open && (
             <span className={"tag tag--" + tag.tone}>

@@ -63,6 +63,14 @@
 
 /* S51: the assistant mark sits on the bottom-left corner of the product photo; hover shows the reasoning. */
 .line__tile { position: relative; display: block; width: var(--tile); height: var(--tile); flex: none; }
-.line__why { position: absolute; left: calc(-1 * var(--s-6)); bottom: calc(-1 * var(--s-6)); }
+.line__why { position: absolute; left: calc(-1 * var(--s-12)); bottom: calc(-1 * var(--s-4)); }
 /* The open reasoning panel must sit above every later row and its glyph, whatever stacking the row animation creates. */
 .line:has(.line__why .popover__trigger[aria-expanded="true"]) { position: relative; z-index: 30; }
+/* The cart title is a label for the order, not a page headline. */
+.order__title--basket { font-size: var(--fs-28); }
+@media (max-width: 780px) { .order__title--basket { font-size: var(--fs-22); } }
+.line > .line__tile { grid-area: tile; }
+@media (max-width: 780px) {
+  .line .line__tile { display: none; }
+  .line__name .line__why-inline { display: inline-block; vertical-align: middle; margin-left: var(--s-6); }
+}

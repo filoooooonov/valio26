@@ -1688,6 +1688,9 @@ a.btn:active {
 
 /* ---------- phone (390, frames f0BPn / n9qwsm) ---------- */
 @media (max-width: 780px) {
+  .app {
+    --tile: var(--tile-phone);
+  }
   .hdr {
     gap: var(--s-12);
     padding: var(--s-6) var(--s-16);
