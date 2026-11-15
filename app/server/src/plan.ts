@@ -20,6 +20,7 @@ import {
 } from "./intent";
 import {
   allergenCode,
+  APPROX_QTY,
   blockingChecks,
   safetyToConfirm,
   stockToConfirm,
@@ -1137,6 +1138,42 @@ export async function buildBasket(req: BasketRequest): Promise<Basket> {
         },
       );
     }
+    // S52: the agent always looks for a substitute. When the shortlist has none, widen the catalogue search for the
+    // same need (same product group, same diet, food only) and stock-check those in ONE more call.
+    const empty = withIssue.filter(({ l }) => !l.issue!.options.length);
+    if (empty.length) {
+      const tried = new Set([...chosen, ...[...alt.values()].flat()]);
+      const wider = new Map<string, string[]>();
+      for (const { l, g } of empty) {
+        const n = g.needs[0];
+        const orig = getProduct(l.sku);
+        const diet = [...new Set([...(dishes.find((d) => d.id === n.dishId)?.diet ?? []), ...n.diet])];
+        const words = (n.item || l.name).toLowerCase().split(/[^a-zåäö]+/).filter((w) => w.length > 3);
+        const qs = [...new Set([n.item, ...n.queries, ...words])].filter(Boolean).slice(0, 5);
+        const found: string[] = [];
+        for (const q of qs)
+          for (const h of search(q, { limit: 60 })) {
+            const p = getProduct(h.id);
+            if (!p || tried.has(p.id) || found.includes(p.id) || NONFOOD.test(p.cat) || !fits(p, diet)) continue;
+            if (orig && p.cat.slice(0, 2) !== orig.cat.slice(0, 2)) continue;
+            found.push(p.id);
+            if (found.length >= 8) break;
+          }
+        wider.set(l.id, found);
+      }
+      const extra = [...new Set([...wider.values()].flat())];
+      if (extra.length) {
+        const sc3 = await checkStock(extra, req.date, customer, { fresh: true });
+        apiCalls += sc3.calls;
+        const st3 = new Map(sc3.lines.map((x) => [x.sku, x]));
+        for (const { l, g } of empty) {
+          const opts = (wider.get(l.id) ?? []).map((s) => optionFor(s, st3.get(s)!, l._need, l, people, dishes, g.needs));
+          l.issue!.options = rankOptions(opts, getProduct(l.sku)?.contains ?? [], { customer, forSku: l.sku });
+          ctx.get(l.id)!.pool.push(...(wider.get(l.id) ?? []));
+        }
+        audit(id, "gateway", "alternatives", `Widened the search for ${empty.length} products without a shortlisted alternative; checked ${sc3.skus} more in ${sc3.calls} API calls`, { calls: sc3.calls });
+      }
+    }
     for (const { l } of withIssue)
       if (!l.issue!.options.length)
         l.issue!.text += " No deliverable alternative found.";
@@ -1347,7 +1384,7 @@ export function permittedSwap(customer: string, orig: BasketLine, o: Option) {
 }
 /** Hard constraints a substitute must provably meet before it can be chosen without the buyer: no forbidden
  *  allergen declared (contains or may contain), explicit free-from evidence for each, and the line's diet. */
-export function breaksHardRule(b: Basket, l: BasketLine, sku: string): boolean {
+export function breaksHardRule(b: Basket, l: BasketLine, sku: string, needProof = true): boolean {
   const p = getProduct(sku);
   if (!p) return true;
   const forbidden = [
@@ -1362,7 +1399,7 @@ export function breaksHardRule(b: Basket, l: BasketLine, sku: string): boolean {
       (a) =>
         p.contains.includes(a) ||
         p.mayContain.includes(a) ||
-        !p.freeFromAllergen?.includes(a),
+        (needProof && !p.freeFromAllergen?.includes(a)),
     )
   )
     return true;
@@ -1416,19 +1453,23 @@ export function autoSwapSameUse(b: Basket): void {
     if (b.rules.autoPickReplacement === false || l.issue.kind === "short") continue;
     // Price ceiling like the same-use rule: +maxSubstituteIncreasePct % or +25 EUR, whichever is larger.
     const ceiling = Math.max((b.rules.maxSubstituteIncreasePct / 100) * Math.max(l.total, 0), 25);
-    const safe = l.issue.options.filter(
+    // S52: the agent always tries to substitute. Hard rules (excluded allergens, diet) are never relaxed.
+    const usable = l.issue.options.filter(
       (x) =>
         x.preference?.status !== "rejected" &&
-        !x.quantityIssue &&
+        (!x.quantityIssue || (b.intent !== "DIRECT_PURCHASE" && APPROX_QTY.test(x.quantityIssue))) &&
         x.stock.price > 0 &&
-        x.stock.available != null &&
         orderable(x.stock, x.qty) &&
-        x.delta <= ceiling + 1e-9 &&
-        !breaksHardRule(b, l, x.sku) &&
-        !addsAllergenRisk(l, x.sku),
+        // Never a product that declares an excluded allergen or misses the diet; unproven safety is allowed in tier 2
+        // because the approver confirms it (CONTRACT S52).
+        !breaksHardRule(b, l, x.sku, false),
     );
+    // Tier 1: known stock, within the price ceiling, no new allergen. Tier 2 (no tier-1 option): the best usable one;
+    // its unknown stock, new allergen risk or price increase goes to the approver to confirm, never silently passed.
+    const safe = usable.filter((x) => x.stock.available != null && x.delta <= ceiling + 1e-9 && !addsAllergenRisk(l, x.sku) && !breaksHardRule(b, l, x.sku));
+    const pool = safe.length ? safe : usable;
     // Contract-priced options first; a list-priced pick still carries the price check to validation.
-    const best = safe.find((x) => x.stock.customerPrice) ?? safe[0];
+    const best = pool.find((x) => x.stock.customerPrice) ?? pool[0];
     if (best) editLine(b.id, l.id, { chooseOption: best.sku, by: BEST_REPLACEMENT_BY });
   }
 }

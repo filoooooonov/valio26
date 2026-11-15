@@ -88,6 +88,8 @@ beforeEach(() => {
   setLlm(null);
   resetStore();
   resetAudit();
+  // These tests drive the buyer's own swap choices: keep S51/S52 auto-pick out of the way.
+  setMandate("123", { autoPickReplacement: false });
 });
 
 describe("guests rescale", () => {

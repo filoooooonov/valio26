@@ -9,10 +9,10 @@ export const allergenCode = (value: string) => aliases[value.toLowerCase()] ?? v
 
 /** Checks that do not block: they route the order to the human approver, whose approval is the confirmation. */
 /** Sign-off checks (CONTRACT S52): unknown stock and unproven allergen/diet safety go to the approver; never claimed safe. */
-export const SIGN_OFF_CODES = new Set(['stock_unknown', 'allergen_unknown', 'diet_unverified']);
+export const SIGN_OFF_CODES = new Set(['stock_unknown', 'allergen_unknown', 'diet_unverified', 'substitution_unverified']);
 /** Recipe-quantity approximations shown as notes, not blockers (CONTRACT S52). */
 export const APPROX_QTY = /^(1 l counted as 1 kg|pieces per pack unknown, check the amount)$/;
-const SAFETY_CODES = new Set(['allergen_unknown', 'diet_unverified']);
+const SAFETY_CODES = new Set(['allergen_unknown', 'diet_unverified', 'substitution_unverified']);
 /** Checks that must be fixed before anything can be sent. */
 export const blockingChecks = (b: Basket) => validatePurchase(b).filter(c => !SIGN_OFF_CODES.has(c.code));
 /** Product names whose stock Valio cannot confirm (sign-off guardrail). */

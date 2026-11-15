@@ -254,22 +254,18 @@ describe("S51 best replacement", () => {
       "remove",
     );
   });
-  test("never auto-picks when a hard allergen rule cannot be proven safe, or when switched off", async () => {
-    setMandate("123", {
-      autoPickReplacement: true,
-      forbiddenAllergens: ["milk"],
-    });
+  test("with an excluded allergen, picks never declare it; unproven safety goes to the approver; off means off", async () => {
+    setMandate("123", { autoPickReplacement: true, forbiddenAllergens: ["milk"] });
     let b = await build();
-    expect(
-      b.lines.some(
-        (x: any) => x.issue?.decidedBy === "gateway (best replacement)",
-      ),
-    ).toBe(false);
+    for (const l of b.lines.filter((x: any) => x.issue?.decidedBy === "gateway (best replacement)")) {
+      const p = getProduct(l.sku)!;
+      expect(p.contains.includes("AM") || p.mayContain.includes("AM")).toBe(false);
+    }
+    // Nothing blocks the buyer for unproven safety: it is the approver's sign-off.
+    expect(b.mandate.reasons.join(" ")).not.toMatch(/no explicit free-from evidence/);
     setMandate("123", { autoPickReplacement: false, forbiddenAllergens: [] });
     b = await build();
-    expect(
-      b.lines.find((x: any) => x.sku === "461814").issue.decided,
-    ).toBeUndefined();
+    expect(b.lines.find((x: any) => x.sku === "461814").issue.decided).toBeUndefined();
   });
 });
 
