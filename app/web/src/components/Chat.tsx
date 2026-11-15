@@ -166,7 +166,6 @@ export function Chat(p: Props) {
       if (event.key === 'Escape' && hasMenuReview && menuReviewOpen && !(event.target as HTMLElement).closest('dialog[open]')) { event.preventDefault(); closeMenuReview(); }
     }}>
       <div className="chat__head">
-        <AssistantBadge />
         <h2 className="chat__title">Helmi</h2>
         <span className="grow" />
         <button className="btn-ghost" onClick={p.onNew}>
@@ -231,7 +230,7 @@ export function Chat(p: Props) {
 
 function ConfirmedOrder({ order }: { order: Order }) {
   return <section className="chat-confirmed" aria-label="Confirmed order">
-    <div className="chat-confirmed__heading"><Icon name="circle-check" className="i-22" /><h3>Order confirmed</h3></div>
+    <div className="chat-confirmed__heading"><span className="chat-confirmed__mark"><Icon name="check" className="i-16" /></span><h3>Order confirmed</h3></div>
     <p>{orderLabel(order.id)} <span aria-hidden="true"> / </span> <strong>{money(order.total)}</strong> excl. VAT</p>
     <p className="chat-confirmed__note">Prices are fixed. Your order and approval are recorded in this demo gateway.</p>
   </section>;

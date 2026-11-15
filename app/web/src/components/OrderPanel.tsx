@@ -72,6 +72,13 @@ export type OrderProps = {
 export function OrderPanel(p: OrderProps) {
   const b = p.basket;
   if (p.phase === "placed" && p.order && b) return <OrderDone p={p} b={b} order={p.order} />;
+  // Before the buyer says anything, the right panel is just the brand watermark.
+  if (!b && !p.chatStarted && p.phase === "empty")
+    return (
+      <section className="order" aria-label="Order">
+        <div className="order__lines order__lines--empty"><div className="order__watermark" aria-hidden="true"><AimoLogo /></div></div>
+      </section>
+    );
   if (!b && p.menuReview && p.phase !== "thinking")
     return (
       <section className="order" aria-label="Menu review">

@@ -431,8 +431,10 @@ a.btn:active {
   text-align: center;
 }
 .sysline--green {
+  color: var(--teal);
+}
+.sysline--green .icon {
   color: var(--green);
-  font-weight: var(--w-bold);
 }
 .sysline--amber {
   color: var(--amber);
