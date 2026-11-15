@@ -446,8 +446,11 @@ export function buildThread(events: AuditEvent[], b: Basket): Item[] {
         break;
       }
       case "decision": {
-        const d = (e.data ?? {}) as { status?: string; orderId?: string; stockConfirmedBy?: string; products?: string[] };
-        if (d.stockConfirmedBy) {
+        const d = (e.data ?? {}) as { status?: string; orderId?: string; stockConfirmedBy?: string; safetyConfirmedBy?: string; products?: string[] };
+        if (d.safetyConfirmedBy) {
+          const n = d.products?.length ?? 0;
+          out.push({ kind: "system", key, at: e.at, icon: "circle-check", tone: "green", text: `${firstName(d.safetyConfirmedBy)} confirmed the dietary safety of ${n} ${n === 1 ? "product" : "products"}` });
+        } else if (d.stockConfirmedBy) {
           // A confirmation, not an error: one short green line instead of the full product list.
           const n = d.products?.length ?? 0;
           out.push({

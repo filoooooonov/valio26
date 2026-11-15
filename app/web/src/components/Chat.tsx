@@ -207,7 +207,7 @@ export function Chat(p: Props) {
         {p.building && <Thinking since={p.building.since} />}
         {p.error && <ErrorCard e={p.error} onDismiss={p.onDismissError} />}
         {p.busy && !p.building && <div className="chat-pending" role="status"><ThinkingMark small /><span>Updating your order...</span></div>}
-        {p.order?.status === "placed" && <ConfirmedOrder order={p.order} onLog={p.onLog} />}
+        {p.order?.status === "placed" && <ConfirmedOrder order={p.order} />}
       </div>
 
       {hasNewMessages && <button className="chat-latest" onClick={() => jumpToLatest()} aria-label="Jump to latest message">Latest messages <Icon name="arrow-right" className="i-14" /></button>}
@@ -229,12 +229,11 @@ export function Chat(p: Props) {
   );
 }
 
-function ConfirmedOrder({ order, onLog }: { order: Order; onLog: () => void }) {
+function ConfirmedOrder({ order }: { order: Order }) {
   return <section className="chat-confirmed" aria-label="Confirmed order">
     <div className="chat-confirmed__heading"><Icon name="circle-check" className="i-22" /><h3>Order confirmed</h3></div>
     <p>{orderLabel(order.id)} <span aria-hidden="true"> / </span> <strong>{money(order.total)}</strong> excl. VAT</p>
     <p className="chat-confirmed__note">Prices are fixed. Your order and approval are recorded in this demo gateway.</p>
-    <button className="chat-confirmed__link" onClick={onLog}>View order and audit trail <Icon name="arrow-right" className="i-14" /></button>
   </section>;
 }
 
@@ -365,11 +364,6 @@ function Turn({
             })}
             {"route" in it && it.route && p.basket && (
               <Route approver={p.basket.rules.approver} />
-            )}
-            {"log" in it && it.log != null && (
-              <button className="loglink" onClick={p.onLog}>
-                <Icon name="list" className="i-14" /> Full technical log
-              </button>
             )}
           </div>
         </div>

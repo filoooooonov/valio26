@@ -16,20 +16,6 @@
   .order .line:not(.line--placed) { grid-template-columns: var(--hit) minmax(0, 1fr) auto; grid-template-areas: "check text price" ". qty swap"; column-gap: var(--s-8); }
   .order .line > .check { display: grid; }
 }
-.order-done { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-16); padding: var(--s-32); }
-.order-done__mark { color: var(--teal); background: var(--light-blue); padding: var(--s-16); border-radius: var(--r-pill); }
-.order-done h1 { font-family: var(--font-display); font-size: var(--fs-40); color: var(--teal); }
-.order-done > p { max-width: 38rem; line-height: var(--lh-body); }
-.order-done__eyebrow { font-size: var(--fs-13); color: var(--text-2); }
-.order-done__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-24); width: 100%; padding: var(--s-20) 0; border-top: var(--hair-w) solid var(--hair); border-bottom: var(--hair-w) solid var(--hair); }
-.order-done__facts dt { font-size: var(--fs-13); color: var(--text-2); margin-bottom: var(--s-6); }
-.order-done__facts dd { margin: 0; font-size: var(--fs-18); font-weight: var(--w-medium); color: var(--teal); }
-.order-done__prototype { color: var(--text-2); font-size: var(--fs-13); }
-.order-done__view { color: var(--white); background: var(--teal); }
-.order-done__products { width: 100%; margin-top: var(--s-16); }
-.order-done__products > summary { color: var(--teal); cursor: pointer; padding: var(--s-12) 0; }
-.order-done__products > summary:focus-visible { outline: var(--ring-w) solid var(--teal); outline-offset: var(--s-3); }
-@media (max-width: 780px) { .order-done { padding: var(--s-20) var(--s-16); } .order-done h1 { font-size: var(--fs-28); } .order-done__facts { gap: var(--s-16); } .order-done__facts dd { font-size: var(--fs-15); } }
 @media (prefers-reduced-motion: reduce) { .product-list--entering .line { animation: none; } }
 
 .line__frozen { display: inline-flex; color: var(--muted); vertical-align: middle; margin-left: var(--s-6); }
@@ -76,3 +62,30 @@
   .line .line__tile { display: none; }
   .line__name .line__why-inline { display: inline-block; vertical-align: middle; margin-left: var(--s-6); }
 }
+
+/* S52 order complete: brand success. Lime card (the commit colour) with ink text, then facts, products, actions. */
+.order-done { display: flex; flex-direction: column; gap: var(--s-24); padding: var(--s-32); }
+.order-done__hero { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-8); padding: var(--s-28) var(--s-32); border-radius: var(--r-16); background: var(--lime); color: var(--ink); }
+.order-done__mark { display: grid; place-items: center; width: var(--s-40); height: var(--s-40); border-radius: var(--r-pill); background: var(--ink); color: var(--lime); margin-bottom: var(--s-8); }
+.order-done__eyebrow { font-size: var(--fs-13); font-weight: var(--w-medium); }
+.order-done__hero h1 { margin: 0; font-family: var(--font-display); font-size: var(--fs-40); line-height: var(--lh-tight); color: var(--ink); }
+.order-done__total { font-size: var(--fs-15); }
+.order-done__total b { font-size: var(--fs-22); }
+.order-done__facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-24); margin: 0; }
+.order-done__facts dt { font-size: var(--fs-13); color: var(--text-2); margin-bottom: var(--s-6); }
+.order-done__facts dd { margin: 0; font-size: var(--fs-18); font-weight: var(--w-medium); color: var(--teal); }
+.order-done__lines { list-style: none; margin: 0; padding: 0; border-top: var(--hair-w) solid var(--hair); }
+.order-done__lines li { display: grid; grid-template-columns: minmax(0, 1fr) auto var(--price-w); align-items: center; gap: var(--s-16); padding: var(--s-10) 0; border-bottom: var(--hair-w) solid var(--hair); font-size: var(--fs-14); }
+.order-done__lines b { text-align: right; }
+.order-done__qty { color: var(--text-2); white-space: nowrap; }
+.order-done__actions { display: flex; flex-wrap: wrap; gap: var(--s-12); }
+.order-done__prototype { color: var(--text-2); font-size: var(--fs-13); }
+@media (max-width: 780px) { .order-done { padding: var(--s-20) var(--s-16); } .order-done__hero { padding: var(--s-20); } .order-done__hero h1 { font-size: var(--fs-28); } .order-done__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-16); } .order-done__facts dd { font-size: var(--fs-15); } }
+
+/* S52 order record dialog */
+.record__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--s-16); margin: 0 0 var(--s-8); padding: var(--s-16); border-radius: var(--r-12); background: var(--surface); }
+.record__facts dt { font-size: var(--fs-12); color: var(--text-2); margin-bottom: var(--s-4); }
+.record__facts dd { margin: 0; font-size: var(--fs-15); font-weight: var(--w-medium); color: var(--teal); }
+.record__note { color: var(--text-2); font-size: var(--fs-12); line-height: var(--lh-body); }
+.record__tech > summary { color: var(--teal); font-size: var(--fs-13); cursor: pointer; padding: var(--s-8) 0; }
+.record__tech .trail { margin-top: var(--s-8); }

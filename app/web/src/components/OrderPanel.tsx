@@ -130,22 +130,29 @@ export function OrderPanel(p: OrderProps) {
 
 function OrderDone({ p, b, order }: { p: OrderProps; b: Basket; order: Order }) {
   const actor = order.decidedBy ?? order.by;
+  const who = actor === BUYER ? "you" : PEOPLE[actor]?.name ?? actor;
+  // S52: brand success state. The lime card is the moment of completion; one teal action opens the record.
   return <section className="order order--done" aria-label="Order confirmation">
     <div className="order__lines order-done">
-      <div className="order-done__mark"><Icon name="circle-check" className="i-22" /></div>
-      <p className="order-done__eyebrow">Order {orderLabel(order.id)}</p>
-      <h1>Order complete</h1>
-      <p>Your order and its fixed-price record are saved in the prototype gateway.</p>
+      <div className="order-done__hero">
+        <span className="order-done__mark"><Icon name="check" className="i-22" /></span>
+        <p className="order-done__eyebrow">Order {orderLabel(order.id)} · {order.decidedBy ? `approved by ${who}` : `placed by ${who}`}</p>
+        <h1>Order complete</h1>
+        <p className="order-done__total"><b>{money(order.total)}</b> excl. VAT · prices fixed</p>
+      </div>
       <dl className="order-done__facts">
-        <div><dt>Total, excl. VAT</dt><dd>{money(order.total)}</dd></div>
-        <div><dt>Requested delivery</dt><dd>{dayLabel(b.date)}, {p.deliveryTime ?? SLOT}</dd></div>
-        <div><dt>{order.decidedBy ? "Approved by" : "Placed by"}</dt><dd>{actor === BUYER ? 'You' : PEOPLE[actor]?.name ?? actor}</dd></div>
-        <div><dt>Recorded at</dt><dd>{stamp(order.decidedAt ?? order.createdAt)}</dd></div>
+        <div><dt>Delivery</dt><dd>{dayLabel(b.date)}, {p.deliveryTime ?? SLOT}</dd></div>
+        <div><dt>Products</dt><dd>{order.lines.length}</dd></div>
+        <div><dt>Recorded</dt><dd>{stamp(order.decidedAt ?? order.createdAt)}</dd></div>
       </dl>
-      <p className="order-done__prototype">Local prototype order. Nothing has been submitted to Valio Aimo's ordering systems.</p>
-      <button className="btn order-done__view" onClick={p.onView}><Icon name="file-text" className="i-16" /> View order and audit trail</button>
-      <button className="link" onClick={p.onDone}>Back to shop</button>
-      <details className="order-done__products"><summary>View {order.lines.length} products</summary><Lines key={b.id} p={p} b={b} /></details>
+      <ul className="order-done__lines" aria-label="Products in this order">
+        {order.lines.map((l) => <li key={l.sku}><span>{niceName(l.name)}</span><span className="order-done__qty">{qtyLabel(l.qty, l.pack)}</span><b>{money(l.total)}</b></li>)}
+      </ul>
+      <div className="order-done__actions">
+        <Button icon="file-text" onClick={p.onView}>View order and audit trail</Button>
+        <Button variant="secondary" icon="plus" onClick={p.onDone}>Start a new order</Button>
+      </div>
+      <p className="order-done__prototype">Simulated order: nothing has been sent to Valio Aimo's ordering systems.</p>
     </div>
   </section>;
 }

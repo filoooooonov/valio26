@@ -1,3 +1,4 @@
+import { getProduct } from "./catalog";
 // Planner + mandate + orders, with the Valio API and the LLM mocked (fast, offline).
 import { beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { app } from "./app";
@@ -169,7 +170,11 @@ describe("fallback planner", () => {
     expect(salmon.why).toBe("50 × 140 g = 7 kg → 10 kg (sold by kg)");
     expect(b.assumed).toContain("salt");
     // Synthetic blanket KG pricing and sparse fish allergen data are not a verified diet-safe order.
-    expect(b.mandate.state).toBe("needs_your_ok");
+    // Unproven fish/diet data goes to the approver to confirm (CONTRACT S52), never claimed safe.
+    expect(b.mandate.state).toBe("needs_approval");
+    expect(b.mandate.reasons.join(" ")).toMatch(
+      /doesn.t prove the dietary or allergen status/,
+    );
     for (const l of b.lines)
       expect(l.total).toBeCloseTo(l.qty * l.stock.price, 2);
   });
@@ -208,14 +213,31 @@ describe("S51 best replacement", () => {
       await post("/api/basket", { request: "50 people", date: "2026-11-20" })
     ).json();
   };
-  test("an unavailable line gets the best safe, priced, in-stock replacement pre-selected; the buyer can change it", async () => {
+  test("unavailable lines get the best safe replacement pre-selected; picks add no allergen and pass the final check; the buyer can change them", async () => {
     setMandate("123", { autoPickReplacement: true, forbiddenAllergens: [] });
-    const b = await build();
-    const l = b.lines.find((x: any) => x.replaced?.sku === "461814");
-    expect(l).toBeTruthy();
-    expect(l.issue.decided).toBe(l.sku);
-    expect(l.issue.decidedBy).toBe("gateway (best replacement)");
-    expect(l.stock.price).toBeGreaterThan(0);
+    // Every product of the demo plan is undeliverable; any other catalogue product is a candidate.
+    const first = await (
+      await post("/api/basket", { request: "50 people", date: "2026-11-20" })
+    ).json();
+    for (const l of first.lines) mocks[l.sku] = { deliverable: false };
+    const b = await (
+      await post("/api/basket", { request: "50 people", date: "2026-11-20" })
+    ).json();
+    const picks = b.lines.filter(
+      (x: any) => x.issue?.decidedBy === "gateway (best replacement)",
+    );
+    expect(picks.length).toBeGreaterThan(0);
+    for (const l of picks) {
+      const orig = getProduct(l.replaced.sku)!,
+        sub = getProduct(l.sku)!;
+      const had = new Set([...orig.contains, ...orig.mayContain]);
+      expect(
+        [...sub.contains, ...sub.mayContain].filter((c) => !had.has(c)),
+      ).toEqual([]);
+      expect(l.stock.price).toBeGreaterThan(0);
+    }
+    expect(b.mandate.reasons.join(" ")).not.toMatch(/unverified allergen risk/);
+    const l = picks[0];
     expect(
       b.summary.items.some(
         (i: any) =>
@@ -531,11 +553,23 @@ describe("LLM planner (mocked)", () => {
 });
 
 test("S51: a best-replacement pick passes validation even when the same-use rule is off", async () => {
-  setMandate("123", { autoPickReplacement: true, autoSwapSameUse: false, forbiddenAllergens: [] });
+  setMandate("123", {
+    autoPickReplacement: true,
+    autoSwapSameUse: false,
+    forbiddenAllergens: [],
+  });
   mocks["461814"] = { deliverable: false };
-  const b = await (await post("/api/basket", { request: "50 people", date: "2026-11-20" })).json();
-  const l = b.lines.find((x: any) => x.issue?.decidedBy === "gateway (best replacement)");
+  const b = await (
+    await post("/api/basket", { request: "50 people", date: "2026-11-20" })
+  ).json();
+  const l = b.lines.find(
+    (x: any) => x.issue?.decidedBy === "gateway (best replacement)",
+  );
   expect(l).toBeTruthy();
-  expect(b.checks?.some?.((c: any) => c.code === "substitution_forbidden") ?? false).toBe(false);
-  expect(b.mandate.reasons.join(" ")).not.toMatch(/automatic substitutions are disabled/);
+  expect(
+    b.checks?.some?.((c: any) => c.code === "substitution_forbidden") ?? false,
+  ).toBe(false);
+  expect(b.mandate.reasons.join(" ")).not.toMatch(
+    /automatic substitutions are disabled/,
+  );
 });

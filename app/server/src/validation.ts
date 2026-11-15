@@ -8,10 +8,16 @@ const aliases: Record<string, string> = { milk:'AM', peanuts:'AP', nuts:'AN', fi
 export const allergenCode = (value: string) => aliases[value.toLowerCase()] ?? value.toUpperCase();
 
 /** Checks that do not block: they route the order to the human approver, whose approval is the confirmation. */
-export const SIGN_OFF_CODES = new Set(['stock_unknown']);
+/** Sign-off checks (CONTRACT S52): unknown stock and unproven allergen/diet safety go to the approver; never claimed safe. */
+export const SIGN_OFF_CODES = new Set(['stock_unknown', 'allergen_unknown', 'diet_unverified']);
+/** Recipe-quantity approximations shown as notes, not blockers (CONTRACT S52). */
+export const APPROX_QTY = /^(1 l counted as 1 kg|pieces per pack unknown, check the amount)$/;
+const SAFETY_CODES = new Set(['allergen_unknown', 'diet_unverified']);
 /** Checks that must be fixed before anything can be sent. */
 export const blockingChecks = (b: Basket) => validatePurchase(b).filter(c => !SIGN_OFF_CODES.has(c.code));
 /** Product names whose stock Valio cannot confirm (sign-off guardrail). */
+/** Product names whose allergen or diet status the catalogue cannot prove (sign-off guardrail, S52). */
+export const safetyToConfirm = (b: Basket) => [...new Set(validatePurchase(b).filter(c => SAFETY_CODES.has(c.code)).map(c => b.lines.find(l => l.sku === c.sku)?.name ?? c.sku ?? ''))].filter(Boolean);
 export const stockToConfirm = (b: Basket) => [...new Set(validatePurchase(b).filter(c => c.code === 'stock_unknown').map(c => b.lines.find(l => l.sku === c.sku)?.name ?? c.sku ?? ''))].filter(Boolean);
 
 /** Final order gate, independent of Claude, UI controls and approval authority. */
@@ -23,12 +29,16 @@ export function validatePurchase(b: Basket): Check[] {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(b.date) || !Number.isFinite(Date.parse(b.date))) add('delivery_unknown','A valid delivery date is required.','user');
   if (m.allowedDeliveryWeekdays.length && !m.allowedDeliveryWeekdays.includes(new Date(b.date+'T12:00:00Z').getUTCDay())) add('delivery_policy','Delivery weekday is outside customer policy.','policy');
   if (b.requestBudgetEur != null && b.total > b.requestBudgetEur) add('request_budget',`Order exceeds the requested budget of EUR ${b.requestBudgetEur}.`,'user');
-  for (const gap of b.validationGaps ?? []) add('quantity_unknown',gap,'user');
+  // Recipe orders: an ingredient with no catalogue match is simply not in this order (a summary note, CONTRACT S52).
+  // A direct purchase of a named product still needs it.
+  if (b.intent === 'DIRECT_PURCHASE') for (const gap of b.validationGaps ?? []) add('quantity_unknown',gap,'user');
   for (const l of b.lines.filter(l => l.qty > 0)) {
     const p = getProduct(l.sku), s = l.stock;
     if (!p) { add('unknown_product',`${l.name}: catalogue product missing.`,'catalogue',l.sku); continue; }
     if (!Number.isFinite(l.qty) || l.qty <= 0) add('quantity_invalid',`${l.name}: invalid quantity.`,'user',l.sku);
-    if(l.quantityIssue)add('quantity_unknown',`${l.name}: ${l.quantityIssue}`,'catalogue',l.sku);
+    // For recipe ingredients "1 l counted as 1 kg" is an approximation note (CONTRACT S52). A direct purchase of an
+    // exact volume or weight (and its price comparison) still needs a verified quantity.
+    if(l.quantityIssue && !(b.intent !== 'DIRECT_PURCHASE' && APPROX_QTY.test(l.quantityIssue)))add('quantity_unknown',`${l.name}: ${l.quantityIssue}`,'catalogue',l.sku);
     const step = p.unit === 'KG' || s.salesUnit === 'KG' ? Math.max(0.5,p.lot ?? 0.5) : Math.max(1,p.lot ?? 1);
     if (Math.abs(l.qty / step - Math.round(l.qty / step)) > 1e-6) add('package_invalid',`${l.name}: quantity must follow sales lot ${step}.`,'catalogue',l.sku);
     // Valio's catalogPrice is the price this customer pays today; netPriceFound only marks a negotiated contract price

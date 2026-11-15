@@ -219,6 +219,15 @@ function Approval({
           </span>
         </div>
       )}
+      {order.mandate?.reasons.some((r) => /doesn.t prove the dietary/.test(r)) && (
+        <div className="approval__why">
+          <Icon name="leaf" className="i-16" />
+          <span>
+            The catalogue doesn't prove the allergen or diet status of some products. Approving confirms you've
+            checked them for the guests' needs.
+          </span>
+        </div>
+      )}
       <details className="approval__lines">
         <summary>{order.lines.length === 1 ? "See the product" : `See the ${order.lines.length} products`}</summary>
         <ul>

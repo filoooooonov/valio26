@@ -1,6 +1,6 @@
 // Orders: the mandate is checked here on EVERY order and approval, whoever sends it (webshop or MCP agent).
 // Price + stock are re-checked with a fresh Valio call at order time and again at approval; differences are reported.
-import { blockingChecks, orderRevision, stockToConfirm, validatePurchase } from "./validation";
+import { blockingChecks, orderRevision, safetyToConfirm, stockToConfirm, validatePurchase } from "./validation";
 import { audit } from "./audit";
 import { HttpError, isOpen, recompute, type Basket } from "./plan";
 import { eur, evaluate, getMandate, type MandateResult } from "./policy";
@@ -176,6 +176,7 @@ async function placeOrderInternal(
     dailySoFar: dailySoFar(b.customer, b.id),
     substituteIncreases:b.lines.filter(l=>l.qty>0 && l.replaced).map(l=>({name:l.name,percent:l.replaced!.originalTotal ? 100*(l.total/l.replaced!.originalTotal-1) : Infinity})),
     stockToConfirm: stockToConfirm(b),
+    safetyToConfirm: safetyToConfirm(b),
   });
   b.mandate = m;
   if (m.state === "needs_your_ok") {
@@ -328,6 +329,9 @@ async function decideInternal(orderId: string, d: Decision): Promise<Order> {
     `${d.decision === "approve" ? "Approved" : "Rejected"} ${o.id} (${eur(o.total)})${d.note ? `: "${d.note}"` : ""}${o.changes.length ? ` · ${o.changes.length} changes since the quote` : ""}`,
     { orderId: o.id, status: o.status },
   );
+  const safe = b && o.status === "placed" ? safetyToConfirm(b) : [];
+  if (safe.length)
+    audit(o.basketId, d.by, "decision", `Dietary safety confirmed by ${d.by} for ${safe.join(", ")} (the catalogue does not prove it).`, { orderId: o.id, safetyConfirmedBy: d.by, products: safe });
   const confirmed = b && o.status === "placed" ? stockToConfirm(b) : [];
   if (confirmed.length)
     audit(o.basketId, d.by, "decision", `Stock confirmed by ${d.by} for ${confirmed.join(", ")} (Valio could not confirm it automatically).`, { orderId: o.id, stockConfirmedBy: d.by, products: confirmed });

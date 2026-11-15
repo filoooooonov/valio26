@@ -117,6 +117,7 @@ export type MandateInput = {
   substituteIncreases?: {name:string;percent:number}[];
   deliveryLabel?: string; // "Fri 20 Nov"
   stockToConfirm?: string[]; // products whose stock Valio cannot confirm: a person confirms before placing
+  safetyToConfirm?: string[]; // S52: products whose allergen/diet status the catalogue cannot prove
 };
 
 /** Pure: same input, same verdict. Order: buyer's OK first (nothing can be ordered with an open swap), then limits. */
@@ -141,6 +142,12 @@ export function evaluate(m: Mandate, x: MandateInput): MandateResult {
     reasons.push(
       `Valio can't confirm stock for ${x.stockToConfirm.join(", ")}, so ${m.approver} confirms it before the order is placed.`,
     );
+  if (x.safetyToConfirm?.length) {
+    const n = x.safetyToConfirm.length;
+    reasons.push(
+      `The catalogue doesn't prove the dietary or allergen status of ${n} product${n > 1 ? "s" : ""}, so ${m.approver} confirms ${n > 1 ? "them" : "it"} before the order is placed.`,
+    );
+  }
   if (m.requireApproval) reasons.push("Customer policy requires human financial approval.");
   const over = Math.round((x.total - m.maxOrderEur) * 100) / 100;
   if (over > 0)

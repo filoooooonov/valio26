@@ -122,7 +122,7 @@ describe("guests rescale", () => {
     // totals + mandate recomputed
     expect(g.total).toBeGreaterThan(decided.total);
     expect(g.openIssues).toBe(0);
-    expect(g.mandate.state).toBe("needs_your_ok"); // fixture lacks verified quantity/diet data
+    expect(g.mandate.state).toBe("needs_approval"); // fixture lacks verified diet data: approver confirms (S52)
     expect(g.mandate.reasons.length).toBeGreaterThan(0);
     expect(calls).toBe(2); // ONE stock check = price + availability
     expect(

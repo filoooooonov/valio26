@@ -21,6 +21,7 @@ import {
 import {
   allergenCode,
   blockingChecks,
+  safetyToConfirm,
   stockToConfirm,
   validatePurchase,
 } from "./validation";
@@ -778,6 +779,7 @@ export function recompute(b: Basket): Basket {
       })),
     deliveryLabel: dayLabel(b.date),
     stockToConfirm: stockToConfirm(b),
+    safetyToConfirm: safetyToConfirm(b),
   });
   const checks = blockingChecks(b);
   if (checks.length)
@@ -1371,6 +1373,14 @@ export function breaksHardRule(b: Basket, l: BasketLine, sku: string): boolean {
       : (b.dishes.find((d) => d.id === l.dishId)?.diet ?? []));
   return !fits(p, diet);
 }
+/** The substitute declares an allergen (contains or may contain) the original did not: the final check would block it
+ *  as unverified allergen risk, so it is never picked automatically; the buyer decides. */
+function addsAllergenRisk(orig: BasketLine, sku: string): boolean {
+  const a = getProduct(orig.sku), p = getProduct(sku);
+  if (!a || !p) return true;
+  const had = new Set([...a.contains, ...a.mayContain]);
+  return [...p.contains, ...p.mayContain].some((c) => !had.has(c));
+}
 export function autoSwapSameUse(b: Basket): void {
   if (!b.rules.substitutionsPermitted) return;
   for (const l of b.lines) {
@@ -1414,7 +1424,8 @@ export function autoSwapSameUse(b: Basket): void {
         x.stock.available != null &&
         orderable(x.stock, x.qty) &&
         x.delta <= ceiling + 1e-9 &&
-        !breaksHardRule(b, l, x.sku),
+        !breaksHardRule(b, l, x.sku) &&
+        !addsAllergenRisk(l, x.sku),
     );
     // Contract-priced options first; a list-priced pick still carries the price check to validation.
     const best = safe.find((x) => x.stock.customerPrice) ?? safe[0];

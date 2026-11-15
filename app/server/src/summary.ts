@@ -9,7 +9,7 @@ import type { Basket } from "./plan";
 const eur = (n: number) => n.toLocaleString("fi-FI", { style: "currency", currency: "EUR" });
 const shortDate = (iso: string) => new Date(iso.slice(0, 10) + "T12:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 import { dailySoFar } from "./store";
-import { SIGN_OFF_CODES, validatePurchase, type Check } from "./validation";
+import { APPROX_QTY, SIGN_OFF_CODES, validatePurchase, type Check } from "./validation";
 
 export type SummaryKind =
   | "unavailable"
@@ -19,6 +19,7 @@ export type SummaryKind =
   | "pack_rounding"
   | "over_limit"
   | "stock_signoff"
+  | "safety_signoff"
   | "needs_choice";
 /** `attention`: this product is counted in "need you" and listed in the chat review card. */
 export type SummaryItem = { lineId?: string; kind: SummaryKind; text: string; attention?: boolean };
@@ -54,16 +55,19 @@ export function basketSummary(b: Basket): BasketSummary {
     attention = 0;
   // Unknown stock is Valio's placeholder on most Stock items: one grouped sign-off note, not an exception per line.
   const unconfirmed: string[] = [];
+  const unproven: string[] = [];
   for (const l of b.lines) {
     const open = !!l.issue && !l.issue.decided;
     if (!open && l.qty <= 0) continue;
     const lineId = l.id;
     const mine = open ? [] : checks.filter((c) => c.sku === l.sku);
     const blocking = mine.filter((c) => !SIGN_OFF_CODES.has(c.code));
-    const signoff = mine.some((c) => SIGN_OFF_CODES.has(c.code));
+    const signoff = mine.some((c) => c.code === "stock_unknown");
+    const safetyOff = mine.some((c) => SIGN_OFF_CODES.has(c.code) && c.code !== "stock_unknown");
     const swapped =
       !!l.replaced && !!l.issue?.decided && l.issue.decided === l.sku;
     const rounded = !open && (l.overbuy ?? 0) > 1e-6 && !!l.requestedAmount;
+    const approx = !open && b.intent !== "DIRECT_PURCHASE" && !!l.quantityIssue && APPROX_QTY.test(l.quantityIssue);
     if (swapped) {
       const by = l.issue!.decidedBy ?? "buyer";
       items.push({
@@ -89,8 +93,10 @@ export function basketSummary(b: Basket): BasketSummary {
         text: blocking[0].message,
         attention: true,
       });
-    } else if (swapped || rounded) {
+    } else if (swapped || rounded || approx) {
       adjusted++;
+      if (approx)
+        items.push({ lineId, kind: "pack_rounding", text: `${l.name}: ${l.quantityIssue === "1 l counted as 1 kg" ? "amount converted, 1 l counted as 1 kg" : `ordered ${l.qty} × ${l.pack}, pieces per pack unknown; check the amount`}.` });
       if (rounded && !swapped)
         items.push({
           lineId,
@@ -99,6 +105,7 @@ export function basketSummary(b: Basket): BasketSummary {
         });
     } else if (l.preference?.status === "usual") usual++;
     if (!open && !blocking.length && signoff) unconfirmed.push(l.name);
+    if (!open && !blocking.length && safetyOff) unproven.push(l.name);
     // Price context for repeat purchases: today's quoted price vs the last price paid (history is never a price fact).
     if (!open && b.intent === "REORDER") {
       const last = lastPaid(b.customer, l.sku);
@@ -122,6 +129,14 @@ export function basketSummary(b: Basket): BasketSummary {
         : `Valio can't confirm stock for ${unconfirmed.length} products, so ${b.rules?.approver ?? "the approver"} checks them before the order is placed.`,
     });
   }
+  if (b.intent !== "DIRECT_PURCHASE")
+    for (const gap of b.validationGaps ?? [])
+      items.push({ kind: "needs_choice", text: `${gap.replace(/,? ?add it by hand.?$/i, "")}: not in this order, add it yourself if you need it.` });
+  if (unproven.length)
+    items.push({
+      kind: "safety_signoff",
+      text: `The catalogue doesn't prove the dietary or allergen status of ${unproven.length === 1 ? unproven[0] : `${unproven.length} products`}, so ${b.rules?.approver ?? "the approver"} confirms ${unproven.length === 1 ? "it" : "them"} before the order is placed.`,
+    });
   const limit = b.rules?.maxOrderEur;
   const day = Math.round((dailySoFar(b.customer, b.id) + b.total) * 100) / 100;
   if (limit != null && b.total > limit) {

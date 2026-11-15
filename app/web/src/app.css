@@ -1525,13 +1525,14 @@ a.btn:active {
   padding: var(--s-6) 0;
   border-bottom: var(--hair-w) solid var(--hair);
 }
-.log__num {
+.log td.log__num {
   text-align: right;
   white-space: nowrap;
-  padding-left: var(--s-12);
+  padding-left: var(--s-16);
 }
 .log__h {
   font-size: var(--fs-14);
+  margin-top: var(--s-12);
 }
 .trail {
   list-style: none;
@@ -1544,8 +1545,12 @@ a.btn:active {
 }
 .trail li {
   display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--s-10);
+  line-height: var(--lh-body);
+}
+.trail li.trail__row--tech {
   grid-template-columns: auto auto 1fr;
-  gap: var(--s-8);
 }
 .trail__time,
 .trail__actor {

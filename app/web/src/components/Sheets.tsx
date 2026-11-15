@@ -1,4 +1,4 @@
-import { Notice } from "../ui";
+import { ReasonList } from "../ui";
 ﻿import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { AuditEvent, Basket, BasketLine, Order } from "../api";
 import "./replacement-dialog.css";
@@ -12,7 +12,8 @@ import {
   SLOT,
   timeLabel,
 } from "../format";
-import { orderLabel } from "../thread";
+import { firstName, orderLabel, PEOPLE } from "../thread";
+import { APPROVER, BUYER } from "../api";
 
 function Modal({
   title,
@@ -196,7 +197,34 @@ const logText = (e: AuditEvent) =>
       (_m, id: string) => "AIM-" + id.toUpperCase(),
     );
 
-// "View order" / "Full technical log": the order lines plus every audit event the gateway recorded.
+// "View order and audit trail" (S52): a readable order record. Summary, products, what Helmi decided and what
+// happened, in plain words. Every raw gateway event stays one click away under "Technical audit trail".
+const STORY_KINDS = new Set(["request", "plan", "swap", "edit", "guests", "replan", "order", "decision"]);
+const who = (actor: string) => (actor === "buyer" ? firstName(BUYER) : PEOPLE[actor] ? firstName(actor) : actor);
+const short = (t: string, n = 140) => (t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t);
+/** One plain sentence per step; product lists become counts. The raw text stays in the technical trail. */
+function storyText(e: AuditEvent): string {
+  const d = (e.data ?? {}) as { status?: string; stockConfirmedBy?: string; safetyConfirmedBy?: string; products?: string[] };
+  if (e.kind === "request") return `${who(e.actor)} asked: ${e.summary.replace(/ for [A-Z][a-z]{2}, d+ [A-Z][a-z]{2}$/, "")}`;
+  if (e.kind === "plan") {
+    const m = e.summary.match(/(d+) dishes?, (d+) ingredients?/);
+    if (m) return Number(m[1]) ? `Helmi planned ${m[1]} ${m[1] === "1" ? "dish" : "dishes"} with ${m[2]} ingredients` : `Helmi built the cart with ${m[2]} products`;
+  }
+  if (e.kind === "decision") {
+    if (d.safetyConfirmedBy) return `${who(d.safetyConfirmedBy)} confirmed the dietary safety of ${d.products?.length ?? 0} products the catalogue does not certify`;
+    if (d.stockConfirmedBy) return `${who(d.stockConfirmedBy)} confirmed stock for ${d.products?.length ?? 0} products Valio could not confirm`;
+    if (d.status === "placed") return `${who(e.actor)} approved the order`;
+    if (d.status === "rejected") return `${who(e.actor)} sent it back`;
+  }
+  if (e.kind === "order") {
+    if (/sent to .* for approval/i.test(e.summary)) {
+      const why = [/can.t confirm stock/i.test(e.summary) && "stock", /doesn.t prove the dietary/i.test(e.summary) && "dietary safety", /limit/i.test(e.summary) && "spending limit"].filter(Boolean);
+      return `${who(e.actor)} sent it to ${firstName(APPROVER)} for approval${why.length ? ` (${why.join(", ")})` : ""}`;
+    }
+    return `${who(e.actor)} placed the order`;
+  }
+  return short(logText(e));
+}
 export function LogSheet({
   basket,
   order,
@@ -212,25 +240,20 @@ export function LogSheet({
     order?.lines ??
     basket.lines
       .filter((l) => l.qty > 0)
-      .map((l) => ({
-        sku: l.sku,
-        name: l.name,
-        qty: l.qty,
-        pack: l.pack,
-        total: l.total,
-      }));
+      .map((l) => ({ sku: l.sku, name: l.name, qty: l.qty, pack: l.pack, total: l.total }));
+  const status = !order ? "Draft" : order.status === "placed" ? "Placed" : order.status === "pending_approval" ? "Waiting for approval" : "Sent back";
+  const approver = order?.decidedBy ? PEOPLE[order.decidedBy]?.name ?? order.decidedBy : null;
+  const decisions = (basket.summary?.items ?? []).filter((i) => i.kind !== "unavailable" && i.kind !== "late");
+  const story = events.filter((e) => STORY_KINDS.has(e.kind));
   return (
-    <Modal
-      title={order ? `Order ${orderLabel(order.id)}` : "Order record"}
-      onClose={onClose}
-      wide
-    >
-      <p className="sheet__sub">
-        Delivery {dayLabel(basket.date)}, {SLOT} ·{" "}
-        {money(order?.total ?? basket.total)} excl. VAT ·{" "}
-        {order?.status.replace("_", " ") ?? "draft"}
-      </p>
-      <Notice title="Simulated order service">No order is sent to Valio Aimo. {basket.factSource === "synthetic_fixture" ? "Prices and availability use an explicit synthetic fixture." : "Prices and availability come from the sponsor mock API."} Catalogue attributes are sponsor data; delivery addresses are user supplied. {order?.confirmationReference ? `Confirmation: ${order.confirmationReference}.` : ""}</Notice>
+    <Modal title={order ? `Order ${orderLabel(order.id)}` : "Order record"} onClose={onClose} wide>
+      <dl className="record__facts">
+        <div><dt>Status</dt><dd>{status}</dd></div>
+        <div><dt>Total, excl. VAT</dt><dd>{money(order?.total ?? basket.total)}</dd></div>
+        <div><dt>Delivery</dt><dd>{dayLabel(basket.date)}, {SLOT}</dd></div>
+        {approver && <div><dt>Approved by</dt><dd>{approver}</dd></div>}
+      </dl>
+      <h3 className="log__h">Products</h3>
       <table className="log">
         <tbody>
           {lines.map((l) => (
@@ -242,22 +265,37 @@ export function LogSheet({
           ))}
         </tbody>
       </table>
-      <h3 className="log__h">Why the agent made these choices</h3>
-      <Notice tone={basket.mandate.state === "agent_may_order" ? "green" : "amber"} title="Purchasing authority">{basket.mandate.reasons.slice(0,2).join(" ")}</Notice>
-      <ol className="trail">{events.filter(e=>e.kind==="choice").map((e,i)=>{
-        const d=e.data as {name?:string;selection?:string;quantity?:string;tradeoffs?:string};
-        return <li key={i}><span className="trail__actor">{d.name ?? "Product decision"}</span><span className="trail__text">{[d.selection,d.quantity,d.tradeoffs].filter(Boolean).join(" ")}</span></li>;
-      })}</ol>
-      <details><summary>Full audit trail and verification evidence</summary>
+      {decisions.length > 0 && (
+        <>
+          <h3 className="log__h">What Helmi decided</h3>
+          <ReasonList items={decisions.map((i) => i.text)} />
+        </>
+      )}
+      <h3 className="log__h">What happened</h3>
       <ol className="trail">
-        {events.map((e, i) => (
+        {story.map((e, i) => (
           <li key={i}>
             <span className="trail__time">{timeLabel(e.at)}</span>
-            <span className="trail__actor">{KIND[e.kind] ?? e.kind}</span>
-            <span className="trail__text">{logText(e)}</span>
+            <span className="trail__text">{storyText(e)}</span>
           </li>
         ))}
-      </ol></details>
+      </ol>
+      <p className="record__note">
+        Simulated order: nothing is sent to Valio Aimo. {basket.factSource === "synthetic_fixture" ? "Prices and availability use a synthetic fixture." : "Prices and availability come from Valio's mock API."}
+        {order?.confirmationReference ? ` Reference ${order.confirmationReference}.` : ""}
+      </p>
+      <details className="record__tech">
+        <summary>Technical audit trail ({events.length} events)</summary>
+        <ol className="trail">
+          {events.map((e, i) => (
+            <li key={i} className="trail__row--tech">
+              <span className="trail__time">{timeLabel(e.at)}</span>
+              <span className="trail__actor">{KIND[e.kind] ?? e.kind}</span>
+              <span className="trail__text">{logText(e)}</span>
+            </li>
+          ))}
+        </ol>
+      </details>
     </Modal>
   );
 }

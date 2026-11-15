@@ -35,7 +35,7 @@ export type Preference = {
 };
 export type SubstitutionPermission = { id: string; customer: string; fromSku: string; toSku: string; maxIncreasePct: number; grantedBy: string; grantedAt: string; expiresAt?: string; revokedAt?: string };
 export type Profile = { customer: string; name: string; synthetic: true; weeklyOrders: number; typicalOrderEur: number; permissions: SubstitutionPermission[] };
-export type SummaryItem = { lineId?: string; kind: "unavailable" | "substitution" | "price_increase" | "late" | "pack_rounding" | "over_limit" | "stock_signoff" | "needs_choice"; text: string; attention?: boolean };
+export type SummaryItem = { lineId?: string; kind: "unavailable" | "substitution" | "price_increase" | "late" | "pack_rounding" | "over_limit" | "stock_signoff" | "safety_signoff" | "needs_choice"; text: string; attention?: boolean };
 export type HistoryOrder = { id: string; date: string; total: number; source: "synthetic_history" | "demo_order"; lines: { sku: string; name: string; qty: number; total: number; substitutedFor?: string }[] };
 export type DecisionSummary = { usual: number; adjusted: number; attention: number; items: SummaryItem[] };
 export type Option = {
